@@ -1,0 +1,5 @@
+services:
+  - type: static
+    name: 3b-admin
+    buildCommand: "npx vite build"
+    staticPublishPath: "dist"
