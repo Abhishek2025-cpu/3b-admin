@@ -1,7 +1,7 @@
 // src/components/ViewClients.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
-import defaultAvatar from '../assets/3b_logo.png'; // A fallback image
+import defaultAvatar from '../assets/3B_logo.png'; // A fallback image
 
 function ViewClients() {
   // State for storing clients, loading status, and errors
