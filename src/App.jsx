@@ -9,7 +9,7 @@ import ViewItems from './compoents/ViewItems';
 import ViewClients from './compoents/ViewClients';
 import Chat from './compoents/Chat';
 import AddStaffForm from './compoents/AddStaffForm';
-import ManageStaff from './compoents/ManageStaff.JSX';
+import ManageStaff from './compoents/ManageStaff';
 import UserOrders from './UserOrders';
 import AddProductForm from './compoents/AddProductForm';
 import ViewProducts from './compoents/ViewProducts';
