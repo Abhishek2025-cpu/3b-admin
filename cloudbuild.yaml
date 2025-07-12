@@ -1,9 +1,9 @@
 steps:
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/admin-panel-3b', '.']
+    args: ['build', '-t', 'gcr.io/$b-profiles-461910/admin-panel-3b', '.']
 
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/admin-panel-3b']
+    args: ['push', 'gcr.io/$b-profiles-461910/admin-panel-3b']
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
@@ -13,7 +13,7 @@ steps:
         'deploy',
         'admin-panel-3b',
         '--image',
-        'gcr.io/$PROJECT_ID/admin-panel-3b',
+        'gcr.io/$b-profiles-461910/admin-panel-3b',
         '--region',
         'asia-south1',
         '--platform',
