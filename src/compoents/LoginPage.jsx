@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPhone, faLock, faEye, faEyeSlash, faKey, faCopyright } from '@fortawesome/free-solid-svg-icons';
 
-import adminLogo from '../assets/3b_logo.png';
+import adminLogo from '../assets/3B_logo.png';
 import vectorNew from '../assets/Vectornew.png';
 
 const styles = {
