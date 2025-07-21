@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPhone, faLock, faEye, faEyeSlash, faKey, faCopyright } from '@fortawesome/free-solid-svg-icons';
 
-import adminLogo from '../assets/3B_logo.png';
+import adminLogo from '../assets/3b.png';
 import vectorNew from '../assets/Vectornew.png';
 
 const styles = {
@@ -26,7 +26,7 @@ const styles = {
   marginRight: 'auto',  // This prevents the image from stretching
   },
   
-  h1: { fontSize: '1.5rem', color: '#7853C2', fontFamily: "'Poppins', sans-serif", margin: '0 0 20px 0' },
+  h1: { fontSize: '1.5rem', color: '#452983', fontFamily: "'Poppins', sans-serif", fontWeight:"600", margin: '0 0 20px 0' },
   inputWrapper: { position: 'relative', marginBottom: '15px', width: '100%' },
   input: { width: '100%', padding: '10px 40px', border: '1px solid #7853C2', borderRadius: '8px', boxSizing: 'border-box', fontSize: '1rem' },
   iconLeft: { position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: '12px', color: '#7853C2' },

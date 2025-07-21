@@ -9,7 +9,7 @@ import {
   faShoppingCart, faCog, faChevronDown
 } from '@fortawesome/free-solid-svg-icons';
 
-import profilePic from '../assets/3B_logo.png'; 
+import profilePic from '../assets/3b.png'; 
 
 const styles = {
     sideMenu: { position: 'fixed', top: 0, left: 0, width: '260px', height: '100%', backgroundColor: '#f5f5f5', boxShadow: '2px 0 5px rgba(0,0,0,0.2)', padding: '20px', zIndex: 2000, transform: 'translateX(-100%)', transition: 'transform 0.3s ease', overflowY: 'auto' },
@@ -112,6 +112,7 @@ function Sidebar({ isOpen, onClose }) {
         <ul style={{ ...styles.nested, ...(openMenus.categories ? styles.nestedOpen : {}) }}>
           <LinkMenuItem icon={faPlusSquare} text="New Category" to="/manager/add-category" />
           <LinkMenuItem icon={faList} text="All Categories" to="/manager/view-categories" />
+           <LinkMenuItem icon={faList} text="Other Categories" to="/manager/other-categories" />
         </ul>
 
         {/* --- ADDED: Products Menu --- */}
@@ -119,6 +120,7 @@ function Sidebar({ isOpen, onClose }) {
         <ul style={{ ...styles.nested, ...(openMenus.products ? styles.nestedOpen : {}) }}>
           <LinkMenuItem icon={faBox} text="Add Products" to="/manager/add-product" />
           <LinkMenuItem icon={faList} text="All Products" to="/manager/view-products" />
+           <LinkMenuItem icon={faList} text="Other Products" to="/manager/other-products"/>
         </ul>
 
         {/* Static Items */}

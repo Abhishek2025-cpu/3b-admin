@@ -1,355 +1,331 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { FaArrowLeft, FaTimes } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
 
-// --- FIX: Define the two separate base URLs for clarity and easy maintenance ---
-const PRODUCT_API_BASE_URL = 'https://threebapi-1067354145699.asia-south1.run.app/api';
-const DIMENSION_API_BASE_URL = 'https://node-api-1067354145699.asia-south1.run.app/api';
+// A reusable Loader component
+// const Loader = () => (
+//   <div className="fixed inset-0 bg-white/80 flex justify-center items-center z-50">
+//     <div className="border-8 border-gray-200 border-t-blue-500 rounded-full w-16 h-16 animate-spin"></div>
+//   </div>
+// );
 
-
-// --- Reusable UI Components (No changes needed here) ---
-
-const Toast = ({ message, type, show, onClose }) => {
-  useEffect(() => {
-    if (show) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [show, onClose]);
-
-  if (!show) return null;
-
-  const styles = {
-    success: 'bg-green-600 text-white',
-    error: 'bg-red-600 text-white',
-  };
-
+// A reusable Image Thumbnail component for previews
+const ImageThumb = ({ file, onRemove }) => {
   return (
-    <div className={`fixed bottom-5 right-5 p-4 rounded-lg shadow-lg flex items-center gap-4 ${styles[type]}`}>
-      <span>{message}</span>
-      <button onClick={onClose}><FaTimes /></button>
+    <div className="relative w-28 h-28 border border-gray-300 rounded-lg overflow-hidden shadow-md">
+      <img
+        src={URL.createObjectURL(file)}
+        alt={file.name}
+        className="w-full h-full object-cover"
+        // Clean up the object URL when the component unmounts
+        onLoad={e => URL.revokeObjectURL(e.target.src)}
+      />
+      <button
+        type="button"
+        onClick={onRemove}
+        className="absolute top-1 right-1 bg-white/90 rounded-full w-6 h-6 flex items-center justify-center text-lg font-bold text-gray-700 cursor-pointer hover:bg-gray-200"
+      >
+        ×
+      </button>
     </div>
   );
 };
 
-// --- Specialized Input Components ---
-
-const DimensionsInput = ({ value, onChange }) => {
-  const [availableDims, setAvailableDims] = useState([]);
-  const [newDimValue, setNewDimValue] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
-
-  // This function will handle fetching the dimensions
-  const fetchDimensions = useCallback(async () => {
-    try {
-      // *** FIX: Uses DIMENSION_API_BASE_URL for getting dimensions ***
-      const res = await fetch(`${DIMENSION_API_BASE_URL}/dimensions/get-dimensions`);
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      const data = await res.json();
-      if (Array.isArray(data)) setAvailableDims(data);
-    } catch (err) {
-      console.error('Failed to load dimensions:', err);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchDimensions();
-  }, [fetchDimensions]);
-
-  const handleSelect = (dimValue) => {
-    if (!value.includes(dimValue)) {
-      onChange([...value, dimValue]);
-    }
-    setIsOpen(false);
-  };
-
-  const handleRemove = (dimToRemove) => {
-    onChange(value.filter(dim => dim !== dimToRemove));
-  };
-  
-  const handleAddNew = async () => {
-    if (!newDimValue.trim()) return;
-    try {
-        // *** FIX: Uses DIMENSION_API_BASE_URL for adding dimensions ***
-        const res = await fetch(`${DIMENSION_API_BASE_URL}/dimensions/add-dimensions`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ value: newDimValue.trim() })
-        });
-        if (!res.ok) throw new Error('Failed to add dimension');
-        
-        fetchDimensions(); 
-        setNewDimValue('');
-    } catch (err) {
-        console.error('Failed to add dimension:', err);
-    }
-  };
-
-  return (
-    <div className="space-y-2">
-      <div className="relative">
-        <button type="button" onClick={() => setIsOpen(!isOpen)} className="w-full p-2 border rounded-md text-left bg-white flex justify-between items-center">
-          <span>Select Dimensions ({value.length})</span>
-          <span>▾</span>
-        </button>
-        {isOpen && (
-          <ul className="absolute z-10 w-full bg-white border mt-1 rounded-md max-h-48 overflow-y-auto">
-            {availableDims.map(dim => (
-              <li key={dim._id} onClick={() => handleSelect(dim.value)} className="p-2 hover:bg-purple-100 cursor-pointer">
-                {dim.value}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-      <div className="p-2 border rounded-md min-h-[40px] bg-gray-50 flex flex-wrap gap-2">
-        {value.map(dim => (
-          <span key={dim} className="bg-purple-600 text-white px-3 py-1 text-sm rounded-full flex items-center gap-2">
-            {dim}
-            <button type="button" onClick={() => handleRemove(dim)}><FaTimes size={12} /></button>
-          </span>
-        ))}
-      </div>
-      <div className="flex gap-2">
-        <input 
-          type="text" 
-          value={newDimValue}
-          onChange={(e) => setNewDimValue(e.target.value)}
-          placeholder="Add new dimension(s)..." 
-          className="w-full p-2 border rounded-md"
-        />
-        <button type="button" onClick={handleAddNew} className="px-4 py-2 bg-purple-600 text-white rounded-md whitespace-nowrap">Add</button>
-      </div>
-    </div>
-  );
-};
-
-
-const ImageUploader = ({ files, onFilesChange }) => {
-    const previewUrls = useMemo(() => 
-        files.map(file => URL.createObjectURL(file)),
-    [files]);
-
-    useEffect(() => {
-        return () => {
-            previewUrls.forEach(url => URL.revokeObjectURL(url));
-        };
-    }, [previewUrls]);
-  
-    const handleFileChange = (e) => {
-        const newFiles = Array.from(e.target.files);
-        onFilesChange([...files, ...newFiles]);
-    };
-
-    const handleRemove = (indexToRemove) => {
-        onFilesChange(files.filter((_, index) => index !== indexToRemove));
-    };
-
-    return (
-        <div>
-            <input 
-                type="file" 
-                multiple 
-                accept="image/*,.obj" 
-                onChange={handleFileChange}
-                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:font-semibold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200"
-            />
-            <div className="mt-4 grid grid-cols-4 sm:grid-cols-6 gap-3">
-                {previewUrls.map((url, index) => (
-                    <div key={index} className="relative">
-                        <img src={url} alt={`Preview ${index}`} className="w-20 h-20 object-cover rounded-lg border"/>
-                        <button 
-                            type="button" 
-                            onClick={() => handleRemove(index)}
-                            className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center border-2 border-white"
-                        >
-                            <FaTimes size={12}/>
-                        </button>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-};
-
-
-// --- Main Form Component ---
-
-function AddProductForm() {
-  const initialFormState = {
+const AddProductForm = () => {
+  // State for form inputs
+  const [formData, setFormData] = useState({
     categoryId: '',
-    productId: '',
     name: '',
-    description: '',
-    modelNumbers: '',
-    dimensions: [],
-    colors: '',
-    price: '',
-    discount: '0',
-    position: '0',
-    quantity: '1',
-  };
+    about: '',
+    quantity: 500,
+    pricePerPiece: '',
+    totalPiecesPerBox: '',
+    discountPercentage: 0,
+  });
   
-  const [formData, setFormData] = useState(initialFormState);
-  const [imageFiles, setImageFiles] = useState([]);
+  // State for lists and selections
   const [categories, setCategories] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [allDimensions, setAllDimensions] = useState([]);
+  const [selectedDimensions, setSelectedDimensions] = useState([]);
+  const [newDimensionInput, setNewDimensionInput] = useState('');
 
+  // State for file uploads
+  const [colorImages, setColorImages] = useState([]);
+  const [productImages, setProductImages] = useState([]);
+
+  // State for UI feedback
+  const [status, setStatus] = useState({ message: '', type: '' }); // type: 'success' or 'error'
+  const [isLoading, setIsLoading] = useState(false);
+
+  // --- DATA FETCHING ---
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchData = async () => {
+      setIsLoading(true);
       try {
-        // *** FIX: Uses PRODUCT_API_BASE_URL for getting categories ***
-        const res = await fetch(`${PRODUCT_API_BASE_URL}/categories/all-category`);
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const data = await res.json();
-        if (Array.isArray(data)) setCategories(data);
-      } catch (err) {
-        console.error('Failed to load categories:', err);
+        // Fetch categories
+        const catRes = await fetch('https://threebappbackend.onrender.com/api/categories/get-categories');
+        if (!catRes.ok) throw new Error('Failed to fetch categories');
+        const catData = await catRes.json();
+        setCategories(catData);
+
+        // Fetch dimensions
+        await fetchDimensions();
+
+      } catch (error) {
+        console.error("Initialization Error:", error);
+        setStatus({ message: `Could not load initial data: ${error.message}`, type: 'error' });
+      } finally {
+        setIsLoading(false);
       }
     };
-    fetchCategories();
-  }, []);
+    fetchData();
+  }, []); // Empty dependency array means this runs once on mount
 
-  const handleChange = (e) => {
+  // --- HANDLERS ---
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (imageFiles.length === 0) {
-      setToast({ show: true, message: 'Please select at least one image.', type: 'error' });
+  const handleFileChange = (e, setFiles, limit) => {
+    const files = Array.from(e.target.files);
+    if (limit && files.length + setFiles.length > limit) {
+      alert(`You can only upload a maximum of ${limit} images.`);
       return;
     }
-    setIsSubmitting(true);
+    setFiles(prev => [...prev, ...files]);
+    e.target.value = null; // Reset file input
+  };
+  
+  const handleDimensionSelect = (e) => {
+    const selectedId = e.target.value;
+    if (!selectedId) return;
 
-    const data = new FormData();
-    Object.keys(formData).forEach(key => {
-      const value = formData[key];
-      data.append(key, Array.isArray(value) ? value.join(',') : value);
-    });
+    const dimensionToAdd = allDimensions.find(d => d._id === selectedId);
+    if (dimensionToAdd && !selectedDimensions.some(d => d._id === dimensionToAdd._id)) {
+      setSelectedDimensions(prev => [...prev, dimensionToAdd]);
+    }
+    e.target.value = ''; // Reset select dropdown
+  };
 
-    imageFiles.forEach(file => {
-      data.append('images', file);
-    });
-
+  const handleAddNewDimension = async () => {
+    if (!newDimensionInput.trim()) return;
+    setIsLoading(true);
     try {
-      // *** FIX: Uses PRODUCT_API_BASE_URL for adding the product ***
-      const res = await fetch(`${PRODUCT_API_BASE_URL}/products/add-products`, {
+      const res = await fetch('https://threebappbackend.onrender.com/api/dimensions/add-dimensions', {
         method: 'POST',
-        body: data,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: newDimensionInput.trim() }),
       });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.message || 'Server responded with an error');
+      const data = await res.json();
+      if (data.error) {
+        throw new Error(data.error);
       }
-
-      setToast({ show: true, message: 'Product added successfully!', type: 'success' });
-      setFormData(initialFormState);
-      setImageFiles([]);
+      alert(`${data.added.length} dimension(s) added successfully.`);
+      setNewDimensionInput('');
+      await fetchDimensions(); // Refresh the dimensions list
     } catch (error) {
-      setToast({ show: true, message: error.message || 'Failed to add product.', type: 'error' });
+      console.error('Error adding dimension:', error);
+      alert(`Error: ${error.message}`);
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
-  const handleDimensionsChange = useCallback((newDims) => {
-    setFormData(prev => ({...prev, dimensions: newDims}));
-  }, []);
+  const fetchDimensions = async () => {
+    const dimRes = await fetch('https://threebappbackend.onrender.com/api/dimensions/get-dimensions');
+    if (!dimRes.ok) throw new Error('Failed to fetch dimensions');
+    const dimData = await dimRes.json();
+    const sorted = dimData.sort((a, b) => {
+      const [aW, aH] = a.value.replace('mm', '').split('*').map(Number);
+      const [bW, bH] = b.value.replace('mm', '').split('*').map(Number);
+      return aW - bW || aH - bH;
+    });
+    setAllDimensions(sorted);
+  }
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.categoryId) {
+      alert('Please select a category.');
+      return;
+    }
+
+    setIsLoading(true);
+    setStatus({ message: 'Uploading product... Please wait.', type: 'info' });
+
+    const submissionData = new FormData();
+    submissionData.append('categoryId', formData.categoryId);
+    submissionData.append('name', formData.name);
+    submissionData.append('about', formData.about);
+    submissionData.append('quantity', formData.quantity);
+    submissionData.append('pricePerPiece', formData.pricePerPiece);
+    submissionData.append('totalPiecesPerBox', formData.totalPiecesPerBox);
+    submissionData.append('discountPercentage', formData.discountPercentage);
+    submissionData.append('dimensions', JSON.stringify(selectedDimensions.map(d => d._id)));
+
+    colorImages.forEach(file => submissionData.append('colorImages', file));
+    productImages.forEach(file => submissionData.append('images', file));
+
+    try {
+      const res = await fetch('https://threebtest.onrender.com/api/products/add', {
+        method: 'POST',
+        body: submissionData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to add product.');
+      }
+
+      setStatus({ message: 'Product added successfully! Form will reset.', type: 'success' });
+      setTimeout(() => {
+        // A full reload might be desired, but resetting the form is more "React-like"
+        window.location.reload(); 
+      }, 2000);
+
+    } catch (error) {
+      console.error(error);
+      setStatus({ message: error.message, type: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="bg-gray-100 min-h-screen p-4 sm:p-8">
-      <Toast {...toast} onClose={() => setToast(prev => ({ ...prev, show: false }))} />
+    <div className="bg-gradient-to-r from-gray-100 to-gray-200 min-h-screen w-full flex flex-col items-center p-4 sm:p-8 font-sans">
+      
+      {isLoading && <Loader />}
+      
+      <button 
+        type="button" 
+        onClick={() => window.history.back()} 
+        className="self-start mb-5 px-5 py-2 text-base font-semibold bg-gray-600 text-white rounded-lg cursor-pointer hover:bg-gray-700 transition-colors"
+      >
+        ← Back
+      </button>
 
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-center gap-4 mb-6">
-          <a href="/manager_dashboard" className="text-gray-600 hover:text-black">
-            <FaArrowLeft size={24} />
-          </a>
-          <h2 className="text-3xl font-bold text-[#6f42c1]">Add New Product</h2>
+      <form
+        onSubmit={handleFormSubmit}
+        className="bg-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-3xl"
+      >
+        <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-6">Add Product</h2>
+
+        {/* --- Form Fields --- */}
+        {/* Category */}
+        <label htmlFor="categorySelect" className="block mt-4 text-sm font-semibold text-gray-700">Category</label>
+        <select id="categorySelect" name="categoryId" value={formData.categoryId} onChange={handleInputChange} required
+          className="w-full p-3 mt-1 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition">
+          <option value="">Select Category</option>
+          {categories.map(cat => (
+            <option key={cat._id} value={cat._id}>{cat.name}</option>
+          ))}
+        </select>
+        
+        {/* Product Name */}
+        <label htmlFor="name" className="block mt-4 text-sm font-semibold text-gray-700">Product Name</label>
+        <input type="text" id="name" name="name" value={formData.name} onChange={handleInputChange} required placeholder="Enter product name"
+          className="w-full p-3 mt-1 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition" />
+          
+        {/* About */}
+        <label htmlFor="about" className="block mt-4 text-sm font-semibold text-gray-700">About</label>
+        <textarea id="about" name="about" value={formData.about} onChange={handleInputChange} rows="3" required placeholder="Product description"
+          className="w-full p-3 mt-1 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition"></textarea>
+
+        {/* Color Images */}
+        <label htmlFor="colorImages" className="block mt-4 text-sm font-semibold text-gray-700">Upload Color Images</label>
+        <input type="file" id="colorImages" multiple accept="image/*" onChange={(e) => handleFileChange(e, setColorImages)}
+          className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+        <div className="flex flex-wrap mt-2 gap-4">
+          {colorImages.map((file, index) => (
+            <ImageThumb key={index} file={file} onRemove={() => setColorImages(prev => prev.filter((_, i) => i !== index))} />
+          ))}
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 bg-white rounded-xl shadow-lg space-y-4">
-          
-          <div>
-            <label htmlFor="categoryId" className="block mb-1 font-medium">Category</label>
-            <select name="categoryId" id="categoryId" value={formData.categoryId} onChange={handleChange} required className="w-full p-2 border rounded-md bg-white">
-              <option value="">-- Select Category --</option>
-              {categories.map(cat => (
-                <option key={cat._id} value={cat.categoryId}>{cat.name}</option>
-              ))}
-            </select>
-          </div>
+        {/* Dimensions */}
+        <label htmlFor="existingDimensionsSelect" className="block mt-4 text-sm font-semibold text-gray-700">Select Existing Dimension</label>
+        <select id="existingDimensionsSelect" onChange={handleDimensionSelect}
+          className="w-full p-3 mt-1 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition">
+          <option value="">-- Select --</option>
+          {allDimensions.map(dim => (
+            <option key={dim._id} value={dim._id}>{dim.value}</option>
+          ))}
+        </select>
+        <div className="mt-2 min-h-[2rem]">
+          {selectedDimensions.map(dim => (
+            <span key={dim._id} className="inline-flex items-center bg-blue-500 text-white text-sm font-medium mr-2 mb-2 px-3 py-1 rounded-full">
+              {dim.value}
+              <button type="button" onClick={() => setSelectedDimensions(prev => prev.filter(d => d._id !== dim._id))}
+                className="ml-2 text-white font-bold hover:text-gray-200">×</button>
+            </span>
+          ))}
+        </div>
 
-          <div>
-            <label htmlFor="productId" className="block mb-1 font-medium">Product ID</label>
-            <input type="text" name="productId" id="productId" value={formData.productId} onChange={handleChange} required className="w-full p-2 border rounded-md" />
-          </div>
-
-          <div>
-            <label htmlFor="name" className="block mb-1 font-medium">Product Name</label>
-            <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} required className="w-full p-2 border rounded-md" />
-          </div>
-
-          <div>
-            <label htmlFor="description" className="block mb-1 font-medium">Description</label>
-            <textarea name="description" id="description" value={formData.description} onChange={handleChange} rows="3" required className="w-full p-2 border rounded-md"></textarea>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="modelNumbers" className="block mb-1 font-medium">Model Numbers</label>
-              <input type="text" name="modelNumbers" id="modelNumbers" placeholder="Comma separated" value={formData.modelNumbers} onChange={handleChange} required className="w-full p-2 border rounded-md" />
-            </div>
-            <div>
-              <label htmlFor="colors" className="block mb-1 font-medium">Colors</label>
-              <input type="text" name="colors" id="colors" placeholder="Comma separated" value={formData.colors} onChange={handleChange} required className="w-full p-2 border rounded-md" />
-            </div>
-          </div>
-
-          <div>
-            <label className="block mb-1 font-medium">Dimensions</label>
-            <DimensionsInput value={formData.dimensions} onChange={handleDimensionsChange} />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="price" className="block mb-1 font-medium">Price</label>
-              <input type="number" name="price" id="price" value={formData.price} onChange={handleChange} required className="w-full p-2 border rounded-md" />
-            </div>
-            <div>
-              <label htmlFor="discount" className="block mb-1 font-medium">Discount (%)</label>
-              <input type="number" name="discount" id="discount" value={formData.discount} onChange={handleChange} className="w-full p-2 border rounded-md" />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="position" className="block mb-1 font-medium">Position</label>
-              <input type="number" name="position" id="position" value={formData.position} onChange={handleChange} className="w-full p-2 border rounded-md" />
-            </div>
-            <div>
-              <label htmlFor="quantity" className="block mb-1 font-medium">Quantity</label>
-              <input type="number" name="quantity" id="quantity" value={formData.quantity} onChange={handleChange} required className="w-full p-2 border rounded-md" />
-            </div>
-          </div>
-          
-          <div>
-            <label className="block mb-1 font-medium">Product Images & 3D Models</label>
-            <ImageUploader files={imageFiles} onFilesChange={setImageFiles} />
-          </div>
-
-          <button type="submit" disabled={isSubmitting} className="w-full bg-purple-600 text-white font-bold py-3 rounded-md hover:bg-purple-700 disabled:bg-purple-300 transition-colors">
-            {isSubmitting ? 'Submitting...' : 'Add Product'}
+        {/* Add New Dimension */}
+        <label htmlFor="newDimensionInput" className="block mt-4 text-sm font-semibold text-gray-700">Add New Dimension</label>
+        <div className="flex items-center gap-2 mt-1">
+          <input type="text" id="newDimensionInput" value={newDimensionInput} onChange={(e) => setNewDimensionInput(e.target.value)} placeholder="Eg: 20x40 or 20x40, 30x60"
+            className="flex-grow p-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition" />
+          <button type="button" onClick={handleAddNewDimension}
+            className="px-4 py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition-colors whitespace-nowrap">
+            Add
           </button>
-        </form>
-      </div>
+        </div>
+
+        {/* Numerical Inputs */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+          <div>
+            <label htmlFor="quantity" className="block mt-4 text-sm font-semibold text-gray-700">Quantity (min 500)</label>
+            <input type="number" id="quantity" name="quantity" value={formData.quantity} onChange={handleInputChange} min="500" required
+              className="w-full p-3 mt-1 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition" />
+          </div>
+          <div>
+            <label htmlFor="pricePerPiece" className="block mt-4 text-sm font-semibold text-gray-700">Price Per Piece</label>
+            <input type="number" id="pricePerPiece" name="pricePerPiece" value={formData.pricePerPiece} onChange={handleInputChange} min="0" step="0.01" required
+              className="w-full p-3 mt-1 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition" />
+          </div>
+          <div>
+            <label htmlFor="totalPiecesPerBox" className="block mt-4 text-sm font-semibold text-gray-700">Total Pieces Per Box</label>
+            <input type="number" id="totalPiecesPerBox" name="totalPiecesPerBox" value={formData.totalPiecesPerBox} onChange={handleInputChange} min="1" required
+              className="w-full p-3 mt-1 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition" />
+          </div>
+          <div>
+            <label htmlFor="discountPercentage" className="block mt-4 text-sm font-semibold text-gray-700">Discount Percentage (%)</label>
+            <input type="number" id="discountPercentage" name="discountPercentage" value={formData.discountPercentage} onChange={handleInputChange} min="0" step="0.01"
+              className="w-full p-3 mt-1 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition" />
+          </div>
+        </div>
+
+        {/* Product Images */}
+        <label htmlFor="images" className="block mt-4 text-sm font-semibold text-gray-700">Product Images (max 10)</label>
+        <input type="file" id="images" multiple accept="image/*" onChange={(e) => handleFileChange(e, setProductImages, 10)}
+          className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+        <div className="flex flex-wrap mt-2 gap-4">
+          {productImages.map((file, index) => (
+            <ImageThumb key={index} file={file} onRemove={() => setProductImages(prev => prev.filter((_, i) => i !== index))} />
+          ))}
+        </div>
+        
+        {/* --- Submission --- */}
+        <button type="submit"
+          className="w-full mt-8 py-3 px-6 text-lg font-semibold bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+          disabled={isLoading}
+        >
+          {isLoading ? 'Submitting...' : 'Add Product'}
+        </button>
+
+        {/* Status Message */}
+        {status.message && (
+          <div className={`text-center mt-4 p-2 rounded-md font-semibold text-sm
+            ${status.type === 'success' ? 'bg-green-100 text-green-700' : ''}
+            ${status.type === 'error' ? 'bg-red-100 text-red-700' : ''}
+            ${status.type === 'info' ? 'bg-blue-100 text-blue-700' : ''}
+          `}>
+            {status.message}
+          </div>
+        )}
+
+      </form>
     </div>
   );
-}
+};
 
 export default AddProductForm;
