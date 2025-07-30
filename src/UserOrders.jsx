@@ -1,38 +1,404 @@
+// import React, { useState, useEffect, useMemo } from 'react';
+// // Importing necessary icons from react-icons
+// import { FaSearch, FaComments, FaFileInvoice } from 'react-icons/fa';
+
+// // --- Reusable Helper Components ---
+
+// // A simple, reusable loader component
+// const Loader = () => (
+//   <div className="flex justify-center items-center py-20">
+//     <div className="w-16 h-16 border-8 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
+//   </div>
+// );
+
+// // Component to display a single product in an order
+// const ProductItem = ({ product }) => (
+//   <div className="flex items-center gap-4 py-3">
+//     <img
+//       src={product.image?.url || 'https://via.placeholder.com/150'}
+//       alt={product.productName || 'Product'}
+//       className="w-14 h-14 rounded-lg object-cover bg-gray-200 shadow-sm"
+//     />
+//     <div>
+//       <p className="font-semibold text-gray-800">{product.productName || 'N/A'}</p>
+//       <p className="text-sm text-gray-600">Quantity: {product.quantity}</p>
+//       <p className="text-sm text-gray-600">Price: ₹{product.priceAtPurchase}</p>
+//     </div>
+//   </div>
+// );
+
+// // New Reusable Pagination Component
+// const Pagination = ({ currentPage, totalPages, onPageChange }) => {
+//   if (totalPages <= 1) return null;
+
+//   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
+
+//   return (
+//     <nav className="flex justify-center items-center gap-2 mt-10" aria-label="Pagination">
+//       <button
+//         onClick={() => onPageChange(currentPage - 1)}
+//         disabled={currentPage === 1}
+//         className="px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300"
+//       >
+//         Previous
+//       </button>
+//       {pageNumbers.map(number => (
+//         <button
+//           key={number}
+//           onClick={() => onPageChange(number)}
+//           className={`px-4 py-2 text-sm font-medium rounded-md border ${
+//             currentPage === number
+//               ? 'bg-blue-600 text-white border-blue-600'
+//               : 'text-gray-700 bg-white hover:bg-gray-50 border-gray-300'
+//           }`}
+//         >
+//           {number}
+//         </button>
+//       ))}
+//       <button
+//         onClick={() => onPageChange(currentPage + 1)}
+//         disabled={currentPage === totalPages}
+//         className="px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300"
+//       >
+//         Next
+//       </button>
+//     </nav>
+//   );
+// };
+
+// // --- Core Feature Components ---
+
+// // Manages the state and UI for a single order (Redesigned)
+// const OrderCard = ({ order, onUpdate }) => {
+//   const [currentStatus, setCurrentStatus] = useState(order.currentStatus);
+//   const [isUpdating, setIsUpdating] = useState(false);
+//   const [message, setMessage] = useState({ text: '', type: '' });
+
+//   const isBillGeneratable = order.currentStatus === 'Delivered';
+
+//   const statusOptions = [
+//     { label: '🕓 Pending', value: 'Pending' },
+//     { label: '✅ Confirmed', value: 'Confirmed' },
+//     { label: '📦 Shipped', value: 'Shipped' },
+//     { label: '🚚 Out for Delivery', value: 'Out for Delivery' },
+//     { label: '📬 Delivered', value: 'Delivered' },
+//     { label: '❌ Cancelled', value: 'Cancelled' },
+//   ];
+
+//   const currentStatusIndex = statusOptions.findIndex(opt => opt.value === order.currentStatus);
+
+//   const handleStatusUpdate = async () => {
+//     setIsUpdating(true);
+//     setMessage({ text: '', type: '' });
+//     try {
+//       const response = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/orders/status/${order._id}`, {
+//         method: 'PATCH',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ newStatus: currentStatus }),
+//       });
+//       const result = await response.json();
+//       if (!response.ok) throw new Error(result.message || 'Failed to update status');
+//       setMessage({ text: '✅ Status updated successfully!', type: 'success' });
+//       if (onUpdate) onUpdate();
+//     } catch (error) {
+//       setMessage({ text: `❌ Error: ${error.message}`, type: 'error' });
+//       setCurrentStatus(order.currentStatus);
+//     } finally {
+//       setIsUpdating(false);
+//       setTimeout(() => setMessage({ text: '', type: '' }), 4000);
+//     }
+//   };
+
+//   return (
+//     <div className="border border-gray-200 rounded-lg p-5 mt-4 bg-white">
+//       <div className="flex justify-between items-start text-sm mb-4">
+//         <div>
+//           <p className="font-semibold text-gray-800">Order ID: {order.orderId}</p>
+//           <p className="text-gray-500">{new Date(order.createdAt).toLocaleString()}</p>
+//         </div>
+//         <p className="text-right">
+//           <span className="text-gray-600">Total: </span>
+//           <span className="font-bold text-xl text-gray-900">₹{order.totalAmount || 'N/A'}</span>
+//         </p>
+//       </div>
+
+//       <div className="pl-4 border-l-2 border-gray-200 space-y-2">
+//         {order.products.map((p, index) => <ProductItem key={index} product={p} />)}
+//       </div>
+      
+//       <div className="flex flex-wrap justify-between items-end gap-4 mt-5 pt-4 border-t border-gray-200">
+//         {/* Status Update Section */}
+//         <div>
+//           <label className="font-bold text-sm text-gray-700 block mb-2">Update Status:</label>
+//           <div className="flex items-center gap-2">
+//             <select
+//               value={currentStatus}
+//               onChange={(e) => setCurrentStatus(e.target.value)}
+//               className="px-3 py-2 rounded-lg text-sm border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+//             >
+//               {statusOptions.map((opt, index) => (
+//                 <option key={opt.value} value={opt.value} disabled={order.currentStatus !== 'Cancelled' && index < currentStatusIndex}>
+//                   {opt.label}
+//                 </option>
+//               ))}
+//             </select>
+//             <button
+//               onClick={handleStatusUpdate}
+//               disabled={isUpdating || currentStatus === order.currentStatus}
+//               className="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+//             >
+//               {isUpdating ? 'Saving...' : 'Save'}
+//             </button>
+//           </div>
+//            {message.text && (
+//             <p className={`mt-2 font-semibold text-xs ${message.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+//               {message.text}
+//             </p>
+//           )}
+//         </div>
+
+//         {/* Action Buttons Section */}
+//         <div className="flex items-center gap-3">
+//           <button className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white text-sm font-semibold rounded-lg hover:bg-blue-600 transition-colors">
+//             <FaComments />
+//             <span>Chat</span>
+//           </button>
+//           <button
+//             disabled={!isBillGeneratable}
+//             className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white text-sm font-semibold rounded-lg hover:bg-indigo-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+//           >
+//             <FaFileInvoice />
+//             <span>Generate Bill</span>
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// // Groups all orders for a single user (Redesigned)
+// const UserCard = ({ user, orders, onUpdate }) => (
+//   <div className="border border-gray-200 rounded-xl mb-8 p-6 bg-white shadow-md hover:shadow-lg transition-shadow">
+//     <div className="pb-4 border-b border-gray-200">
+//       <h3 className="text-xl font-bold text-gray-900">{user.name}</h3>
+//       <p className="text-gray-600">{user.email}</p>
+//       <p className="text-gray-600"><strong>Phone:</strong> {user.number}</p>
+//     </div>
+//     {orders.map(order => (
+//       <OrderCard key={order._id} order={order} onUpdate={onUpdate} />
+//     ))}
+//   </div>
+// );
+
+// // --- Main Page Component ---
+
+// const ITEMS_PER_PAGE = 5; // Number of user cards per page
+
+// function UserOrders() {
+//   const [ordersData, setOrdersData] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState(null);
+//   const [searchQuery, setSearchQuery] = useState('');
+//   const [currentPage, setCurrentPage] = useState(1);
+
+//   const fetchOrders = async () => {
+//     setLoading(true);
+//     setError(null);
+//     try {
+//       const response = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/orders/get-orders');
+//       if (!response.ok) throw new Error(`Server error (Status: ${response.status})`);
+//       const data = await response.json();
+//       if (!data.success || !Array.isArray(data.orders)) {
+//         throw new Error(data.message || 'Invalid data format from server.');
+//       }
+//       setOrdersData(data.orders);
+//     } catch (err) {
+//       setError(err.message);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   useEffect(() => {
+//     fetchOrders();
+//   }, []);
+
+//   // Memoized derivation of data for filtering and pagination
+//   const processedData = useMemo(() => {
+//     if (!ordersData || ordersData.length === 0) {
+//       return { usersToDisplay: [], totalPages: 0 };
+//     }
+
+//     const userMap = new Map();
+//     ordersData.forEach(order => {
+//       if (!order.user || !order.user._id) return;
+//       const userId = order.user._id;
+//       if (!userMap.has(userId)) {
+//         userMap.set(userId, { user: order.user, orders: [] });
+//       }
+//       userMap.get(userId).orders.push(order);
+//     });
+
+//     userMap.forEach(userData => {
+//       userData.orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+//     });
+
+//     const allGroupedUsers = Array.from(userMap.values());
+
+//     // Filter based on search query
+//     const filteredUsers = allGroupedUsers.filter(group => {
+//       const query = searchQuery.toLowerCase().trim();
+//       if (!query) return true;
+//       const userNameMatch = group.user.name.toLowerCase().includes(query);
+//       const userEmailMatch = group.user.email.toLowerCase().includes(query);
+//       const userNumberMatch = group.user.number?.includes(query);
+//       const orderIdMatch = group.orders.some(order => order.orderId.toLowerCase().includes(query));
+//       return userNameMatch || userEmailMatch || userNumberMatch || orderIdMatch;
+//     });
+
+//     // Paginate the filtered results
+//     const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+//     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+//     const usersToDisplay = filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+//     return { usersToDisplay, totalPages };
+//   }, [ordersData, searchQuery, currentPage]);
+
+//   const handleSearchChange = (e) => {
+//     setSearchQuery(e.target.value);
+//     setCurrentPage(1); // Reset to first page on new search
+//   };
+  
+//   const renderContent = () => {
+//     if (loading) return <Loader />;
+//     if (error) return <div className="text-center text-red-600 bg-red-100 p-4 rounded-md font-bold">{error}</div>;
+//     if (processedData.usersToDisplay.length === 0) {
+//       return <div className="text-center text-gray-500 text-xl p-8">No orders found.</div>;
+//     }
+//     return (
+//       <>
+//         {processedData.usersToDisplay.map(({ user, orders }) => (
+//           <UserCard key={user._id} user={user} orders={orders} onUpdate={fetchOrders} />
+//         ))}
+//         <Pagination
+//           currentPage={currentPage}
+//           totalPages={processedData.totalPages}
+//           onPageChange={setCurrentPage}
+//         />
+//       </>
+//     );
+//   };
+
+//   return (
+//     <div className="bg-gray-100 min-h-screen p-4 sm:p-8 font-sans">
+//       <div className="max-w-5xl mx-auto">
+//         <header className="mb-8">
+//           <h1 className="text-4xl font-bold text-gray-800 mb-4">Customer Orders</h1>
+//           <div className="relative w-full max-w-lg">
+//             <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+//             <input
+//               type="text"
+//               placeholder="Search by name, email, phone or Order ID..."
+//               value={searchQuery}
+//               onChange={handleSearchChange}
+//               className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow shadow-sm"
+//             />
+//           </div>
+//         </header>
+        
+//         <main>
+//           {renderContent()}
+//         </main>
+//       </div>
+//     </div>
+//   );
+// }
+
+// export default UserOrders;
+
+
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaArrowLeft } from 'react-icons/fa';
+// Import useNavigate from react-router-dom
+import { useNavigate } from 'react-router-dom';
+// Importing necessary icons from react-icons
+import { FaSearch, FaComments, FaFileInvoice } from 'react-icons/fa';
 
 // --- Reusable Helper Components ---
 
 // A simple, reusable loader component
 const Loader = () => (
   <div className="flex justify-center items-center py-20">
-    <div className="w-16 h-16 border-8 border-gray-200 border-t-blue-500 rounded-full animate-spin"></div>
+    <div className="w-16 h-16 border-8 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
   </div>
 );
 
 // Component to display a single product in an order
 const ProductItem = ({ product }) => (
-  <div className="flex items-center gap-4 py-2">
+  <div className="flex items-center gap-4 py-3">
     <img
       src={product.image?.url || 'https://via.placeholder.com/150'}
       alt={product.productName || 'Product'}
-      className="w-16 h-16 rounded-full object-cover bg-gray-200"
+      className="w-14 h-14 rounded-lg object-cover bg-gray-200 shadow-sm"
     />
     <div>
-      <p className="font-semibold">{product.productName || 'N/A'}</p>
+      <p className="font-semibold text-gray-800">{product.productName || 'N/A'}</p>
       <p className="text-sm text-gray-600">Quantity: {product.quantity}</p>
       <p className="text-sm text-gray-600">Price: ₹{product.priceAtPurchase}</p>
     </div>
   </div>
 );
 
+// New Reusable Pagination Component
+const Pagination = ({ currentPage, totalPages, onPageChange }) => {
+  if (totalPages <= 1) return null;
+
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
+
+  return (
+    <nav className="flex justify-center items-center gap-2 mt-10" aria-label="Pagination">
+      <button
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300"
+      >
+        Previous
+      </button>
+      {pageNumbers.map(number => (
+        <button
+          key={number}
+          onClick={() => onPageChange(number)}
+          className={`px-4 py-2 text-sm font-medium rounded-md border ${
+            currentPage === number
+              ? 'bg-blue-600 text-white border-blue-600'
+              : 'text-gray-700 bg-white hover:bg-gray-50 border-gray-300'
+          }`}
+        >
+          {number}
+        </button>
+      ))}
+      <button
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300"
+      >
+        Next
+      </button>
+    </nav>
+  );
+};
+
 // --- Core Feature Components ---
 
-// Manages the state and UI for a single order
+// Manages the state and UI for a single order (Redesigned)
 const OrderCard = ({ order, onUpdate }) => {
   const [currentStatus, setCurrentStatus] = useState(order.currentStatus);
   const [isUpdating, setIsUpdating] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
+  
+  // NEW: Initialize the navigate function
+  const navigate = useNavigate();
+
+  const isBillGeneratable = order.currentStatus === 'Delivered';
 
   const statusOptions = [
     { label: '🕓 Pending', value: 'Pending' },
@@ -44,27 +410,30 @@ const OrderCard = ({ order, onUpdate }) => {
   ];
 
   const currentStatusIndex = statusOptions.findIndex(opt => opt.value === order.currentStatus);
+  
+  // NEW: Handler for the chat button click
+  const handleChatClick = () => {
+    if (order.user && order.user._id) {
+      // Navigate to the chat page with the user's ID
+      navigate(`/manager/chats/${order.user._id}`);
+    } else {
+      console.error("User ID is missing, cannot navigate to chat.");
+    }
+  };
 
   const handleStatusUpdate = async () => {
     setIsUpdating(true);
     setMessage({ text: '', type: '' });
-
     try {
       const response = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/orders/status/${order._id}`, {
         method: 'PATCH',
-        // The 'Authorization' header has been removed.
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ newStatus: currentStatus }),
       });
-
       const result = await response.json();
       if (!response.ok) throw new Error(result.message || 'Failed to update status');
-
       setMessage({ text: '✅ Status updated successfully!', type: 'success' });
       if (onUpdate) onUpdate();
-
     } catch (error) {
       setMessage({ text: `❌ Error: ${error.message}`, type: 'error' });
       setCurrentStatus(order.currentStatus);
@@ -75,64 +444,81 @@ const OrderCard = ({ order, onUpdate }) => {
   };
 
   return (
-    <div className="border border-dashed border-gray-300 rounded-lg p-4 mt-4 bg-gray-50">
-      <div className="flex justify-between items-start text-sm mb-3">
+    <div className="border border-gray-200 rounded-lg p-5 mt-4 bg-white">
+      <div className="flex justify-between items-start text-sm mb-4">
         <div>
-          <p><strong>Order ID:</strong> {order.orderId}</p>
-          <p><strong>Total:</strong> <span className="font-bold text-lg">₹{order.totalAmount || 'N/A'}</span></p>
+          <p className="font-semibold text-gray-800">Order ID: {order.orderId}</p>
+          <p className="text-gray-500">{new Date(order.createdAt).toLocaleString()}</p>
         </div>
-        <p className="text-gray-500 text-right">
-          {new Date(order.createdAt).toLocaleString()}
+        <p className="text-right">
+          <span className="text-gray-600">Total: </span>
+          <span className="font-bold text-xl text-gray-900">₹{order.totalAmount || 'N/A'}</span>
         </p>
       </div>
 
-      <div className="pl-5 border-l-2 border-gray-200">
-        {order.products.map((p, index) => (
-          <ProductItem key={index} product={p} />
-        ))}
+      <div className="pl-4 border-l-2 border-gray-200 space-y-2">
+        {order.products.map((p, index) => <ProductItem key={index} product={p} />)}
       </div>
       
-      <div className="mt-4 pt-4 border-t">
-        <label className="font-bold block mb-2">Update Order Status:</label>
-        <div className="flex flex-wrap items-center gap-3">
-          <select
-            value={currentStatus}
-            onChange={(e) => setCurrentStatus(e.target.value)}
-            className="px-3 py-2 rounded-lg font-semibold text-sm border border-gray-300 bg-gray-100 transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {statusOptions.map((opt, index) => (
-              <option
-                key={opt.value}
-                value={opt.value}
-                disabled={order.currentStatus !== 'Cancelled' && index < currentStatusIndex}
-              >
-                {opt.label}
-              </option>
-            ))}
-          </select>
+      <div className="flex flex-wrap justify-between items-end gap-4 mt-5 pt-4 border-t border-gray-200">
+        {/* Status Update Section */}
+        <div>
+          <label className="font-bold text-sm text-gray-700 block mb-2">Update Status:</label>
+          <div className="flex items-center gap-2">
+            <select
+              value={currentStatus}
+              onChange={(e) => setCurrentStatus(e.target.value)}
+              className="px-3 py-2 rounded-lg text-sm border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {statusOptions.map((opt, index) => (
+                <option key={opt.value} value={opt.value} disabled={order.currentStatus !== 'Cancelled' && index < currentStatusIndex}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleStatusUpdate}
+              disabled={isUpdating || currentStatus === order.currentStatus}
+              className="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {isUpdating ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+           {message.text && (
+            <p className={`mt-2 font-semibold text-xs ${message.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+              {message.text}
+            </p>
+          )}
+        </div>
+
+        {/* Action Buttons Section */}
+        <div className="flex items-center gap-3">
+          {/* NEW: Added onClick handler */}
           <button
-            onClick={handleStatusUpdate}
-            disabled={isUpdating || currentStatus === order.currentStatus}
-            className="px-4 py-2 border-none bg-green-600 text-white text-sm rounded-md cursor-pointer hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            onClick={handleChatClick}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white text-sm font-semibold rounded-lg hover:bg-blue-600 transition-colors"
           >
-            {isUpdating ? 'Saving...' : 'Save'}
+            <FaComments />
+            <span>Chat</span>
+          </button>
+          <button
+            disabled={!isBillGeneratable}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white text-sm font-semibold rounded-lg hover:bg-indigo-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            <FaFileInvoice />
+            <span>Generate Bill</span>
           </button>
         </div>
-        {message.text && (
-          <p className={`mt-2 font-bold text-sm ${message.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
-            {message.text}
-          </p>
-        )}
       </div>
     </div>
   );
 };
 
-// Groups all orders for a single user
+// Groups all orders for a single user (Redesigned)
 const UserCard = ({ user, orders, onUpdate }) => (
-  <div className="border border-gray-300 rounded-xl mb-8 p-5 bg-white shadow-lg">
-    <div className="pb-3 border-b">
-      <h3 className="text-xl font-bold text-gray-800">{user.name}</h3>
+  <div className="border border-gray-200 rounded-xl mb-8 p-6 bg-white shadow-md hover:shadow-lg transition-shadow">
+    <div className="pb-4 border-b border-gray-200">
+      <h3 className="text-xl font-bold text-gray-900">{user.name}</h3>
       <p className="text-gray-600">{user.email}</p>
       <p className="text-gray-600"><strong>Phone:</strong> {user.number}</p>
     </div>
@@ -142,112 +528,125 @@ const UserCard = ({ user, orders, onUpdate }) => (
   </div>
 );
 
-
 // --- Main Page Component ---
+
+const ITEMS_PER_PAGE = 5; // Number of user cards per page
 
 function UserOrders() {
   const [ordersData, setOrdersData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
- const fetchOrders = async () => {
+  const fetchOrders = async () => {
     setLoading(true);
     setError(null);
-    console.log("Attempting to fetch orders..."); // 1. Check if the function runs
-
     try {
       const response = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/orders/get-orders');
-      
-      console.log("API Response Status:", response.status); // 2. Check the HTTP status
-
-      if (!response.ok) {
-        throw new Error(`Server error (Status: ${response.status})`);
-      }
-
+      if (!response.ok) throw new Error(`Server error (Status: ${response.status})`);
       const data = await response.json();
-      console.log("Data received from API:", data); // 3. THIS IS THE MOST IMPORTANT LOG
-
       if (!data.success || !Array.isArray(data.orders)) {
         throw new Error(data.message || 'Invalid data format from server.');
       }
       setOrdersData(data.orders);
     } catch (err) {
-      console.error("An error occurred during fetch:", err); // 4. Check for errors
       setError(err.message);
     } finally {
       setLoading(false);
     }
-};
+  };
 
-  // Fetch data on initial component mount
   useEffect(() => {
     fetchOrders();
   }, []);
 
-  // In the UserOrders component, replace the old useMemo block with this one.
-
-  const groupedByUser = useMemo(() => {
+  // Memoized derivation of data for filtering and pagination
+  const processedData = useMemo(() => {
     if (!ordersData || ordersData.length === 0) {
-      return [];
+      return { usersToDisplay: [], totalPages: 0 };
     }
-    
+
     const userMap = new Map();
-
     ordersData.forEach(order => {
-      // --- FIX: Check for 'order.user' instead of 'order.userId' ---
-      // Also check that the user object actually has an ID.
-      if (!order.user || !order.user._id) {
-        // This will skip any orders that have malformed user data.
-        return; 
-      }
-
-      // Get the user ID from the nested user object.
+      if (!order.user || !order.user._id) return;
       const userId = order.user._id;
-
-      // If we haven't seen this user ID before, create a new entry in our map.
       if (!userMap.has(userId)) {
-        // The group will contain the full user object and an empty array for their orders.
         userMap.set(userId, { user: order.user, orders: [] });
       }
-
-      // Add the current order to this user's list of orders.
       userMap.get(userId).orders.push(order);
     });
 
-    // Sort orders for each user by date, newest first
     userMap.forEach(userData => {
       userData.orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     });
-    
-    // Convert the map back to an array for rendering.
-    return Array.from(userMap.values());
-  }, [ordersData]); // This dependency array is correct.
 
+    const allGroupedUsers = Array.from(userMap.values());
+
+    // Filter based on search query
+    const filteredUsers = allGroupedUsers.filter(group => {
+      const query = searchQuery.toLowerCase().trim();
+      if (!query) return true;
+      const userNameMatch = group.user.name.toLowerCase().includes(query);
+      const userEmailMatch = group.user.email.toLowerCase().includes(query);
+      const userNumberMatch = group.user.number?.includes(query);
+      const orderIdMatch = group.orders.some(order => order.orderId.toLowerCase().includes(query));
+      return userNameMatch || userEmailMatch || userNumberMatch || orderIdMatch;
+    });
+
+    // Paginate the filtered results
+    const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const usersToDisplay = filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+    return { usersToDisplay, totalPages };
+  }, [ordersData, searchQuery, currentPage]);
+
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1); // Reset to first page on new search
+  };
+  
   const renderContent = () => {
-    if (loading) {
-      return <Loader />;
+    if (loading) return <Loader />;
+    if (error) return <div className="text-center text-red-600 bg-red-100 p-4 rounded-md font-bold">{error}</div>;
+    if (processedData.usersToDisplay.length === 0) {
+      return <div className="text-center text-gray-500 text-xl p-8">No orders found.</div>;
     }
-    if (error) {
-      return <div className="text-center text-red-600 bg-red-100 p-4 rounded-md font-bold">{error}</div>;
-    }
-    if (groupedByUser.length === 0) {
-      return <div className="text-center text-gray-500 text-xl p-4">No orders found.</div>;
-    }
-    return groupedByUser.map(({ user, orders }) => (
-      <UserCard key={user._id} user={user} orders={orders} onUpdate={fetchOrders} />
-    ));
+    return (
+      <>
+        {processedData.usersToDisplay.map(({ user, orders }) => (
+          <UserCard key={user._id} user={user} orders={orders} onUpdate={fetchOrders} />
+        ))}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={processedData.totalPages}
+          onPageChange={setCurrentPage}
+        />
+      </>
+    );
   };
 
   return (
     <div className="bg-gray-100 min-h-screen p-4 sm:p-8 font-sans">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center gap-4 mb-8">
-      
+      <div className="max-w-5xl mx-auto">
+        <header className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">Customer Orders</h1>
+          <div className="relative w-full max-w-lg">
+            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by name, email, phone or Order ID..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow shadow-sm"
+            />
+          </div>
+        </header>
         
-        </div>
-        <div>
+        <main>
           {renderContent()}
-        </div>
+        </main>
       </div>
     </div>
   );

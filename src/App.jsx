@@ -31,6 +31,8 @@ function App() {
           <Route path="view-items" element={<ViewItems />} />
           <Route path="view-clients" element={<ViewClients />} />
           <Route path="chats" element={<Chat />} />
+       
+          <Route path="chats/:userId" element={<Chat />} />       
           <Route path="add-staff" element={<AddStaffForm />} />
           <Route path="manage-staff" element={<ManageStaff />} />
           <Route path="Orders" element={<UserOrders />} />
