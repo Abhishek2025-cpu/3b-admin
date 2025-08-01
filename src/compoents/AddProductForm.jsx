@@ -193,7 +193,7 @@ const AddProductForm = () => {
   return (
     <div className="bg-gradient-to-r from-gray-100 to-gray-200 min-h-screen w-full flex flex-col items-center p-4 sm:p-8 font-sans">
       
-      {isLoading && <Loader />}
+      {/* {isLoading && <Loader />} */}
       
       <button 
         type="button" 

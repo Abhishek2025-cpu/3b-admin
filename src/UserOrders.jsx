@@ -317,43 +317,57 @@
 // export default UserOrders;
 
 
+// src/components/UserOrders.jsx
+
 import React, { useState, useEffect, useMemo } from 'react';
-// Import useNavigate from react-router-dom
 import { useNavigate } from 'react-router-dom';
-// Importing necessary icons from react-icons
 import { FaSearch, FaComments, FaFileInvoice } from 'react-icons/fa';
 
 // --- Reusable Helper Components ---
 
-// A simple, reusable loader component
 const Loader = () => (
   <div className="flex justify-center items-center py-20">
     <div className="w-16 h-16 border-8 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
   </div>
 );
 
-// Component to display a single product in an order
+// --- MODIFIED COMPONENT ---
+// Updated to conditionally display company and material name
 const ProductItem = ({ product }) => (
-  <div className="flex items-center gap-4 py-3">
+  <div className="flex items-start gap-4 py-3">
     <img
       src={product.image?.url || 'https://via.placeholder.com/150'}
       alt={product.productName || 'Product'}
-      className="w-14 h-14 rounded-lg object-cover bg-gray-200 shadow-sm"
+      className="w-14 h-14 rounded-lg object-cover bg-gray-200 shadow-sm flex-shrink-0"
     />
-    <div>
+    <div className="flex-grow">
       <p className="font-semibold text-gray-800">{product.productName || 'N/A'}</p>
-      <p className="text-sm text-gray-600">Quantity: {product.quantity}</p>
-      <p className="text-sm text-gray-600">Price: ₹{product.priceAtPurchase}</p>
+      
+      {/* NEW: Conditionally render company name */}
+      {product.company?.name && (
+        <p className="text-xs text-gray-500 mt-0.5">
+          Sold by: <span className="font-medium text-gray-600">{product.company.name}</span>
+        </p>
+      )}
+
+      {/* NEW: Conditionally render material name */}
+      {product.materialName && (
+        <p className="text-xs text-gray-500 mt-0.5">
+          Material: <span className="font-medium text-gray-600">{product.materialName}</span>
+        </p>
+      )}
+
+      <div className="flex items-center gap-4 mt-1.5">
+        <p className="text-sm text-gray-600">Qty: {product.quantity}</p>
+        <p className="text-sm text-gray-600">Price: ₹{product.priceAtPurchase}</p>
+      </div>
     </div>
   </div>
 );
 
-// New Reusable Pagination Component
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   if (totalPages <= 1) return null;
-
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
-
   return (
     <nav className="flex justify-center items-center gap-2 mt-10" aria-label="Pagination">
       <button
@@ -389,32 +403,23 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
 
 // --- Core Feature Components ---
 
-// Manages the state and UI for a single order (Redesigned)
 const OrderCard = ({ order, onUpdate }) => {
   const [currentStatus, setCurrentStatus] = useState(order.currentStatus);
   const [isUpdating, setIsUpdating] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
-  
-  // NEW: Initialize the navigate function
   const navigate = useNavigate();
-
   const isBillGeneratable = order.currentStatus === 'Delivered';
 
   const statusOptions = [
-    { label: '🕓 Pending', value: 'Pending' },
-    { label: '✅ Confirmed', value: 'Confirmed' },
-    { label: '📦 Shipped', value: 'Shipped' },
-    { label: '🚚 Out for Delivery', value: 'Out for Delivery' },
-    { label: '📬 Delivered', value: 'Delivered' },
-    { label: '❌ Cancelled', value: 'Cancelled' },
+    { label: '🕓 Pending', value: 'Pending' }, { label: '✅ Confirmed', value: 'Confirmed' },
+    { label: '📦 Shipped', value: 'Shipped' }, { label: '🚚 Out for Delivery', value: 'Out for Delivery' },
+    { label: '📬 Delivered', value: 'Delivered' }, { label: '❌ Cancelled', value: 'Cancelled' },
   ];
 
   const currentStatusIndex = statusOptions.findIndex(opt => opt.value === order.currentStatus);
-  
-  // NEW: Handler for the chat button click
+
   const handleChatClick = () => {
-    if (order.user && order.user._id) {
-      // Navigate to the chat page with the user's ID
+    if (order.user?._id) {
       navigate(`/manager/chats/${order.user._id}`);
     } else {
       console.error("User ID is missing, cannot navigate to chat.");
@@ -455,13 +460,10 @@ const OrderCard = ({ order, onUpdate }) => {
           <span className="font-bold text-xl text-gray-900">₹{order.totalAmount || 'N/A'}</span>
         </p>
       </div>
-
       <div className="pl-4 border-l-2 border-gray-200 space-y-2">
         {order.products.map((p, index) => <ProductItem key={index} product={p} />)}
       </div>
-      
       <div className="flex flex-wrap justify-between items-end gap-4 mt-5 pt-4 border-t border-gray-200">
-        {/* Status Update Section */}
         <div>
           <label className="font-bold text-sm text-gray-700 block mb-2">Update Status:</label>
           <div className="flex items-center gap-2">
@@ -490,10 +492,7 @@ const OrderCard = ({ order, onUpdate }) => {
             </p>
           )}
         </div>
-
-        {/* Action Buttons Section */}
         <div className="flex items-center gap-3">
-          {/* NEW: Added onClick handler */}
           <button
             onClick={handleChatClick}
             className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white text-sm font-semibold rounded-lg hover:bg-blue-600 transition-colors"
@@ -514,7 +513,6 @@ const OrderCard = ({ order, onUpdate }) => {
   );
 };
 
-// Groups all orders for a single user (Redesigned)
 const UserCard = ({ user, orders, onUpdate }) => (
   <div className="border border-gray-200 rounded-xl mb-8 p-6 bg-white shadow-md hover:shadow-lg transition-shadow">
     <div className="pb-4 border-b border-gray-200">
@@ -530,7 +528,7 @@ const UserCard = ({ user, orders, onUpdate }) => (
 
 // --- Main Page Component ---
 
-const ITEMS_PER_PAGE = 5; // Number of user cards per page
+const ITEMS_PER_PAGE = 5;
 
 function UserOrders() {
   const [ordersData, setOrdersData] = useState([]);
@@ -561,40 +559,31 @@ function UserOrders() {
     fetchOrders();
   }, []);
 
-  // Memoized derivation of data for filtering and pagination
   const processedData = useMemo(() => {
     if (!ordersData || ordersData.length === 0) {
       return { usersToDisplay: [], totalPages: 0 };
     }
-
     const userMap = new Map();
     ordersData.forEach(order => {
-      if (!order.user || !order.user._id) return;
-      const userId = order.user._id;
-      if (!userMap.has(userId)) {
-        userMap.set(userId, { user: order.user, orders: [] });
-      }
-      userMap.get(userId).orders.push(order);
+      if (!order.user?._id) return;
+      userMap.set(order.user._id, userMap.get(order.user._id) || { user: order.user, orders: [] });
+      userMap.get(order.user._id).orders.push(order);
     });
-
     userMap.forEach(userData => {
       userData.orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     });
 
-    const allGroupedUsers = Array.from(userMap.values());
-
-    // Filter based on search query
-    const filteredUsers = allGroupedUsers.filter(group => {
+    const filteredUsers = Array.from(userMap.values()).filter(group => {
       const query = searchQuery.toLowerCase().trim();
       if (!query) return true;
-      const userNameMatch = group.user.name.toLowerCase().includes(query);
-      const userEmailMatch = group.user.email.toLowerCase().includes(query);
-      const userNumberMatch = group.user.number?.includes(query);
-      const orderIdMatch = group.orders.some(order => order.orderId.toLowerCase().includes(query));
-      return userNameMatch || userEmailMatch || userNumberMatch || orderIdMatch;
+      return (
+        group.user.name.toLowerCase().includes(query) ||
+        group.user.email.toLowerCase().includes(query) ||
+        group.user.number?.includes(query) ||
+        group.orders.some(order => order.orderId.toLowerCase().includes(query))
+      );
     });
 
-    // Paginate the filtered results
     const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const usersToDisplay = filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
@@ -604,7 +593,7 @@ function UserOrders() {
 
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
-    setCurrentPage(1); // Reset to first page on new search
+    setCurrentPage(1);
   };
   
   const renderContent = () => {
@@ -643,7 +632,6 @@ function UserOrders() {
             />
           </div>
         </header>
-        
         <main>
           {renderContent()}
         </main>
