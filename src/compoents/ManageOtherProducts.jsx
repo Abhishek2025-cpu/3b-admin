@@ -396,9 +396,9 @@ function ManageOtherProducts() {
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          prod.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          prod.available ? 'bg-green-100 text-green-800' : 'bg-green-100 text-green-800'
                         }`}>
-                          {prod.available ? 'Available' : 'Unavailable'}
+                          {prod.available ? 'Available' : 'Aavailable'}
                         </span>
                       </td>
                       <td className="px-6 py-4">{new Date(prod.createdAt).toLocaleDateString()}</td>

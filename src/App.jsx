@@ -17,6 +17,7 @@ import AddCategoryForm from './compoents/AddCategoryForm';
 import Categories from './compoents/Categories';
 import ManageOtherCategories from './compoents/ManageOtherCategories';
 import ManageOtherProducts from './compoents/ManageOtherProducts';
+import CompanyDetails from './compoents/Companydetails';
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
           <Route path='view-categories' element= {<Categories/>}/>
           <Route path ='Other-Categories' element ={<ManageOtherCategories/>}/>
           <Route path = 'other-products' element ={<ManageOtherProducts/>}/>
+          <Route path="company" element={<CompanyDetails />} />
           
           {/* Add routes for 'add-staff', 'view-clients', etc. as you create them */}
         </Route>

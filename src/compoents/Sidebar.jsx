@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faTachometerAlt, faStickyNote, faPlusSquare, faList, faUsers, faUserTie, faUserFriends,
   faComments, faUserPlus, faUsersCog, faThLarge, faBoxOpen, faBox,
-  faShoppingCart, faCog, faChevronDown
+  faShoppingCart, faCog, faChevronDown,faGlobe
 } from '@fortawesome/free-solid-svg-icons';
 
 import profilePic from '../assets/3b.png'; 
@@ -125,6 +125,7 @@ function Sidebar({ isOpen, onClose }) {
 
         {/* Static Items */}
         <LinkMenuItem icon={faShoppingCart} text="Orders" to="/manager/orders" />
+         <LinkMenuItem icon={faGlobe} text="Companies" to="/manager/company" />
         <LinkMenuItem icon={faComments} text="App Feedback" to="/manager/feedback" />
         <LinkMenuItem icon={faCog} text="Settings" to="/manager/settings" />
       </ul>
