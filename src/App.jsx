@@ -17,7 +17,8 @@ import AddCategoryForm from './compoents/AddCategoryForm';
 import Categories from './compoents/Categories';
 import ManageOtherCategories from './compoents/ManageOtherCategories';
 import ManageOtherProducts from './compoents/ManageOtherProducts';
-import CompanyDetails from './compoents/Companydetails';
+import CompanyDetails from './compoents/CompanyDetails'; //np error
+
 
 function App() {
   return (
