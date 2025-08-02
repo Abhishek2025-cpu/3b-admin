@@ -258,7 +258,7 @@ function ViewProducts() {
       </div>
 
       <Modal isOpen={isCarouselOpen} onClose={() => setCarouselOpen(false)}>
-        {/* Unchanged */}
+   
       </Modal>
 
       <Modal isOpen={isQrOpen} onClose={() => setQrOpen(false)}>
