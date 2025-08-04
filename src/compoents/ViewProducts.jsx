@@ -9,7 +9,9 @@ import { faQrcode, faPenToSquare, faTrash, faSave, faTimes } from '@fortawesome/
 const Modal = ({ isOpen, onClose, children, maxWidth = "max-w-lg" }) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+    // START - MODIFIED CODE: Made the backdrop less intrusive
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-25 flex justify-center items-center z-50 p-4">
+ 
       <div className={`bg-white rounded-2xl shadow-2xl relative ${maxWidth} w-full my-8 border flex flex-col max-h-[90vh]`}>
         {children}
       </div>
@@ -25,7 +27,9 @@ const ImageThumb = ({ file, onRemove }) => (
 );
 
 // --- Add Product Modal Component ---
-const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensions }) => {
+// START - MODIFIED CODE: Added onDimensionAdded prop for dynamic updates
+const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensions, onDimensionAdded }) => {
+// END - MODIFIED CODE
   const [formData, setFormData] = useState({ categoryId: '', name: '', about: '', quantity: 500, pricePerPiece: '', totalPiecesPerBox: '', discountPercentage: 0 });
   const [selectedDimensions, setSelectedDimensions] = useState([]);
   const [newDimensionInput, setNewDimensionInput] = useState('');
@@ -61,41 +65,45 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
     e.target.value = '';
   };
   
+  // START - MODIFIED CODE: Removed page reload and now updates state dynamically
   const handleAddNewDimension = async () => {
     if (!newDimensionInput.trim()) return;
-    // START - MODIFIED CODE
     const promise = fetch('https://node-api-1067354145699.asia-south1.run.app/api/dimensions/add-dimensions', {
-    // END - MODIFIED CODE
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ value: newDimensionInput.trim() }),
-    }).then(res => res.json().then(data => {
-      if (!res.ok || data.error) throw new Error(data.error || 'Failed to add dimension');
-      // On success, clear the input field
-      setNewDimensionInput('');
-      return data;
-    }));
+    }).then(res => {
+        if (!res.ok) {
+            return res.json().then(err => { throw new Error(err.message || 'Failed to add dimension'); });
+        }
+        return res.json();
+    }).then(data => {
+        // Assuming the API returns the new dimension object in a 'dimension' key
+        if (data && data.dimension) {
+            onDimensionAdded(data.dimension); // Update the list in the parent component
+        }
+        setNewDimensionInput(''); // Clear the input field on success
+        return data;
+    });
 
     toast.promise(promise, {
       loading: 'Adding dimension...',
-      success: 'Dimension added! Refreshing page...',
+      success: 'Dimension added successfully!',
       error: (err) => `Error: ${err.message}`,
     });
-    
-    // Refresh the page on success to see the new dimension in the list next time
-    promise.then(() => {
-        setTimeout(() => window.location.reload(), 1500);
-    }).catch(() => {
-        // Log or handle the error if the promise from toast.promise rejects.
-    });
   };
+  // END - MODIFIED CODE
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     if (!formData.categoryId) return toast.error('Please select a category.');
     const submissionData = new FormData();
     Object.entries(formData).forEach(([key, value]) => submissionData.append(key, value));
-    submissionData.append('dimensions', JSON.stringify(selectedDimensions.map(d => d._id)));
+    // The API expects dimensions as a plain string, not a JSON array of IDs.
+    // Let's join the values of the selected dimensions into a single string.
+    const dimensionString = selectedDimensions.map(d => d.value).join(', ');
+    submissionData.append('dimensions', dimensionString);
+
     colorImages.forEach(file => submissionData.append('colorImages', file));
     productImages.forEach(file => submissionData.append('images', file));
     
@@ -180,7 +188,6 @@ function ViewProducts() {
     return categoryList.reduce((acc, cat) => ({ ...acc, [cat._id]: cat.name }), {});
   }, [categoryList]);
 
-  // START - MODIFIED CODE
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -200,7 +207,10 @@ function ViewProducts() {
       
       setProducts(productData.products || []);
       setCategoryList(Array.isArray(categoryData) ? categoryData : []);
-      setDimensionList(dimensionData.dimensions || []);
+      // START - MODIFIED CODE: Correctly parsing the dimensions API response
+      // The API returns a direct array, not an object with a `dimensions` key.
+      setDimensionList(Array.isArray(dimensionData) ? dimensionData : []);
+      // END - MODIFIED CODE
 
     } catch (err) {
       setError(err.message);
@@ -208,11 +218,16 @@ function ViewProducts() {
       setIsLoading(false);
     }
   }, []);
-  // END - MODIFIED CODE
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // START - MODIFIED CODE: Function to handle adding a new dimension to the state
+  const handleDimensionAdded = (newDimension) => {
+    setDimensionList(prevList => [...prevList, newDimension]);
+  };
+  // END - MODIFIED CODE
 
   const handleProductAdded = () => { window.location.reload(); };
   const showCarousel = (images) => { setCarouselImages(images.map(img => img.url)); setCarouselOpen(true); };
@@ -269,7 +284,7 @@ function ViewProducts() {
                   <tr key={product._id} className="bg-white border-b hover:bg-gray-50 align-middle">
                     <td className="px-6 py-4"><img src={product.images[0]?.url} onClick={() => showCarousel(product.images)} className="w-16 h-16 object-cover rounded-md cursor-pointer" alt={product.name} /></td>
                     <td className="px-6 py-4 font-medium text-gray-900">{product.name}</td>
-                    <td className="px-6 py-4">{product.dimensions || '—'}</td>
+                    <td className="px-6 py-4">{product.dimensions.map(d => d.value).join(', ') || '—'}</td>
                     {/* <td className="px-6 py-4">{product.category?.name || 'N/A'}</td> */}
                     <td className="px-6 py-4">₹{product.pricePerPiece}</td>
                     <td className="px-6 py-4">{product.totalPiecesPerBox}</td>
@@ -297,13 +312,16 @@ function ViewProducts() {
         {/* ... */}
       </Modal>
       
+      {/* START - MODIFIED CODE: Passing the new handler to the modal */}
       <AddProductModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onProductAdded={handleProductAdded}
         categories={categoryList}
         dimensions={dimensionList}
+        onDimensionAdded={handleDimensionAdded}
       />
+    
     </div>
   );
 }
