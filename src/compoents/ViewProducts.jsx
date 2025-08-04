@@ -128,13 +128,17 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
 
 // In AddProductModal component inside src/components/ViewProducts.jsx
 
-  const handleFormSubmit = async (e) => {
+// In AddProductModal component inside src/components/ViewProducts.jsx
+
+const handleFormSubmit = async (e) => {
     e.preventDefault();
     if (!formData.categoryId) return toast.error('Please select a category.');
     if (isCompressing) return toast.error('Please wait for images to finish processing.');
 
     const submissionData = new FormData();
-    Object.entries(formData).forEach(([key, value]) => submissionData.append(key, value));
+    Object.entries(formData).forEach(([key, value]) => {
+        submissionData.append(key, value);
+    });
     
     const dimensionString = selectedDimensions.map(d => d.value).join(',');
     submissionData.append('dimensions', dimensionString);
@@ -142,35 +146,46 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
     colorImages.forEach(file => submissionData.append('colorImages', file, file.name));
     productImages.forEach(file => submissionData.append('images', file, file.name));
     
-    // START - DEBUGGING LOGS ADDED
+    // --- START: CONSOLE LOGGING THE FORM DATA ---
+    console.log("--- 📦 Submitting Data to Server ---");
+    for (let [key, value] of submissionData.entries()) {
+        // For file objects, log the name and size, not the whole object
+        if (value instanceof File) {
+            console.log(`${key}:`, { name: value.name, size: value.size, type: value.type });
+        } else {
+            console.log(`${key}:`, value);
+        }
+    }
+    console.log("-------------------------------------");
+    // --- END: CONSOLE LOGGING THE FORM DATA ---
+    
     const promise = fetch('https://threebapi-1067354145699.asia-south1.run.app/api/products/add', {
       method: 'POST',
       body: submissionData,
-    }).then(async (res) => { // Made the callback async to use await
+    }).then(async (res) => {
         if (!res.ok) {
-          // Try to parse the error response body from the server
           let errorBody;
           try {
             errorBody = await res.json();
           } catch (jsonError) {
-            // If the server returns an error that isn't valid JSON (like a plain text error or HTML)
             errorBody = { message: await res.text(), error: 'Response was not valid JSON.' };
           }
           
-          // **** THIS IS THE MOST IMPORTANT CONSOLE LOG ON THE FRONTEND ****
           console.error("❌ SERVER ERROR RESPONSE:", {
               status: res.status,
               statusText: res.statusText,
               body: errorBody
           });
           
-          // Throw an error so that toast.promise can catch it and display it
-          throw new Error(errorBody.message || `Request failed with status ${res.status}`);
+          // The new backend error response might have a `details` field
+          const errorMessage = errorBody.details ? 
+              Object.values(errorBody.details).map(e => e.message).join(' ') : 
+              (errorBody.message || `Request failed with status ${res.status}`);
+          
+          throw new Error(errorMessage);
         }
-        // If the request was successful
         return res.json();
     });
-    // END - DEBUGGING LOGS ADDED
 
     toast.promise(promise, {
       loading: 'Adding product...',
@@ -179,7 +194,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
         setTimeout(() => onProductAdded(), 1000);
         return 'Product added successfully!';
       },
-      error: (err) => `Error: ${err.message}`, // This will now show the detailed error from the server
+      error: (err) => `Error: ${err.message}`,
     });
   };
 
