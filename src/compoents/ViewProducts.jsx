@@ -1,25 +1,22 @@
 // src/components/ViewProducts.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faQrcode, faPenToSquare, faTrash, faSave, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 // --- Reusable Components ---
 
-// Reusable Modal Component (FIXED: Centered layout with overlay and optimized for scrolling)
 const Modal = ({ isOpen, onClose, children, maxWidth = "max-w-lg" }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
       <div className={`bg-white rounded-2xl shadow-2xl relative ${maxWidth} w-full my-8 border flex flex-col max-h-[90vh]`}>
-        {/* Children will now provide the full structure: header, body, footer */}
         {children}
       </div>
     </div>
   );
 };
 
-// Reusable Image Thumbnail component for previews
 const ImageThumb = ({ file, onRemove }) => (
   <div className="relative w-28 h-28 border border-gray-300 rounded-lg overflow-hidden shadow-sm">
     <img src={URL.createObjectURL(file)} alt={file.name} className="w-full h-full object-cover" />
@@ -27,47 +24,71 @@ const ImageThumb = ({ file, onRemove }) => (
   </div>
 );
 
-// --- Add Product Modal Component (FIXED) ---
-const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
+// --- Add Product Modal Component ---
+const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensions }) => {
   const [formData, setFormData] = useState({ categoryId: '', name: '', about: '', quantity: 500, pricePerPiece: '', totalPiecesPerBox: '', discountPercentage: 0 });
-  const [categories, setCategories] = useState([]);
-  const [allDimensions, setAllDimensions] = useState([]);
   const [selectedDimensions, setSelectedDimensions] = useState([]);
   const [newDimensionInput, setNewDimensionInput] = useState('');
   const [colorImages, setColorImages] = useState([]);
   const [productImages, setProductImages] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const fetchModalData = useCallback(async () => {
-    if (!isOpen) return;
-    setIsLoading(true);
-    try {
-      // FIXED: Using the correct and consistent API endpoints for this project
-      const [catRes, dimRes] = await Promise.all([
-        fetch('https://threebapi-1067354145699.asia-south1.run.app/api/categories/all-category'),
-        fetch('https://threebappbackend.onrender.com/api/dimensions/get-dimensions') // Assuming this one is correct as per user
-      ]);
-      if (!catRes.ok) throw new Error('Failed to fetch categories');
-      if (!dimRes.ok) throw new Error('Failed to fetch dimensions');
-      const catData = await catRes.json();
-      const dimData = await dimRes.json();
-      setCategories(Array.isArray(catData) ? catData : []);
-      setAllDimensions(Array.isArray(dimData) ? dimData.sort((a, b) => a.value.localeCompare(b.value, undefined, { numeric: true })) : []);
-    } catch (error) {
-      toast.error(`Could not load form data: ${error.message}`);
-    } finally {
-      setIsLoading(false);
+  useEffect(() => {
+    if (!isOpen) {
+        setFormData({ categoryId: '', name: '', about: '', quantity: 500, pricePerPiece: '', totalPiecesPerBox: '', discountPercentage: 0 });
+        setSelectedDimensions([]);
+        setColorImages([]);
+        setProductImages([]);
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    fetchModalData();
-  }, [fetchModalData]);
-
   const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-  const handleFileChange = (e, setFiles, limit) => { /* ... no changes ... */ };
-  const handleDimensionSelect = (e) => { /* ... no changes ... */ };
-  const handleAddNewDimension = async () => { /* ... no changes ... */ };
+  const handleFileChange = (e, setFiles, limit) => {
+    const files = Array.from(e.target.files);
+    if (limit && files.length + setFiles.length > limit) {
+      toast.error(`You can only upload a maximum of ${limit} images.`);
+      return;
+    }
+    setFiles(prev => [...prev, ...files]);
+    e.target.value = null;
+  };
+  const handleDimensionSelect = (e) => {
+    const selectedId = e.target.value;
+    if (!selectedId) return;
+    const dimensionToAdd = dimensions.find(d => d._id === selectedId);
+    if (dimensionToAdd && !selectedDimensions.some(d => d._id === dimensionToAdd._id)) {
+      setSelectedDimensions(prev => [...prev, dimensionToAdd]);
+    }
+    e.target.value = '';
+  };
+  
+  const handleAddNewDimension = async () => {
+    if (!newDimensionInput.trim()) return;
+    // START - MODIFIED CODE
+    const promise = fetch('https://node-api-1067354145699.asia-south1.run.app/api/dimensions/add-dimensions', {
+    // END - MODIFIED CODE
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value: newDimensionInput.trim() }),
+    }).then(res => res.json().then(data => {
+      if (!res.ok || data.error) throw new Error(data.error || 'Failed to add dimension');
+      // On success, clear the input field
+      setNewDimensionInput('');
+      return data;
+    }));
+
+    toast.promise(promise, {
+      loading: 'Adding dimension...',
+      success: 'Dimension added! Refreshing page...',
+      error: (err) => `Error: ${err.message}`,
+    });
+    
+    // Refresh the page on success to see the new dimension in the list next time
+    promise.then(() => {
+        setTimeout(() => window.location.reload(), 1500);
+    }).catch(() => {
+        // Log or handle the error if the promise from toast.promise rejects.
+    });
+  };
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
@@ -78,7 +99,6 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
     colorImages.forEach(file => submissionData.append('colorImages', file));
     productImages.forEach(file => submissionData.append('images', file));
     
-    // FIXED: Using a consistent API endpoint for adding products
     const promise = fetch('https://threebapi-1067354145699.asia-south1.run.app/api/products/add', {
       method: 'POST',
       body: submissionData,
@@ -91,7 +111,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
       loading: 'Adding product...',
       success: () => {
         onClose();
-        setTimeout(() => onProductAdded(), 1000); // Trigger refresh
+        setTimeout(() => onProductAdded(), 1000);
         return 'Product added successfully!';
       },
       error: (err) => `Error: ${err.message}`,
@@ -108,16 +128,15 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
         <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl font-bold">×</button>
       </div>
       <div className="overflow-y-auto px-6 py-4 flex-grow">
-        {isLoading ? <div className="text-center p-8 text-gray-500">Loading form data...</div> : (
-          <form id="add-product-form" onSubmit={handleFormSubmit} className="space-y-4">
+        <form id="add-product-form" onSubmit={handleFormSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><label className="text-sm font-semibold text-gray-700">Category</label><select name="categoryId" value={formData.categoryId} onChange={handleInputChange} required className={inputClass}><option value="">Select Category</option>{categories.map(cat => <option key={cat._id} value={cat._id}>{cat.name}</option>)}</select></div>
-              <div><label className="text-sm font-semibold text-gray-700">Product Name</label><input type="text" name="name" value={formData.name} onChange={handleInputChange} required placeholder="Enter product name" className={inputClass} /></div>
+                <div><label className="text-sm font-semibold text-gray-700">Category</label><select name="categoryId" value={formData.categoryId} onChange={handleInputChange} required className={inputClass}><option value="">Select Category</option>{categories.map(cat => <option key={cat._id} value={cat._id}>{cat.name}</option>)}</select></div>
+                <div><label className="text-sm font-semibold text-gray-700">Product Name</label><input type="text" name="name" value={formData.name} onChange={handleInputChange} required placeholder="Enter product name" className={inputClass} /></div>
             </div>
             <div><label className="text-sm font-semibold text-gray-700">About</label><textarea name="about" value={formData.about} onChange={handleInputChange} rows="3" required placeholder="Product description" className={inputClass}></textarea></div>
             <div><label className="text-sm font-semibold text-gray-700">Upload Color Images</label><input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, setColorImages)} className={`${fileInputClass} mt-1`} /><div className="flex flex-wrap mt-2 gap-4">{colorImages.map((file, index) => <ImageThumb key={index} file={file} onRemove={() => setColorImages(prev => prev.filter((_, i) => i !== index))} />)}</div></div>
             <div>
-              <label className="text-sm font-semibold text-gray-700">Dimensions</label><select onChange={handleDimensionSelect} className={`${inputClass} mb-2`}><option value="">-- Select to add --</option>{allDimensions.map(dim => <option key={dim._id} value={dim._id}>{dim.value}</option>)}</select>
+              <label className="text-sm font-semibold text-gray-700">Dimensions</label><select onChange={handleDimensionSelect} className={`${inputClass} mb-2`}><option value="">-- Select to add --</option>{dimensions.map(dim => <option key={dim._id} value={dim._id}>{dim.value}</option>)}</select>
               <div className="mt-1 min-h-[2rem] p-2 bg-gray-50 rounded-lg">{selectedDimensions.length > 0 ? selectedDimensions.map(dim => (<span key={dim._id} className="inline-flex items-center bg-[#6A3E9D] text-white text-xs font-medium mr-2 mb-2 px-3 py-1 rounded-full">{dim.value}<button type="button" onClick={() => setSelectedDimensions(prev => prev.filter(d => d._id !== dim._id))} className="ml-2 font-bold hover:text-gray-200">×</button></span>)) : <span className="text-gray-400 text-sm">No dimensions selected.</span>}</div>
             </div>
             <div>
@@ -131,8 +150,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
               <div><label className="text-sm font-semibold text-gray-700">Discount %</label><input type="number" name="discountPercentage" value={formData.discountPercentage} onChange={handleInputChange} min="0" step="0.01" className={inputClass} /></div>
             </div>
             <div><label className="text-sm font-semibold text-gray-700">Product Images (max 10)</label><input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, setProductImages, 10)} className={`${fileInputClass} mt-1`} /><div className="flex flex-wrap mt-2 gap-4">{productImages.map((file, index) => <ImageThumb key={index} file={file} onRemove={() => setProductImages(prev => prev.filter((_, i) => i !== index))} />)}</div></div>
-          </form>
-        )}
+        </form>
       </div>
       <div className="flex justify-end gap-3 p-6 border-t flex-shrink-0">
         <button type="button" onClick={onClose} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">Cancel</button>
@@ -142,10 +160,12 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
   );
 };
 
+
 // --- Main Component ---
 function ViewProducts() {
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState({});
+  const [categoryList, setCategoryList] = useState([]);
+  const [dimensionList, setDimensionList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editingId, setEditingId] = useState(null);
@@ -156,40 +176,52 @@ function ViewProducts() {
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
+  const categoryMap = useMemo(() => {
+    return categoryList.reduce((acc, cat) => ({ ...acc, [cat._id]: cat.name }), {});
+  }, [categoryList]);
+
+  // START - MODIFIED CODE
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [productRes, categoryRes] = await Promise.all([
+      const [productRes, categoryRes, dimensionRes] = await Promise.all([
         fetch('https://threebapi-1067354145699.asia-south1.run.app/api/products/all'),
-        fetch('https://threebapi-1067354145699.asia-south1.run.app/api/categories/all-category')
+        fetch('https://threebapi-1067354145699.asia-south1.run.app/api/categories/all-category'),
+        fetch('https://node-api-1067354145699.asia-south1.run.app/api/dimensions/get-dimensions')
       ]);
+
+      if (!productRes.ok) throw new Error('Failed to fetch products');
+      if (!categoryRes.ok) throw new Error('Failed to fetch categories');
+      if (!dimensionRes.ok) throw new Error('Failed to fetch dimensions');
+
       const productData = await productRes.json();
       const categoryData = await categoryRes.json();
-      if (!productData.success) throw new Error('Failed to fetch products');
-      if (!Array.isArray(categoryData)) throw new Error('Failed to fetch categories');
-      const categoryMap = categoryData.reduce((acc, cat) => ({ ...acc, [cat._id]: cat.name }), {});
+      const dimensionData = await dimensionRes.json();
+      
       setProducts(productData.products || []);
-      setCategories(categoryMap);
+      setCategoryList(Array.isArray(categoryData) ? categoryData : []);
+      setDimensionList(dimensionData.dimensions || []);
+
     } catch (err) {
       setError(err.message);
     } finally {
       setIsLoading(false);
     }
   }, []);
+  // END - MODIFIED CODE
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // All handlers below this are unchanged
   const handleProductAdded = () => { window.location.reload(); };
   const showCarousel = (images) => { setCarouselImages(images.map(img => img.url)); setCarouselOpen(true); };
   const showQrCode = (url) => { setQrCodeUrl(url); setQrOpen(true); };
   const handleEdit = (product) => { setEditingId(product._id); setEditFormData({ ...product }); };
   const handleCancelEdit = () => setEditingId(null);
   const handleEditFormChange = (e) => setEditFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-  const handleSave = async (productId) => { /* ... */ };
-  const handleDelete = async (productId) => { /* ... */ };
+  const handleSave = async (productId) => { /* Unchanged */ };
+  const handleDelete = async (productId) => { /* Unchanged */ };
 
   if (isLoading) return <div className="text-center p-8 text-lg">Loading...</div>;
   if (error) return <div className="text-center p-8 text-red-500">Error: {error}</div>;
@@ -210,7 +242,7 @@ function ViewProducts() {
           <table className="w-full text-sm text-left text-gray-600">
             <thead className="text-xs text-gray-700 uppercase bg-gray-50">
               <tr>
-                {['Image', 'Frame', 'Dimensions', 'Category', 'Price/Piece', 'Piece/Box', 'Box Price', 'Discount', 'Qty', 'Actions'].map(header => (
+                {['Image', 'Frame', 'Dimensions', 'Price/Piece', 'Piece/Box', 'Box Price', 'Discount', 'Qty', 'Actions'].map(header => (
                   <th key={header} className="px-6 py-3">{header}</th>
                 ))}
               </tr>
@@ -222,7 +254,7 @@ function ViewProducts() {
                     <td className="px-6 py-4"><img src={product.images[0]?.url} className="w-16 h-16 object-cover mx-auto rounded-md" alt={product.name} /></td>
                     <td className="px-6 py-4"><input type="text" name="name" value={editFormData.name} onChange={handleEditFormChange} className={inputClasses} /></td>
                     <td className="px-6 py-4"><input type="text" name="dimensions" value={editFormData.dimensions} onChange={handleEditFormChange} className={inputClasses} /></td>
-                    <td className="px-6 py-4">{categories[product.categoryId] || 'N/A'}</td>
+                       <td className="px-6 py-4">{product.category?.name || 'N/A'}</td>
                     <td className="px-6 py-4"><input type="number" name="pricePerPiece" value={editFormData.pricePerPiece} onChange={handleEditFormChange} className={inputClasses} /></td>
                     <td className="px-6 py-4"><input type="number" name="totalPiecesPerBox" value={editFormData.totalPiecesPerBox} onChange={handleEditFormChange} className={inputClasses} /></td>
                     <td className="px-6 py-4 text-gray-400 text-xs">Auto-Calc</td>
@@ -238,7 +270,7 @@ function ViewProducts() {
                     <td className="px-6 py-4"><img src={product.images[0]?.url} onClick={() => showCarousel(product.images)} className="w-16 h-16 object-cover rounded-md cursor-pointer" alt={product.name} /></td>
                     <td className="px-6 py-4 font-medium text-gray-900">{product.name}</td>
                     <td className="px-6 py-4">{product.dimensions || '—'}</td>
-                    <td className="px-6 py-4">{categories[product.categoryId] || 'N/A'}</td>
+                    {/* <td className="px-6 py-4">{product.category?.name || 'N/A'}</td> */}
                     <td className="px-6 py-4">₹{product.pricePerPiece}</td>
                     <td className="px-6 py-4">{product.totalPiecesPerBox}</td>
                     <td className="px-6 py-4">₹{product.finalPricePerBox || product.mrpPerBox}</td>
@@ -256,19 +288,21 @@ function ViewProducts() {
           </table>
         </div>
       </div>
-
+      
+      {/* Other Modals (Carousel, QR) are unchanged */}
       <Modal isOpen={isCarouselOpen} onClose={() => setCarouselOpen(false)}>
-   
+        {/* ... */}
       </Modal>
-
       <Modal isOpen={isQrOpen} onClose={() => setQrOpen(false)}>
-        {/* Unchanged */}
+        {/* ... */}
       </Modal>
-
+      
       <AddProductModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onProductAdded={handleProductAdded}
+        categories={categoryList}
+        dimensions={dimensionList}
       />
     </div>
   );
