@@ -1,5 +1,7 @@
 // src/components/Dashboard.jsx
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+
 // REMOVED: The problematic 'react-icons' import is gone.
 
 const styles = {
@@ -22,6 +24,7 @@ const Card = ({ icon, title, onClick }) => (
 
 function Dashboard() {
   const userName = localStorage.getItem('userName') || 'Manager';
+  const navigate = useNavigate();
 
   return (
     <div style={styles.dashboardContainer}>
@@ -30,10 +33,10 @@ function Dashboard() {
         <p>Here's your overview for today.</p>
       </div>
       <div style={styles.dashboardGrid}>
-        <Card icon="ℹ️" title="Inventory Management" />
+        <Card icon="ℹ️" title="Inventory Management" onClick={() => navigate('/manager/view-items')} />
         <Card icon="🚚" title="Assign Machines" />
         <Card icon="📊" title="View Reports" />
-        <Card icon="➕" title="Add Staff" />
+        <Card icon="➕" title="Add Staff" onClick={() => navigate('/manager/manage-staff')} />
       </div>
     </div>
   );

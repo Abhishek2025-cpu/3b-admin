@@ -118,8 +118,8 @@ function Sidebar({ isOpen, onClose }) {
         {/* --- ADDED: Products Menu --- */}
         <DropdownMenuItem icon={faBoxOpen} text="Products" isOpen={openMenus.products} onClick={(e) => toggleNested(e, 'products')} />
         <ul style={{ ...styles.nested, ...(openMenus.products ? styles.nestedOpen : {}) }}>
-          <LinkMenuItem icon={faBox} text="Add Products" to="/manager/add-product" />
-          <LinkMenuItem icon={faList} text="All Products" to="/manager/view-products" />
+          {/* <LinkMenuItem icon={faBox} text="Add Products" to="/manager/add-product" /> */}
+          <LinkMenuItem icon={faBox} text="All Products" to="/manager/view-products" />
            <LinkMenuItem icon={faList} text="Other Products" to="/manager/other-products"/>
         </ul>
 

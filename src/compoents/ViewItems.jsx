@@ -2,10 +2,7 @@
 import logo from '../assets/3b.png';
 import React, { useState, useEffect, useMemo } from 'react';
 
-/**
- * BillModal Component - **REVISED LAYOUT**
- * A modal that displays item details in a bill format, precisely replicating the provided design.
- */
+// --- (No changes to BillModal, so it's included as is) ---
 const BillModal = ({ isOpen, onClose, item }) => {
   if (!isOpen || !item) return null;
 
@@ -41,27 +38,13 @@ const BillModal = ({ isOpen, onClose, item }) => {
       
       <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
         <div className="relative w-full max-w-2xl">
-          {/* --- Printable Area --- */}
-                  {/* --- Printable Area (Final Corrected Layout) --- */}
           <div id="bill-to-print" className="bg-white p-1.5 rounded-xl">
             <div className="border-[14px] border-[#6A3E9D] rounded-lg p-6">
-              
               <div className="grid grid-cols-5 gap-x-6">
-
-                {/* --- LEFT COLUMN (LOGO & DETAILS) --- */}
                 <div className="col-span-3 flex flex-col justify-between">
-                  {/* Top Part: Logo & Company Name */}
                   <div>
-                                     {/* Top Part: Logo & Company Name */}
-                  <div>
-                    {/* Replaced the text logo with a single image */}
                     <img src={logo} alt="3B Profiles Pvt Ltd Logo" className="h-76" />
-              
                   </div>
-                    {/* <p className="text-sm text-gray-500">www.3bprofilespvttltd.com</p> */}
-                  </div>
-                  
-                  {/* Bottom Part: Item Specifics */}
                   <div>
                     <hr className="my-4 border-gray-400"/>
                     <div className="space-y-3 text-base">
@@ -80,20 +63,13 @@ const BillModal = ({ isOpen, onClose, item }) => {
                     </div>
                   </div>
                 </div>
-
-                {/* --- RIGHT COLUMN (QR, IMAGE, BARCODE) --- */}
                 <div className="col-span-2 flex flex-col justify-between items-center">
-                  {/* QR Code */}
                   {item.qrCodeUrl && (
                     <img src={item.qrCodeUrl} alt="QR Code" className="w-28 h-28"/>
                   )}
-                  
-                  {/* Dashed Box for Product Image */}
                   <div className="w-full h-44 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center p-2 my-4">
                     <img src={item.productImageUrl} alt={item.itemNo} className="max-w-full max-h-full object-contain"/>
                   </div>
-                  
-                  {/* Barcode Placeholder */}
                   <div className="w-full flex h-8 items-end justify-center gap-px overflow-hidden">
                       <div className="w-1 bg-black h-full"></div><div className="w-px bg-black h-3/4"></div>
                       <div className="w-1 bg-black h-full"></div><div className="w-px bg-black h-full"></div>
@@ -111,12 +87,9 @@ const BillModal = ({ isOpen, onClose, item }) => {
                       <div className="w-1 bg-black h-full"></div><div className="w-px bg-black h-1/2"></div>
                   </div>
                 </div>
-
               </div>
             </div>
           </div>
-          
-          {/* Action Buttons (will not be printed) */}
           <div className="no-print mt-4 flex justify-end gap-3">
             <button
               onClick={handlePrint}
@@ -138,9 +111,7 @@ const BillModal = ({ isOpen, onClose, item }) => {
 };
 
 
-/**
- * ItemDetails Component
- */
+// --- (No changes to ItemDetails, so it's included as is) ---
 const ItemDetails = ({ item, onGetBillClick }) => (
   <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 bg-gray-50">
     <div>
@@ -189,6 +160,88 @@ const ItemDetails = ({ item, onGetBillClick }) => (
 );
 
 /**
+ * NEW AddItemModal Component
+ * A modal form for adding a new item, styled to match the screenshot.
+ */
+const AddItemModal = ({ isOpen, onClose }) => {
+    if (!isOpen) return null;
+
+    const [imageFileName, setImageFileName] = useState('');
+
+    const handleFileChange = (event) => {
+        if (event.target.files && event.target.files[0]) {
+            setImageFileName(event.target.files[0].name);
+        } else {
+            setImageFileName('');
+        }
+    };
+    
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        // Add your form submission logic here
+        console.log("Form submitted!");
+        onClose(); // Close modal on submit
+    };
+
+    return (
+        // Modal container: no dark background, positioned from the top
+        <div className="fixed inset-0 z-50 flex justify-center items-start pt-28" onClick={onClose}>
+            <div 
+                className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-3xl"
+                onClick={e => e.stopPropagation()} // Prevent clicks inside the modal from closing it
+            >
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-gray-800 mx-auto">Add New Item</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                
+                <form onSubmit={handleSubmit}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                        {/* Column 1 */}
+                        <select className="w-full p-3 border border-gray-300 rounded-lg text-gray-500">
+                            <option value="">Select Item</option>
+                        </select>
+                        <input type="text" placeholder="No of Pieces" className="w-full p-3 border border-gray-300 rounded-lg"/>
+                        <select className="w-full p-3 border border-gray-300 rounded-lg text-gray-500">
+                            <option value="">Select Operator</option>
+                        </select>
+                        {/* Reduced height by using same padding as others */}
+                        <select className="w-full p-3 border border-gray-300 rounded-lg text-gray-500">
+                            <option value="">Select Company</option>
+                        </select>
+
+                        {/* Column 2 */}
+                        <input type="text" defaultValue="9.5 Feet" className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100" readOnly/>
+                        <select className="w-full p-3 border border-gray-300 rounded-lg text-gray-500">
+                            <option value="">Select Helper</option>
+                        </select>
+                        <select className="w-full p-3 border border-gray-300 rounded-lg text-gray-500">
+                            <option value="">Select Shift</option>
+                        </select>
+                        <div>
+                            <label htmlFor="product-image" className="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
+                            <label className="w-full flex items-center px-3 py-2.5 border border-gray-300 rounded-lg cursor-pointer text-gray-500">
+                                <span className="flex-grow truncate">{imageFileName || 'Choose File No file chosen'}</span>
+                                <input id="product-image" name="product-image" type="file" className="sr-only" onChange={handleFileChange} />
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div className="mt-8">
+                        <button type="submit" className="w-full bg-[#6A3E9D] hover:bg-#6A3E9D-700 text-white font-bold py-3 px-4 rounded-lg transition-colors cursor-pointer">
+                            Submit
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+
+/**
  * Main ViewItems Component
  */
 function ViewItems() {
@@ -197,8 +250,16 @@ function ViewItems() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedRowId, setExpandedRowId] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // State for the two modals
+  const [isBillModalOpen, setIsBillModalOpen] = useState(false);
+  const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
+  
   const [selectedItemForBill, setSelectedItemForBill] = useState(null);
+  
+  // --- PAGINATION STATE ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     async function fetchItems() {
@@ -217,7 +278,7 @@ function ViewItems() {
     }
     fetchItems();
   }, []);
-
+  
   const filteredItems = useMemo(() => {
     return items.filter(item => 
       item.itemNo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -226,34 +287,57 @@ function ViewItems() {
     );
   }, [items, searchQuery]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
+  const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
+  const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
+  const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
+
   const handleToggleRow = (itemId) => {
     setExpandedRowId(expandedRowId === itemId ? null : itemId);
   };
   
   const handleOpenBillModal = (item) => {
     setSelectedItemForBill(item);
-    setIsModalOpen(true);
+    setIsBillModalOpen(true);
   };
 
   const handleCloseBillModal = () => {
-    setIsModalOpen(false);
+    setIsBillModalOpen(false);
     setSelectedItemForBill(null);
   };
-
+  
   if (isLoading) return <div className="text-center p-8">Loading items...</div>;
   if (error) return <div className="text-center p-8 text-red-500">Error: {error}</div>;
 
   return (
     <>
       <div className="bg-white shadow-xl rounded-2xl p-8 w-full mx-auto">
-        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">View All Items</h2>
-        <input 
-          type="text"
-          placeholder="Search by Item No, Operator, or Helper Name..."
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          className="w-full p-2 border rounded-xl mb-4"
-        />
+        <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">View All Items</h2>
+            <div className="flex items-center gap-4">
+                <input 
+                    type="text"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="w-64 p-2 border rounded-xl"
+                />
+                <button
+                    onClick={() => setIsAddItemModalOpen(true)}
+                    className="bg-[#6A3E9D] hover:bg-[#583281] text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-300 flex items-center gap-2"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                    </svg>
+                    Add Item
+                </button>
+            </div>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left text-gray-500">
             <thead className="text-xs text-gray-700 uppercase bg-gray-50">
@@ -268,7 +352,7 @@ function ViewItems() {
               </tr>
             </thead>
             <tbody>
-              {filteredItems.length > 0 ? filteredItems.map(item => (
+              {currentItems.length > 0 ? currentItems.map(item => (
                 <React.Fragment key={item._id}>
                   <tr className="bg-white border-b hover:bg-gray-50">
                     <td className="px-6 py-4 font-medium text-gray-900">{item.itemNo}</td>
@@ -311,10 +395,38 @@ function ViewItems() {
             </tbody>
           </table>
         </div>
+        
+        {/* --- PAGINATION CONTROLS --- */}
+        {totalPages > 1 && (
+            <div className="mt-6 flex justify-end items-center gap-3">
+                <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    Previous
+                </button>
+                <span className="text-sm text-gray-700">
+                    Page {currentPage} of {totalPages}
+                </span>
+                <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    Next
+                </button>
+            </div>
+        )}
       </div>
 
+      {/* --- Render both modals here --- */}
+      <AddItemModal 
+        isOpen={isAddItemModalOpen} 
+        onClose={() => setIsAddItemModalOpen(false)} 
+      />
       <BillModal 
-        isOpen={isModalOpen} 
+        isOpen={isBillModalOpen} 
         onClose={handleCloseBillModal} 
         item={selectedItemForBill} 
       />
