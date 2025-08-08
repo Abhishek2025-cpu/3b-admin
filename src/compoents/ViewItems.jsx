@@ -2,7 +2,7 @@
 import logo from '../assets/3b.png';
 import React, { useState, useEffect, useMemo } from 'react';
 
-// --- (No changes to BillModal, so it's included as is) ---
+// --- BillModal with Print-Specific CSS Fixes ---
 const BillModal = ({ isOpen, onClose, item }) => {
   if (!isOpen || !item) return null;
 
@@ -18,24 +18,69 @@ const BillModal = ({ isOpen, onClose, item }) => {
     <>
       <style>
         {`
+          /* Defines the printable area margins on the physical page. */
+          @page {
+            size: A4;
+            margin: 1.5cm;
+          }
+
           @media print {
-            body * { visibility: hidden; }
-            #bill-to-print, #bill-to-print * { visibility: visible; }
+            /* Hide everything on the page by default */
+            body * {
+              visibility: hidden;
+            }
+            
+            /* Make the printable section and its children visible */
+            #bill-to-print, #bill-to-print * {
+              visibility: visible;
+            }
+
+            /* 
+             * SOLUTION 1: Correctly position the print container.
+             * By removing 'position: absolute', the element will now respect the '@page'
+             * margins and start at the top of the printable area, fixing the alignment.
+             */
             #bill-to-print {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
-              border: none;
-              box-shadow: none;
+              position: static;
               margin: 0;
               padding: 0;
+              width: auto;
+              border: none;
+              box-shadow: none;
+              page-break-inside: avoid; /* Prevents the bill from being split across pages */
             }
-            .no-print { display: none !important; }
+
+            .no-print {
+              display: none !important;
+            }
+
+            /* 
+             * SOLUTION 2: Override on-screen layout ONLY for printing to prevent overflow.
+             * These rules target elements within the bill and compact their layout
+             * to ensure they fit on a single page, fixing the "repeating" issue.
+             * These have NO effect on the on-screen appearance.
+            */
+
+            /* Target the logo by its 'alt' tag to reduce its height for print */
+            #bill-to-print img[alt="3B Profiles Pvt Ltd Logo"] {
+              height: 5rem !important; /* Was h-76 (19rem) */
+            }
+
+            /* Target the main flex containers and change their alignment to be compact */
+            #bill-to-print .flex.flex-col.justify-between {
+                justify-content: flex-start !important;
+                gap: 1.5rem !important;
+            }
+            
+            /* Target the dashed image box and reduce its height for print */
+            #bill-to-print .h-44 {
+                height: 9rem !important; /* Was h-44 (11rem) */
+            }
           }
         `}
       </style>
       
+      {/* The JSX below is UNCHANGED from your original to preserve the on-screen layout. */}
       <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
         <div className="relative w-full max-w-2xl">
           <div id="bill-to-print" className="bg-white p-1.5 rounded-xl">
@@ -111,7 +156,7 @@ const BillModal = ({ isOpen, onClose, item }) => {
 };
 
 
-// --- (No changes to ItemDetails, so it's included as is) ---
+// --- (No changes to the rest of the file) ---
 const ItemDetails = ({ item, onGetBillClick }) => (
   <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 bg-gray-50">
     <div>
@@ -158,16 +203,9 @@ const ItemDetails = ({ item, onGetBillClick }) => (
     </div>
   </div>
 );
-
-/**
- * NEW AddItemModal Component
- * A modal form for adding a new item, styled to match the screenshot.
- */
 const AddItemModal = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
-
     const [imageFileName, setImageFileName] = useState('');
-
     const handleFileChange = (event) => {
         if (event.target.files && event.target.files[0]) {
             setImageFileName(event.target.files[0].name);
@@ -175,20 +213,16 @@ const AddItemModal = ({ isOpen, onClose }) => {
             setImageFileName('');
         }
     };
-    
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Add your form submission logic here
         console.log("Form submitted!");
-        onClose(); // Close modal on submit
+        onClose();
     };
-
     return (
-        // Modal container: no dark background, positioned from the top
         <div className="fixed inset-0 z-50 flex justify-center items-start pt-28" onClick={onClose}>
             <div 
                 className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-3xl"
-                onClick={e => e.stopPropagation()} // Prevent clicks inside the modal from closing it
+                onClick={e => e.stopPropagation()}
             >
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold text-gray-800 mx-auto">Add New Item</h2>
@@ -199,7 +233,6 @@ const AddItemModal = ({ isOpen, onClose }) => {
                 
                 <form onSubmit={handleSubmit}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-                        {/* Column 1 */}
                         <select className="w-full p-3 border border-gray-300 rounded-lg text-gray-500">
                             <option value="">Select Item</option>
                         </select>
@@ -207,12 +240,9 @@ const AddItemModal = ({ isOpen, onClose }) => {
                         <select className="w-full p-3 border border-gray-300 rounded-lg text-gray-500">
                             <option value="">Select Operator</option>
                         </select>
-                        {/* Reduced height by using same padding as others */}
                         <select className="w-full p-3 border border-gray-300 rounded-lg text-gray-500">
                             <option value="">Select Company</option>
                         </select>
-
-                        {/* Column 2 */}
                         <input type="text" defaultValue="9.5 Feet" className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100" readOnly/>
                         <select className="w-full p-3 border border-gray-300 rounded-lg text-gray-500">
                             <option value="">Select Helper</option>
@@ -228,7 +258,6 @@ const AddItemModal = ({ isOpen, onClose }) => {
                             </label>
                         </div>
                     </div>
-                    
                     <div className="mt-8">
                         <button type="submit" className="w-full bg-[#6A3E9D] hover:bg-#6A3E9D-700 text-white font-bold py-3 px-4 rounded-lg transition-colors cursor-pointer">
                             Submit
@@ -239,28 +268,17 @@ const AddItemModal = ({ isOpen, onClose }) => {
         </div>
     );
 };
-
-
-/**
- * Main ViewItems Component
- */
 function ViewItems() {
   const [items, setItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedRowId, setExpandedRowId] = useState(null);
-  
-  // State for the two modals
   const [isBillModalOpen, setIsBillModalOpen] = useState(false);
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
-  
   const [selectedItemForBill, setSelectedItemForBill] = useState(null);
-  
-  // --- PAGINATION STATE ---
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
-
   useEffect(() => {
     async function fetchItems() {
       try {
@@ -278,7 +296,6 @@ function ViewItems() {
     }
     fetchItems();
   }, []);
-  
   const filteredItems = useMemo(() => {
     return items.filter(item => 
       item.itemNo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -286,33 +303,26 @@ function ViewItems() {
       item.operator?.name?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [items, searchQuery]);
-
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
-
   const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
   const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
   const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
   const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
-
   const handleToggleRow = (itemId) => {
     setExpandedRowId(expandedRowId === itemId ? null : itemId);
   };
-  
   const handleOpenBillModal = (item) => {
     setSelectedItemForBill(item);
     setIsBillModalOpen(true);
   };
-
   const handleCloseBillModal = () => {
     setIsBillModalOpen(false);
     setSelectedItemForBill(null);
   };
-  
   if (isLoading) return <div className="text-center p-8">Loading items...</div>;
   if (error) return <div className="text-center p-8 text-red-500">Error: {error}</div>;
-
   return (
     <>
       <div className="bg-white shadow-xl rounded-2xl p-8 w-full mx-auto">
@@ -337,7 +347,6 @@ function ViewItems() {
                 </button>
             </div>
         </div>
-
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left text-gray-500">
             <thead className="text-xs text-gray-700 uppercase bg-gray-50">
@@ -395,8 +404,6 @@ function ViewItems() {
             </tbody>
           </table>
         </div>
-        
-        {/* --- PAGINATION CONTROLS --- */}
         {totalPages > 1 && (
             <div className="mt-6 flex justify-end items-center gap-3">
                 <button
@@ -419,8 +426,6 @@ function ViewItems() {
             </div>
         )}
       </div>
-
-      {/* --- Render both modals here --- */}
       <AddItemModal 
         isOpen={isAddItemModalOpen} 
         onClose={() => setIsAddItemModalOpen(false)} 
