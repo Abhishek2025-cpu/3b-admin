@@ -1,5 +1,5 @@
 // src/components/ViewProducts.jsx
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faQrcode, faPenToSquare, faTrash, faSave, faTimes } from '@fortawesome/free-solid-svg-icons';
@@ -12,8 +12,8 @@ import imageCompression from 'browser-image-compression';
 const Modal = ({ isOpen, onClose, children, maxWidth = "max-w-lg" }) => {
   if (!isOpen) return null;
   return (
-    // FIX: Made the backdrop less intrusive
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-25 flex justify-center items-center z-50 p-4">
+    // SOLUTION: Modal container updated to remove background and position from the top.
+    <div className="fixed inset-0 flex justify-center items-start pt-28 z-50 p-4">
       <div className={`bg-white rounded-2xl shadow-2xl relative ${maxWidth} w-full my-8 border flex flex-col max-h-[90vh]`}>
         {children}
       </div>
@@ -30,7 +30,9 @@ const ImageThumb = ({ file, onRemove }) => (
 
 // --- Add Product Modal Component ---
 const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensions, onDimensionAdded }) => {
-  const [formData, setFormData] = useState({ categoryId: '', name: '', about: '', quantity: 500, pricePerPiece: '', totalPiecesPerBox: '', discountPercentage: 0 });
+  const [formData, setFormData] = useState({ categoryId: '', about: '', quantity: 500, pricePerPiece: '', totalPiecesPerBox: '', discountPercentage: 0 });
+  const [productNameParts, setProductNameParts] = useState(Array(4).fill(''));
+  const nameInputRefs = useRef([]);
   const [selectedDimensions, setSelectedDimensions] = useState([]);
   const [newDimensionInput, setNewDimensionInput] = useState('');
   const [colorImages, setColorImages] = useState([]);
@@ -39,7 +41,8 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
 
   useEffect(() => {
     if (!isOpen) {
-        setFormData({ categoryId: '', name: '', about: '', quantity: 500, pricePerPiece: '', totalPiecesPerBox: '', discountPercentage: 0 });
+        setFormData({ categoryId: '', about: '', quantity: 500, pricePerPiece: '', totalPiecesPerBox: '', discountPercentage: 0 });
+        setProductNameParts(Array(4).fill(''));
         setSelectedDimensions([]);
         setColorImages([]);
         setProductImages([]);
@@ -47,12 +50,27 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
     }
   }, [isOpen]);
 
+  const handleNamePartChange = (e, index) => {
+    const { value } = e.target;
+    const newParts = [...productNameParts];
+    newParts[index] = value.substring(0, 4).toUpperCase();
+    setProductNameParts(newParts);
+    if (value && index < 3) {
+      nameInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleNamePartKeyDown = (e, index) => {
+    if (e.key === 'Backspace' && !productNameParts[index] && index > 0) {
+      nameInputRefs.current[index - 1]?.focus();
+    }
+  };
+
   const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   
-  // FIX: Implemented client-side image compression
   const handleFileChange = async (e, setFiles, currentFiles, limit) => {
     const filesToProcess = Array.from(e.target.files);
-    e.target.value = null; // Reset the file input immediately
+    e.target.value = null;
 
     if (limit && (filesToProcess.length + currentFiles.length > limit)) {
       toast.error(`You can only upload a maximum of ${limit} images in total.`);
@@ -74,7 +92,6 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
       );
       const compressedFiles = await Promise.all(compressedFilesPromises);
 
-      // Add a name property to the compressed Blob/File for display
       compressedFiles.forEach((file, index) => {
           file.name = filesToProcess[index].name;
       });
@@ -99,7 +116,6 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
     e.target.value = '';
   };
   
-  // FIX: Dynamic dimension adding without page reload
   const handleAddNewDimension = async () => {
     if (!newDimensionInput.trim()) return;
     const promise = fetch('https://node-api-1067354145699.asia-south1.run.app/api/dimensions/add-dimensions', {
@@ -113,9 +129,9 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
         return res.json();
     }).then(data => {
         if (data && data.dimension) {
-            onDimensionAdded(data.dimension); // Update parent state
+            onDimensionAdded(data.dimension);
         }
-        setNewDimensionInput(''); // Clear input
+        setNewDimensionInput('');
         return data;
     });
 
@@ -126,12 +142,12 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
     });
   };
 
-// In AddProductModal component inside src/components/ViewProducts.jsx
-
-// In AddProductModal component inside src/components/ViewProducts.jsx
-
 const handleFormSubmit = async (e) => {
     e.preventDefault();
+    const combinedName = productNameParts.join(' ').trim();
+    if (!combinedName || productNameParts.some(p => p === '')) {
+      return toast.error('Product Name is required. Please fill all four boxes.');
+    }
     if (!formData.categoryId) return toast.error('Please select a category.');
     if (isCompressing) return toast.error('Please wait for images to finish processing.');
 
@@ -140,24 +156,13 @@ const handleFormSubmit = async (e) => {
         submissionData.append(key, value);
     });
     
+    submissionData.append('name', combinedName);
+
     const dimensionString = selectedDimensions.map(d => d.value).join(',');
     submissionData.append('dimensions', dimensionString);
 
     colorImages.forEach(file => submissionData.append('colorImages', file, file.name));
     productImages.forEach(file => submissionData.append('images', file, file.name));
-    
-    // --- START: CONSOLE LOGGING THE FORM DATA ---
-    console.log("--- 📦 Submitting Data to Server ---");
-    for (let [key, value] of submissionData.entries()) {
-        // For file objects, log the name and size, not the whole object
-        if (value instanceof File) {
-            console.log(`${key}:`, { name: value.name, size: value.size, type: value.type });
-        } else {
-            console.log(`${key}:`, value);
-        }
-    }
-    console.log("-------------------------------------");
-    // --- END: CONSOLE LOGGING THE FORM DATA ---
     
     const promise = fetch('https://threebapi-1067354145699.asia-south1.run.app/api/products/add', {
       method: 'POST',
@@ -165,23 +170,10 @@ const handleFormSubmit = async (e) => {
     }).then(async (res) => {
         if (!res.ok) {
           let errorBody;
-          try {
-            errorBody = await res.json();
-          } catch (jsonError) {
+          try { errorBody = await res.json(); } catch (jsonError) {
             errorBody = { message: await res.text(), error: 'Response was not valid JSON.' };
           }
-          
-          console.error("❌ SERVER ERROR RESPONSE:", {
-              status: res.status,
-              statusText: res.statusText,
-              body: errorBody
-          });
-          
-          // The new backend error response might have a `details` field
-          const errorMessage = errorBody.details ? 
-              Object.values(errorBody.details).map(e => e.message).join(' ') : 
-              (errorBody.message || `Request failed with status ${res.status}`);
-          
+          const errorMessage = errorBody.details ? Object.values(errorBody.details).map(e => e.message).join(' ') : (errorBody.message || `Request failed with status ${res.status}`);
           throw new Error(errorMessage);
         }
         return res.json();
@@ -211,7 +203,24 @@ const handleFormSubmit = async (e) => {
         <form id="add-product-form" onSubmit={handleFormSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div><label className="text-sm font-semibold text-gray-700">Category</label><select name="categoryId" value={formData.categoryId} onChange={handleInputChange} required className={inputClass}><option value="">Select Category</option>{categories.map(cat => <option key={cat._id} value={cat._id}>{cat.name}</option>)}</select></div>
-                <div><label className="text-sm font-semibold text-gray-700">Product Name</label><input type="text" name="name" value={formData.name} onChange={handleInputChange} required placeholder="Enter product name" className={inputClass} /></div>
+                
+                <div>
+                  <label className="text-sm font-semibold text-gray-700">Product Name</label>
+                  <div className="flex items-center gap-3 mt-1">
+                    {productNameParts.map((part, index) => (
+                      <input
+                        key={index}
+                        ref={(el) => (nameInputRefs.current[index] = el)}
+                        type="text"
+                        value={part}
+                        onChange={(e) => handleNamePartChange(e, index)}
+                        onKeyDown={(e) => handleNamePartKeyDown(e, index)}
+                        className="w-full h-10 text-center text-lg font-mono border border-gray-300 rounded-lg focus:border-[#6A3E9D] focus:ring-1 focus:ring-[#6A3E9D] focus:outline-none transition"
+                        maxLength="4"
+                      />
+                    ))}
+                  </div>
+                </div>
             </div>
             <div><label className="text-sm font-semibold text-gray-700">About</label><textarea name="about" value={formData.about} onChange={handleInputChange} rows="3" required placeholder="Product description" className={inputClass}></textarea></div>
             <div><label className="text-sm font-semibold text-gray-700">Upload Color Images</label><input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, setColorImages, colorImages)} className={`${fileInputClass} mt-1`} disabled={isCompressing} /><div className="flex flex-wrap mt-2 gap-4">{colorImages.map((file, index) => <ImageThumb key={index} file={file} onRemove={() => setColorImages(prev => prev.filter((_, i) => i !== index))} />)}</div></div>
@@ -281,10 +290,10 @@ function ViewProducts() {
       
       setProducts(productData.products || []);
       setCategoryList(Array.isArray(categoryData) ? categoryData : []);
-      // FIX: Correctly parse the dimensions API response which returns a direct array
       setDimensionList(Array.isArray(dimensionData) ? dimensionData : []);
 
-    } catch (err) {
+    } catch (err)
+ {
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -295,7 +304,6 @@ function ViewProducts() {
     fetchData();
   }, [fetchData]);
 
-  // FIX: Callback function to dynamically add a new dimension to the state
   const handleDimensionAdded = (newDimension) => {
     setDimensionList(prevList => [...prevList, newDimension]);
   };
@@ -353,8 +361,8 @@ function ViewProducts() {
                 ) : (
                   <tr key={product._id} className="bg-white border-b hover:bg-gray-50 align-middle">
                     <td className="px-6 py-4"><img src={product.images[0]?.url} onClick={() => showCarousel(product.images)} className="w-16 h-16 object-cover rounded-md cursor-pointer" alt={product.name} /></td>
-                    <td className="px-6 py-4 font-medium text-gray-900">{product.name}</td>
-                    {/* FIX: Robustly display dimensions which is an array of strings */}
+                    {/* SOLUTION: Replaced spaces in the product name before displaying it. */}
+                    <td className="px-6 py-4 font-medium text-gray-900">{product.name.replace(/\s+/g, '')}</td>
                     <td className="px-6 py-4">{Array.isArray(product.dimensions) ? product.dimensions.join(', ') : '—'}</td>
                     <td className="px-6 py-4">₹{product.pricePerPiece}</td>
                     <td className="px-6 py-4">{product.totalPiecesPerBox}</td>
@@ -382,7 +390,6 @@ function ViewProducts() {
         {/* ... */}
       </Modal>
       
-      {/* FIX: Passing the new handler to the modal */}
       <AddProductModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}

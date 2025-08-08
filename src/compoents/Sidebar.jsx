@@ -88,8 +88,8 @@ function Sidebar({ isOpen, onClose }) {
         {/* Sticker Menu */}
         <DropdownMenuItem icon={faStickyNote} text="Sticker" isOpen={openMenus.sticker} onClick={(e) => toggleNested(e, 'sticker')} />
         <ul style={{ ...styles.nested, ...(openMenus.sticker ? styles.nestedOpen : {}) }}>
-          <LinkMenuItem icon={faPlusSquare} text="Add Item" to="/manager/add-item" />
-          <LinkMenuItem icon={faList} text="View Item" to="/manager/view-items" />
+          <LinkMenuItem icon={faPlusSquare} text="Add" to="/manager/add-item" />
+          <LinkMenuItem icon={faList} text="View" to="/manager/view-items" />
         </ul>
 
         {/* Users Menu */}
