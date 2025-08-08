@@ -2,7 +2,7 @@
 import logo from '../assets/3b.png';
 import React, { useState, useEffect, useMemo } from 'react';
 
-// --- BillModal with Print-Specific CSS Fixes ---
+// --- BillModal with updated on-screen positioning ---
 const BillModal = ({ isOpen, onClose, item }) => {
   if (!isOpen || !item) return null;
 
@@ -80,8 +80,13 @@ const BillModal = ({ isOpen, onClose, item }) => {
         `}
       </style>
       
-      {/* The JSX below is UNCHANGED from your original to preserve the on-screen layout. */}
-      <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
+      {/* 
+        * SOLUTION: Updated the modal container.
+        * - Removed 'bg-black bg-opacity-60' to make the background transparent.
+        * - Changed 'items-center' to 'items-start' and added 'pt-28' to position
+        *   the modal at the top of the page with a margin.
+      */}
+      <div className="fixed inset-0 flex justify-center items-start pt-28 z-50 p-4">
         <div className="relative w-full max-w-2xl">
           <div id="bill-to-print" className="bg-white p-1.5 rounded-xl">
             <div className="border-[14px] border-[#6A3E9D] rounded-lg p-6">
