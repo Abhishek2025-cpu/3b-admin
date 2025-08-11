@@ -1,5 +1,7 @@
-// src/components/AddItem.jsx
 import React, { useState, useEffect } from 'react';
+// MODIFICATION: Import the toast library
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // A reusable input component for cleaner code
 const SelectInput = ({ name, value, onChange, options, placeholder }) => (
@@ -11,24 +13,37 @@ const SelectInput = ({ name, value, onChange, options, placeholder }) => (
   </select>
 );
 
+// MODIFICATION: A simple SVG spinner component for the loader
+const Spinner = () => (
+  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+  </svg>
+);
+
+
 function AddItem() {
   const [formData, setFormData] = useState({
     itemNo: '',
     length: '9.5 Feet',
     noOfSticks: '',
+    // MODIFICATION: Added noOfBoxes to the form state
+    noOfBoxes: '', 
     helperEid: '',
     operatorEid: '',
     shift: '',
     company: '',
     productImage: null,
   });
+
   const [helpers, setHelpers] = useState([]);
   const [operators, setOperators] = useState([]);
   const [products, setProducts] = useState([]);
   const [productMap, setProductMap] = useState(new Map());
   const [imagePreview, setImagePreview] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [status, setStatus] = useState({ message: '', type: '' });
+  // MODIFICATION: The 'status' state is no longer needed, as toasts will handle messages.
+  // const [status, setStatus] = useState({ message: '', type: '' });
 
   // Fetch staff and products on component mount
   useEffect(() => {
@@ -39,6 +54,7 @@ function AddItem() {
         setHelpers(data.filter(e => e.role === 'Helper').map(e => ({ value: e.eid, label: `${e.name} (${e.eid})` })));
         setOperators(data.filter(e => e.role === 'Operator').map(e => ({ value: e.eid, label: `${e.name} (${e.eid})` })));
       } catch (error) {
+        toast.error('Failed to load staff list.');
         console.error('Error loading staff:', error);
       }
     }
@@ -52,6 +68,7 @@ function AddItem() {
         setProducts(productOptions);
         setProductMap(newProductMap);
       } catch (err) {
+        toast.error('Failed to load product list.');
         console.error('Failed to load products:', err);
       }
     }
@@ -84,14 +101,16 @@ function AddItem() {
   const removeImage = () => {
     setFormData(prev => ({ ...prev, productImage: null }));
     setImagePreview('');
-    // Reset the file input visually
     document.getElementById('productImageInput').value = '';
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (formData.noOfBoxes <= 0) {
+      toast.error('Number of boxes must be a positive number.');
+      return;
+    }
     setIsLoading(true);
-    setStatus({ message: '', type: '' });
 
     const submissionData = new FormData();
     for (const key in formData) {
@@ -99,21 +118,31 @@ function AddItem() {
     }
 
     try {
-      const response = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/add-items', {
+      // MODIFICATION: Using the correct new endpoint URL
+      const response = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items', {
         method: 'POST',
         body: submissionData,
       });
 
+      const responseData = await response.json();
+
       if (response.ok) {
-        setStatus({ message: 'Item added successfully!', type: 'success' });
-        e.target.reset();
+        // MODIFICATION: Using toast for success message
+        toast.success(`Successfully created item with ${responseData.boxes.length} boxes!`);
+        e.target.reset(); // Reset form fields
+        // Manually reset state since e.target.reset() doesn't trigger state updates
+        setFormData({
+            itemNo: '', length: '9.5 Feet', noOfSticks: '', noOfBoxes: '', helperEid: '',
+            operatorEid: '', shift: '', company: '', productImage: null,
+        });
         removeImage();
       } else {
-        const errorText = await response.text();
-        setStatus({ message: `Error: ${errorText}`, type: 'error' });
+        // MODIFICATION: Using toast for error message from the API
+        toast.error(responseData.error || 'An unknown error occurred.');
       }
     } catch (err) {
-      setStatus({ message: 'Submission error. Please check the console.', type: 'error' });
+      // MODIFICATION: Using toast for network/submission error
+      toast.error('Submission failed. Please check your connection.');
       console.error('Submission error:', err);
     } finally {
       setIsLoading(false);
@@ -122,6 +151,19 @@ function AddItem() {
 
   return (
     <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-3xl mx-auto mt-5">
+      {/* MODIFICATION: Add the ToastContainer to render the notifications */}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+
       <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Add New Item</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid md:grid-cols-2 gap-4">
@@ -135,11 +177,26 @@ function AddItem() {
             <option value="Day">Day</option>
             <option value="Night">Night</option>
           </select>
-          <select name="company" value={formData.company} onChange={handleChange} required className="p-2 border rounded-xl w-full bg-white">
+
+          {/* MODIFICATION: Added No of Boxes input field */}
+          <input
+            type="number"
+            name="noOfBoxes"
+            value={formData.noOfBoxes}
+            onChange={handleChange}
+            placeholder="No of Boxes"
+            required
+            min="1"
+            className="p-2 border rounded-xl w-full"
+          />
+          
+          {/* MODIFICATION: Reduced height of company select box with py-1 */}
+          <select name="company" value={formData.company} onChange={handleChange} required className="py-1 px-2 border rounded-xl w-full bg-white">
             <option value="">Select Company</option>
             <option value="B">B</option>
             <option value="BI">BI</option>
           </select>
+          
           <div>
             <label className="block text-sm font-medium mb-1">Product Image</label>
             <input type="file" id="productImageInput" name="productImage" onChange={handleImageChange} accept="image/*" required className="p-2 border rounded-xl w-full" />
@@ -153,16 +210,22 @@ function AddItem() {
           </div>
         )}
 
-        <button type="submit" disabled={isLoading} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl w-full font-semibold disabled:bg-blue-400">
-          {isLoading ? 'Submitting...' : 'Submit'}
+        {/* MODIFICATION: Changed button color and added loader */}
+        <button 
+          type="submit" 
+          disabled={isLoading} 
+          className="bg-[#6F42C1] hover:bg-[#5a37a0] text-white px-6 py-3 rounded-xl w-full font-semibold disabled:bg-purple-300 disabled:cursor-not-allowed flex items-center justify-center"
+        >
+          {isLoading ? (
+            <>
+              <Spinner />
+              Submitting...
+            </>
+          ) : 'Submit'}
         </button>
       </form>
 
-      {status.message && (
-        <div className={`mt-6 text-center font-semibold ${status.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
-          {status.message}
-        </div>
-      )}
+      {/* MODIFICATION: Removed the old status message div, as toasts now handle this */}
     </div>
   );
 }
