@@ -18,6 +18,7 @@ import Categories from './compoents/Categories';
 import ManageOtherCategories from './compoents/ManageOtherCategories';
 import ManageOtherProducts from './compoents/ManageOtherProducts';
 import CompanyDetails from './compoents/CompanyDetails'; //np error
+import SubAdmins from './compoents/SubAdmins'; 
 
 
 function App() {
@@ -46,6 +47,7 @@ function App() {
           <Route path ='Other-Categories' element ={<ManageOtherCategories/>}/>
           <Route path = 'other-products' element ={<ManageOtherProducts/>}/>
           <Route path="company" element={<CompanyDetails />} />
+          <Route path="admins" element={<SubAdmins />} />
           
           {/* Add routes for 'add-staff', 'view-clients', etc. as you create them */}
         </Route>
