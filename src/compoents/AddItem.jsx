@@ -119,7 +119,7 @@ function AddItem() {
 
     try {
       // MODIFICATION: Using the correct new endpoint URL
-      const response = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items', {
+      const response = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/add-items', {
         method: 'POST',
         body: submissionData,
       });
