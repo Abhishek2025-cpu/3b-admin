@@ -93,7 +93,7 @@ const ItemDetails = ({ item, onGetBillClick }) => {
   return (
     <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 bg-gray-50">
       <div><p className="font-semibold text-gray-700">Length:</p><p>{item.length}</p></div><div><p className="font-semibold text-gray-700">Shift:</p><p>{item.shift}</p></div><div><p className="font-semibold text-gray-700">Company:</p><p>{item.company}</p></div><div><p className="font-semibold text-gray-700">Created At:</p><p>{new Date(item.createdAt).toLocaleString()}</p></div><div><p className="font-semibold text-gray-700">Operator EID:</p><p>{item.operator?.eid || 'N/A'}</p></div><div><p className="font-semibold text-gray-700">Helper EID:</p><p>{item.helper?.eid || 'N/A'}</p></div>
-      <div className="flex items-center justify-center"><button onClick={() => onGetBillClick(item)} className="bg-[#6A3E9D] hover:bg-[#583281] text-white font-bold py-2 px-6 rounded-lg shadow-md transition-colors duration-300">Get Bill</button></div>
+      {/* <div className="flex items-center justify-center"><button onClick={() => onGetBillClick(item)} className="bg-[#6A3E9D] hover:bg-[#583281] text-white font-bold py-2 px-6 rounded-lg shadow-md transition-colors duration-300">Get Bill</button></div> */}
     </div>
   );
 };
@@ -197,7 +197,7 @@ function ViewItems() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left text-gray-500">
             <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-              <tr><th className="px-6 py-3">Item No</th><th className="px-6 py-3">Image</th><th className="px-6 py-3">Operator</th><th className="px-6 py-3">Helper</th><th className="px-6 py-3 text-center">Boxes</th><th className="px-6 py-3">Status</th><th className="px-6 py-3 text-center">Actions</th></tr>
+              <tr><th className="px-6 py-3">Item No</th><th className="px-6 py-3">Image</th><th className="px-6 py-3">Operator</th><th className="px-6 py-3">Helper</th><th className="px-6 py-3 text-center">Boxes</th><th className="px-6 py-3 text-center">Actions</th></tr>
             </thead>
             <tbody>
               {currentItems.map(item => (
@@ -208,7 +208,7 @@ function ViewItems() {
                     <td className="px-6 py-4">{item.operator?.name || 'N/A'}</td>
                     <td className="px-6 py-4">{item.helper?.name || 'N/A'}</td>
                     <td className="px-6 py-4 text-center font-mono text-lg">{item.boxCount}</td>
-                    <td className="px-6 py-4"><span className={`px-2 py-1 rounded-full text-xs font-semibold ${item.stockStatus === 'In Stock' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{item.stockStatus || 'N/A'}</span></td>
+                    {/* <td className="px-6 py-4"><span className={`px-2 py-1 rounded-full text-xs font-semibold ${item.stockStatus === 'In Stock' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{item.stockStatus || 'N/A'}</span></td> */}
                     <td className="px-6 py-4 text-center">
                       <div className="flex items-center justify-center gap-4">
                         <button onClick={() => handleToggleRow(item._id)} title="View Details" className="text-blue-600 hover:text-blue-800"><ViewIcon /></button>
