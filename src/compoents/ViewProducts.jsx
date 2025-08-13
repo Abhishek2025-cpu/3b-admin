@@ -1,9 +1,7 @@
-// src/components/ViewProducts.jsx
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faQrcode, faPenToSquare, faTrash, faSave, faTimes } from '@fortawesome/free-solid-svg-icons';
-// Import the image compression library
 import imageCompression from 'browser-image-compression';
 
 
@@ -12,9 +10,12 @@ import imageCompression from 'browser-image-compression';
 const Modal = ({ isOpen, onClose, children, maxWidth = "max-w-lg" }) => {
   if (!isOpen) return null;
   return (
-    // SOLUTION: Modal container updated to remove background and position from the top.
-    <div className="fixed inset-0 flex justify-center items-start pt-28 z-50 p-4">
-      <div className={`bg-white rounded-2xl shadow-2xl relative ${maxWidth} w-full my-8 border flex flex-col max-h-[90vh]`}>
+    // MODIFICATION: Added overflow-y-auto as a fallback for very small screens.
+    // The pt-28 provides the margin from the top for your header.
+    <div className="fixed inset-0 flex justify-center items-start pt-28 z-50 p-4 overflow-y-auto">
+      {/* MODIFICATION: Removed 'my-8' and established a robust max-height. 
+          The flexbox structure is key to the scrolling behavior. */}
+      <div className={`bg-white rounded-2xl shadow-2xl relative ${maxWidth} w-full border flex flex-col max-h-[calc(100vh-8rem)]`}>
         {children}
       </div>
     </div>
@@ -30,6 +31,7 @@ const ImageThumb = ({ file, onRemove }) => (
 
 // --- Add Product Modal Component ---
 const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensions, onDimensionAdded }) => {
+  // ... (State and handlers are unchanged)
   const [formData, setFormData] = useState({ categoryId: '', about: '', quantity: 500, pricePerPiece: '', totalPiecesPerBox: '', discountPercentage: 0 });
   const [productNameParts, setProductNameParts] = useState(Array(4).fill(''));
   const nameInputRefs = useRef([]);
@@ -182,8 +184,8 @@ const handleFormSubmit = async (e) => {
     toast.promise(promise, {
       loading: 'Adding product...',
       success: () => {
-        onClose();
-        setTimeout(() => onProductAdded(), 1000);
+        onProductAdded(); // Refreshes data
+        onClose(); // Closes modal
         return 'Product added successfully!';
       },
       error: (err) => `Error: ${err.message}`,
@@ -195,53 +197,50 @@ const handleFormSubmit = async (e) => {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-3xl">
+      {/* HEADER: flex-shrink-0 prevents this from shrinking */}
       <div className="p-6 border-b flex justify-between items-center flex-shrink-0">
         <h3 className="text-2xl font-bold text-gray-800">Add New Product</h3>
         <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl font-bold">×</button>
       </div>
-      <div className="overflow-y-auto px-6 py-4 flex-grow">
+      
+      {/* CONTENT: This is the scrollable area. */}
+      {/* KEY FIX: Added 'min-h-0' to fix flexbox overflow bug. */}
+      <div className="overflow-y-auto px-6 py-6 flex-grow min-h-0">
         <form id="add-product-form" onSubmit={handleFormSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label className="text-sm font-semibold text-gray-700">Category</label><select name="categoryId" value={formData.categoryId} onChange={handleInputChange} required className={inputClass}><option value="">Select Category</option>{categories.map(cat => <option key={cat._id} value={cat._id}>{cat.name}</option>)}</select></div>
-                
-                <div>
-                  <label className="text-sm font-semibold text-gray-700">Product Name</label>
-                  <div className="flex items-center gap-3 mt-1">
-                    {productNameParts.map((part, index) => (
-                      <input
-                        key={index}
-                        ref={(el) => (nameInputRefs.current[index] = el)}
-                        type="text"
-                        value={part}
-                        onChange={(e) => handleNamePartChange(e, index)}
-                        onKeyDown={(e) => handleNamePartKeyDown(e, index)}
-                        className="w-full h-10 text-center text-lg font-mono border border-gray-300 rounded-lg focus:border-[#6A3E9D] focus:ring-1 focus:ring-[#6A3E9D] focus:outline-none transition"
-                        maxLength="4"
-                      />
-                    ))}
-                  </div>
+          {/* Form content remains exactly the same */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><label className="text-sm font-semibold text-gray-700">Category</label><select name="categoryId" value={formData.categoryId} onChange={handleInputChange} required className={inputClass}><option value="">Select Category</option>{categories.map(cat => <option key={cat._id} value={cat._id}>{cat.name}</option>)}</select></div>
+              <div>
+                <label className="text-sm font-semibold text-gray-700">Product Name</label>
+                <div className="flex items-center gap-3 mt-1">
+                  {productNameParts.map((part, index) => (
+                    <input key={index} ref={(el) => (nameInputRefs.current[index] = el)} type="text" value={part} onChange={(e) => handleNamePartChange(e, index)} onKeyDown={(e) => handleNamePartKeyDown(e, index)} className="w-full h-10 text-center text-lg font-mono border border-gray-300 rounded-lg focus:border-[#6A3E9D] focus:ring-1 focus:ring-[#6A3E9D] focus:outline-none transition" maxLength="4" />
+                  ))}
                 </div>
-            </div>
-            <div><label className="text-sm font-semibold text-gray-700">About</label><textarea name="about" value={formData.about} onChange={handleInputChange} rows="3" required placeholder="Product description" className={inputClass}></textarea></div>
-            <div><label className="text-sm font-semibold text-gray-700">Upload Color Images</label><input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, setColorImages, colorImages)} className={`${fileInputClass} mt-1`} disabled={isCompressing} /><div className="flex flex-wrap mt-2 gap-4">{colorImages.map((file, index) => <ImageThumb key={index} file={file} onRemove={() => setColorImages(prev => prev.filter((_, i) => i !== index))} />)}</div></div>
-            <div>
-              <label className="text-sm font-semibold text-gray-700">Dimensions</label><select onChange={handleDimensionSelect} className={`${inputClass} mb-2`}><option value="">-- Select to add --</option>{dimensions.map(dim => <option key={dim._id} value={dim._id}>{dim.value}</option>)}</select>
-              <div className="mt-1 min-h-[2rem] p-2 bg-gray-50 rounded-lg">{selectedDimensions.length > 0 ? selectedDimensions.map(dim => (<span key={dim._id} className="inline-flex items-center bg-[#6A3E9D] text-white text-xs font-medium mr-2 mb-2 px-3 py-1 rounded-full">{dim.value}<button type="button" onClick={() => setSelectedDimensions(prev => prev.filter(d => d._id !== dim._id))} className="ml-2 font-bold hover:text-gray-200">×</button></span>)) : <span className="text-gray-400 text-sm">No dimensions selected.</span>}</div>
-            </div>
-            <div>
-              <label className="text-sm font-semibold text-gray-700">Add New Dimension</label>
-              <div className="flex items-center gap-2 mt-1"><input type="text" value={newDimensionInput} onChange={(e) => setNewDimensionInput(e.target.value)} placeholder="Eg: 20x40" className="flex-grow p-2 border border-gray-300 rounded-xl" /><button type="button" onClick={handleAddNewDimension} className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">Add</button></div>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div><label className="text-sm font-semibold text-gray-700">Quantity</label><input type="number" name="quantity" value={formData.quantity} onChange={handleInputChange} min="500" required className={inputClass} /></div>
-              <div><label className="text-sm font-semibold text-gray-700">Price/Piece</label><input type="number" name="pricePerPiece" value={formData.pricePerPiece} onChange={handleInputChange} min="0" step="0.01" required className={inputClass} /></div>
-              <div><label className="text-sm font-semibold text-gray-700">Pieces/Box</label><input type="number" name="totalPiecesPerBox" value={formData.totalPiecesPerBox} onChange={handleInputChange} min="1" required className={inputClass} /></div>
-              <div><label className="text-sm font-semibold text-gray-700">Discount %</label><input type="number" name="discountPercentage" value={formData.discountPercentage} onChange={handleInputChange} min="0" step="0.01" className={inputClass} /></div>
-            </div>
-            <div><label className="text-sm font-semibold text-gray-700">Product Images (max 10)</label><input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, setProductImages, productImages, 10)} className={`${fileInputClass} mt-1`} disabled={isCompressing}/><div className="flex flex-wrap mt-2 gap-4">{productImages.map((file, index) => <ImageThumb key={index} file={file} onRemove={() => setProductImages(prev => prev.filter((_, i) => i !== index))} />)}</div></div>
+              </div>
+          </div>
+          <div><label className="text-sm font-semibold text-gray-700">About</label><textarea name="about" value={formData.about} onChange={handleInputChange} rows="3" required placeholder="Product description" className={inputClass}></textarea></div>
+          <div><label className="text-sm font-semibold text-gray-700">Upload Color Images</label><input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, setColorImages, colorImages)} className={`${fileInputClass} mt-1`} disabled={isCompressing} /><div className="flex flex-wrap mt-2 gap-4">{colorImages.map((file, index) => <ImageThumb key={index} file={file} onRemove={() => setColorImages(prev => prev.filter((_, i) => i !== index))} />)}</div></div>
+          <div>
+            <label className="text-sm font-semibold text-gray-700">Dimensions</label><select onChange={handleDimensionSelect} className={`${inputClass} mb-2`}><option value="">-- Select to add --</option>{dimensions.map(dim => <option key={dim._id} value={dim._id}>{dim.value}</option>)}</select>
+            <div className="mt-1 min-h-[2rem] p-2 bg-gray-50 rounded-lg">{selectedDimensions.length > 0 ? selectedDimensions.map(dim => (<span key={dim._id} className="inline-flex items-center bg-[#6A3E9D] text-white text-xs font-medium mr-2 mb-2 px-3 py-1 rounded-full">{dim.value}<button type="button" onClick={() => setSelectedDimensions(prev => prev.filter(d => d._id !== dim._id))} className="ml-2 font-bold hover:text-gray-200">×</button></span>)) : <span className="text-gray-400 text-sm">No dimensions selected.</span>}</div>
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-gray-700">Add New Dimension</label>
+            <div className="flex items-center gap-2 mt-1"><input type="text" value={newDimensionInput} onChange={(e) => setNewDimensionInput(e.target.value)} placeholder="Eg: 20x40" className="flex-grow p-2 border border-gray-300 rounded-xl" /><button type="button" onClick={handleAddNewDimension} className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">Add</button></div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div><label className="text-sm font-semibold text-gray-700">Quantity</label><input type="number" name="quantity" value={formData.quantity} onChange={handleInputChange} min="500" required className={inputClass} /></div>
+            <div><label className="text-sm font-semibold text-gray-700">Price/Piece</label><input type="number" name="pricePerPiece" value={formData.pricePerPiece} onChange={handleInputChange} min="0" step="0.01" required className={inputClass} /></div>
+            <div><label className="text-sm font-semibold text-gray-700">Pieces/Box</label><input type="number" name="totalPiecesPerBox" value={formData.totalPiecesPerBox} onChange={handleInputChange} min="1" required className={inputClass} /></div>
+            <div><label className="text-sm font-semibold text-gray-700">Discount %</label><input type="number" name="discountPercentage" value={formData.discountPercentage} onChange={handleInputChange} min="0" step="0.01" className={inputClass} /></div>
+          </div>
+          <div><label className="text-sm font-semibold text-gray-700">Product Images (max 10)</label><input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, setProductImages, productImages, 10)} className={`${fileInputClass} mt-1`} disabled={isCompressing}/><div className="flex flex-wrap mt-2 gap-4">{productImages.map((file, index) => <ImageThumb key={index} file={file} onRemove={() => setProductImages(prev => prev.filter((_, i) => i !== index))} />)}</div></div>
         </form>
       </div>
-      <div className="flex justify-end gap-3 p-6 border-t flex-shrink-0">
+
+      {/* FOOTER: flex-shrink-0 prevents this from shrinking and keeps it visible */}
+      <div className="flex justify-end gap-3 p-4 bg-gray-50 border-t flex-shrink-0 rounded-b-2xl">
         <button type="button" onClick={onClose} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">Cancel</button>
         <button type="submit" form="add-product-form" className="bg-[#6A3E9D] hover:bg-[#583281] text-white font-bold py-2 px-6 rounded-lg" disabled={isCompressing}>
           {isCompressing ? 'Processing...' : 'Add Product'}
@@ -272,7 +271,9 @@ function ViewProducts() {
   }, [categoryList]);
 
   const fetchData = useCallback(async () => {
-    setIsLoading(true);
+    // Set loading to true only if it's the initial load.
+    // This prevents the "Loading..." message on subsequent refetches.
+    if (products.length === 0) setIsLoading(true);
     try {
       const [productRes, categoryRes, dimensionRes] = await Promise.all([
         fetch('https://threebapi-1067354145699.asia-south1.run.app/api/products/all'),
@@ -292,13 +293,12 @@ function ViewProducts() {
       setCategoryList(Array.isArray(categoryData) ? categoryData : []);
       setDimensionList(Array.isArray(dimensionData) ? dimensionData : []);
 
-    } catch (err)
- {
+    } catch (err) {
       setError(err.message);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [products.length]); // Dependency added to manage initial load state
 
   useEffect(() => {
     fetchData();
@@ -308,7 +308,8 @@ function ViewProducts() {
     setDimensionList(prevList => [...prevList, newDimension]);
   };
 
-  const handleProductAdded = () => { window.location.reload(); };
+  // IMPROVEMENT: Refetches data instead of reloading the entire page for a better UX.
+  const handleProductAdded = () => { fetchData(); };
   const showCarousel = (images) => { setCarouselImages(images.map(img => img.url)); setCarouselOpen(true); };
   const showQrCode = (url) => { setQrCodeUrl(url); setQrOpen(true); };
   const handleEdit = (product) => { setEditingId(product._id); setEditFormData({ ...product }); };
@@ -334,6 +335,7 @@ function ViewProducts() {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left text-gray-600">
+            {/* Table content is unchanged */}
             <thead className="text-xs text-gray-700 uppercase bg-gray-50">
               <tr>
                 {['Image', 'Frame', 'Dimensions', 'Price/Piece', 'Piece/Box', 'Box Price', 'Discount', 'Qty', 'Actions'].map(header => (
@@ -361,8 +363,7 @@ function ViewProducts() {
                 ) : (
                   <tr key={product._id} className="bg-white border-b hover:bg-gray-50 align-middle">
                     <td className="px-6 py-4"><img src={product.images[0]?.url} onClick={() => showCarousel(product.images)} className="w-16 h-16 object-cover rounded-md cursor-pointer" alt={product.name} /></td>
-                    {/* SOLUTION: Replaced spaces in the product name before displaying it. */}
-                    <td className="px-6 py-4 font-medium text-gray-900">{product.name.replace(/\s+/g, '')}</td>
+                    <td className="px-6 py-4 font-medium text-gray-900">{product.name}</td>
                     <td className="px-6 py-4">{Array.isArray(product.dimensions) ? product.dimensions.join(', ') : '—'}</td>
                     <td className="px-6 py-4">₹{product.pricePerPiece}</td>
                     <td className="px-6 py-4">{product.totalPiecesPerBox}</td>
