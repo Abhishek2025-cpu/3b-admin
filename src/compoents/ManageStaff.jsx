@@ -287,7 +287,7 @@ const handleDelete = useCallback(async (staffId) => {
                                   <input type="checkbox" checked={staff.status ?? false} onChange={() => handleOpenConfirmModal(staff)} className="sr-only peer" />
                                   <div className="w-11 h-6 bg-gray-300 rounded-full peer peer-focus:ring-2 peer-focus:ring-purple-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#6f42c1]"></div>
                               </label>
-                              <FaPen onClick={() => handleOpenUpdateModal(staff)} className="cursor-pointer text-blue-600 hover:text-blue-800" title="Edit" size={18} />
+                              {/* <FaPen onClick={() => handleOpenUpdateModal(staff)} className="cursor-pointer text-blue-600 hover:text-blue-800" title="Edit" size={18} /> */}
                               <FaTrash onClick={() => handleDelete(staff._id)} className="cursor-pointer text-red-600 hover:text-red-800" title="Delete" size={18} />
                             </div>
                           </td>
