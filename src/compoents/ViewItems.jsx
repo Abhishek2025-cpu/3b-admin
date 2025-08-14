@@ -2,13 +2,41 @@ import logo from '../assets/3b.png';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 
-// --- SVG Icons (Unchanged) ---
+// --- SVG Icons (Unchanged, but with a new addition) ---
 const ViewIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.022 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" /></svg> );
 const BoxIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 4a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V4zm2-1a1 1 0 00-1 1v2h14V4a1 1 0 00-1-1H4zM3 9v9a1 1 0 001 1h12a1 1 0 001-1V9H3z" /></svg> );
 const DeleteIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg> );
 const PrintIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clipRule="evenodd" /></svg> );
 const TrackIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" /></svg>);
 const Spinner = () => ( <svg className="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> );
+
+// *** START: New SVG Component for the Static Barcode ***
+const StaticBarcodeIcon = () => (
+    <svg className="h-12 w-full max-w-xs" viewBox="0 0 200 50" preserveAspectRatio="none">
+        <rect x="0" y="0" width="200" height="50" fill="white"/>
+        <g fill="black">
+            <rect x="10" y="5" width="2" height="40" /><rect x="14" y="5" width="2" height="40" />
+            <rect x="18" y="5" width="4" height="40" /><rect x="24" y="5" width="2" height="40" />
+            <rect x="28" y="5" width="4" height="40" /><rect x="34" y="5" width="2" height="40" />
+            <rect x="38" y="5" width="2" height="40" /><rect x="42" y="5" width="6" height="40" />
+            <rect x="50" y="5" width="2" height="40" /><rect x="54" y="5" width="4" height="40" />
+            <rect x="60" y="5" width="2" height="40" /><rect x="64" y="5" width="2" height="40" />
+            <rect x="68" y="5" width="4" height="40" /><rect x="74" y="5" width="4" height="40" />
+            <rect x="80" y="5" width="2" height="40" /><rect x="84" y="5" width="6" height="40" />
+            <rect x="92" y="5" width="2" height="40" /><rect x="96" y="5" width="2" height="40" />
+            <rect x="100" y="5" width="4" height="40" /><rect x="106" y="5" width="2" height="40" />
+            <rect x="110" y="5" width="6" height="40" /><rect x="118" y="5" width="2" height="40" />
+            <rect x="122" y="5" width="4" height="40" /><rect x="128" y="5" width="2" height="40" />
+            <rect x="132" y="5" width="4" height="40" /><rect x="138" y="5" width="2" height="40" />
+            <rect x="142" y="5" width="6" height="40" /><rect x="150" y="5" width="2" height="40" />
+            <rect x="154" y="5" width="2" height="40" /><rect x="158" y="5" width="4" height="40" />
+            <rect x="164" y="5" width="4" height="40" /><rect x="170" y="5" width="2" height="40" />
+            <rect x="174" y="5" width="6" height="40" /><rect x="182" y="5" width="2" height="40" />
+            <rect x="186" y="5" width="4" height="40" />
+        </g>
+    </svg>
+);
+// *** END: New SVG Component ***
 
 // --- Reusable Components (Unchanged) ---
 const GenericModal = ({ isOpen, onClose, children, maxWidth = "max-w-lg", zIndex = "z-50" }) => {
@@ -23,13 +51,9 @@ const UpdateBoxesModal = ({ isOpen, onClose, item, onUpdateSubmit }) => {
     return <GenericModal isOpen={isOpen} onClose={onClose}><div className="p-4 border-b flex justify-between items-center"><h2 className="text-xl font-bold text-gray-800">Add More Boxes</h2><button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button></div><form onSubmit={handleSubmit}><div className="p-6 space-y-4"><div><label className="font-semibold text-gray-700 block mb-1">Item Name</label><input type="text" readOnly value={item?.itemNo?.trim() || ''} className="w-full p-2 bg-gray-100 border rounded-lg cursor-not-allowed" /></div><div><label htmlFor="new-boxes-input" className="font-semibold text-gray-700 block mb-1">Number of New Boxes to Add</label><input id="new-boxes-input" type="number" min="1" value={numberOfNewBoxes} onChange={(e) => setNumberOfNewBoxes(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., 5" required /></div></div><div className="p-4 border-t flex justify-end gap-3"><button type="button" onClick={onClose} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">Cancel</button><button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg disabled:bg-indigo-300 disabled:cursor-not-allowed">{isSubmitting ? 'Adding...' : 'Add Boxes'}</button></div></form></GenericModal>;
 };
 
-// *** START: New Reusable Layout Component ***
-// This component contains the visual layout for a single printable page.
+// --- Reusable Layout Component (UPDATED with static barcode) ---
 const PrintablePageLayout = ({ item, box }) => {
     const profileCodes = [item.operator?.eid, item.helper?.eid].filter(Boolean).join(', ');
-    
-    // Note: The height is now displayed as "9.5 Feet" from the image, not item.length
-    // This assumes the value is hardcoded or comes from a different field. We'll use item.length but add "Feet".
     const heightDisplay = item.length ? `${item.length} Feet` : "N/A";
 
     return (
@@ -56,15 +80,17 @@ const PrintablePageLayout = ({ item, box }) => {
                     <div className="w-full h-48 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center p-2 my-4">
                         <img src={item.productImageUrl} alt="Product" className="max-w-full max-h-full object-contain" />
                     </div>
+                    {/* *** THIS IS THE NEW STATIC BARCODE *** */}
+                    <div className="w-full mt-auto">
+                        <StaticBarcodeIcon />
+                    </div>
                 </div>
             </div>
         </div>
     );
 };
-// *** END: New Reusable Layout Component ***
 
-
-// --- PrintModal (Refactored to use the new layout component) ---
+// --- PrintModal (Unchanged, it now gets the barcode automatically) ---
 const PrintModal = ({ isOpen, onClose, item, box }) => {
   const handlePrint = () => window.print();
   if (!isOpen || !item || !box) return null;
@@ -85,7 +111,7 @@ const PrintModal = ({ isOpen, onClose, item, box }) => {
   );
 };
 
-// --- PrintAllBoxesModal (Refactored to render one layout per page) ---
+// --- PrintAllBoxesModal (Unchanged, it now gets the barcode automatically) ---
 const PrintAllBoxesModal = ({ isOpen, onClose, item }) => {
     const handlePrint = () => window.print();
     if (!isOpen || !item) return null;
@@ -127,32 +153,17 @@ const PrintAllBoxesModal = ({ isOpen, onClose, item }) => {
     );
 };
 
-
-// --- BoxesModal (Unchanged from previous version, still correct) ---
+// --- BoxesModal & ItemDetails (Unchanged) ---
 const BoxesModal = ({ isOpen, onClose, item, onOpenPrintModal, onOpenUpdateModal, onOpenPrintAllModal }) => {
     if (!isOpen) return null;
-    return (
-        <GenericModal isOpen={isOpen} onClose={onClose}>
-            <div className="p-4 border-b flex justify-between items-center"><h2 className="text-xl font-bold text-gray-800">Boxes for Item: <span className="text-indigo-600">{item?.itemNo?.trim()}</span></h2><button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button></div>
-            <div className="p-4 overflow-y-auto">{item?.boxes?.length > 0 ? (<ul className="space-y-3">{item.boxes.map((box) => (<li key={box._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"><div className="flex items-center gap-4"><img src={box.qrCodeUrl} alt="QR Code" className="w-16 h-16 rounded-md" /><div><p className="font-semibold text-gray-700">Serial No:</p><p className="text-lg font-mono text-black">{box.boxSerialNo}</p></div></div><div className="flex items-center gap-2"><button onClick={() => alert(`Tracking box: ${box.boxSerialNo}`)} className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"><TrackIcon /> Track</button><button onClick={() => onOpenPrintModal(box)} className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"><PrintIcon /> View/Print</button></div></li>))}</ul>) : (<p className="text-center text-gray-500 py-8">No box details found.</p>)}</div>
-            <div className="p-4 border-t flex justify-between items-center">
-                <div className="flex gap-3">
-                    <button onClick={onOpenUpdateModal} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg">Update</button>
-                    <button onClick={onOpenPrintAllModal} className="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2"><PrintIcon /> Print All</button>
-                </div>
-                <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">Close</button>
-            </div>
-        </GenericModal>
-    );
+    return ( <GenericModal isOpen={isOpen} onClose={onClose}><div className="p-4 border-b flex justify-between items-center"><h2 className="text-xl font-bold text-gray-800">Boxes for Item: <span className="text-indigo-600">{item?.itemNo?.trim()}</span></h2><button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button></div><div className="p-4 overflow-y-auto">{item?.boxes?.length > 0 ? (<ul className="space-y-3">{item.boxes.map((box) => (<li key={box._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"><div className="flex items-center gap-4"><img src={box.qrCodeUrl} alt="QR Code" className="w-16 h-16 rounded-md" /><div><p className="font-semibold text-gray-700">Serial No:</p><p className="text-lg font-mono text-black">{box.boxSerialNo}</p></div></div><div className="flex items-center gap-2"><button onClick={() => alert(`Tracking box: ${box.boxSerialNo}`)} className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"><TrackIcon /> Track</button><button onClick={() => onOpenPrintModal(box)} className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"><PrintIcon /> View/Print</button></div></li>))}</ul>) : (<p className="text-center text-gray-500 py-8">No box details found.</p>)}</div><div className="p-4 border-t flex justify-between items-center"><div className="flex gap-3"><button onClick={onOpenUpdateModal} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg">Update</button><button onClick={onOpenPrintAllModal} className="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2"><PrintIcon /> Print All</button></div><button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">Close</button></div></GenericModal> );
 };
-
-// --- ItemDetails (Unchanged) ---
 const ItemDetails = ({ item }) => {
     if (!item) return null;
     return ( <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 bg-gray-50"><div><p className="font-semibold text-gray-700">Length:</p><p>{item.length}</p></div><div><p className="font-semibold text-gray-700">Shift:</p><p>{item.shift}</p></div><div><p className="font-semibold text-gray-700">Company:</p><p>{item.company}</p></div><div><p className="font-semibold text-gray-700">Created At:</p><p>{new Date(item.createdAt).toLocaleString()}</p></div><div><p className="font-semibold text-gray-700">Operator EID:</p><p>{item.operator?.eid || 'N/A'}</p></div><div><p className="font-semibold text-gray-700">Helper EID:</p><p>{item.helper?.eid || 'N/A'}</p></div></div> );
 };
   
-// --- Main ViewItems Component (Unchanged from previous version, still correct) ---
+// --- Main ViewItems Component (Unchanged) ---
 function ViewItems() {
     const [items, setItems] = useState([]);
     const [fullItemsMap, setFullItemsMap] = useState(new Map());
@@ -160,13 +171,10 @@ function ViewItems() {
     const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [expandedRowId, setExpandedRowId] = useState(null);
-
     const [isBoxesModalOpen, setIsBoxesModalOpen] = useState(false);
     const [selectedItemForBoxes, setSelectedItemForBoxes] = useState(null);
-    
     const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
     const [selectedBoxForPrint, setSelectedBoxForPrint] = useState(null);
-    
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
     const [isPrintAllModalOpen, setIsPrintAllModalOpen] = useState(false);
 
@@ -199,14 +207,12 @@ function ViewItems() {
     const currentItems = filteredItems;
     
     const handleToggleRow = (itemId) => setExpandedRowId(expandedRowId === itemId ? null : itemId);
-  
     const handleOpenBoxesModal = (itemFromList) => {
         const fullItemData = fullItemsMap.get(itemFromList._id);
         if (fullItemData) { setSelectedItemForBoxes(fullItemData); setIsBoxesModalOpen(true); } 
         else { toast.error('Could not find detailed box info.'); }
     };
     const handleCloseBoxesModal = () => setIsBoxesModalOpen(false);
-    
     const handleOpenPrintModal = (box) => {
         setSelectedBoxForPrint(box);
         setIsPrintModalOpen(true);
@@ -215,7 +221,6 @@ function ViewItems() {
         setIsPrintModalOpen(false);
         setSelectedBoxForPrint(null);
     };
-
     const handleOpenUpdateModal = () => {
         setIsBoxesModalOpen(false);
         setIsUpdateModalOpen(true);
@@ -223,16 +228,13 @@ function ViewItems() {
     const handleCloseUpdateModal = () => {
         setIsUpdateModalOpen(false);
     };
-
     const handleOpenPrintAllModal = () => {
         setIsBoxesModalOpen(false);
         setIsPrintAllModalOpen(true);
     };
-
     const handleClosePrintAllModal = () => {
         setIsPrintAllModalOpen(false);
     };
-
     const handleUpdateSubmit = async (itemId, numberOfNewBoxes) => {
         const promise = fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/items/${itemId}/add-boxes`, {
             method: 'PATCH',
@@ -242,7 +244,6 @@ function ViewItems() {
             if (!res.ok) { return res.json().then(err => { throw new Error(err.message || 'API request failed') }); }
             return res.json();
         });
-
         await toast.promise(promise, {
             loading: 'Adding new boxes...',
             success: (data) => {
