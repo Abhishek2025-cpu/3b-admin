@@ -62,7 +62,7 @@ const PrintablePageLayout = ({ item, box }) => {
                 {/* Left Column */}
                 <div className="col-span-3 flex flex-col justify-between">
                     <div>
-                        <img src={logo} alt="3B Profiles Logo" className="h-24" />
+                        <img src={logo} alt="3B Profiles Logo" className="h-74" />
                         <p className="text-sm font-semibold text-gray-700 mt-1">www.3bprofilespvtltd.com</p>
                     </div>
                     <div className="mt-8 space-y-4 text-xl">
