@@ -24,6 +24,29 @@ const Alert = ({ message, type, show, onClose }) => {
   );
 };
 
+// Password Popup Component
+const PasswordPopup = ({ password, show, onClose }) => {
+  if (!show) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-[1100]">
+      <div className="bg-white p-8 rounded-xl shadow-2xl text-center max-w-sm w-full mx-4">
+        <h3 className="text-2xl font-bold mb-4 text-gray-800">Registration Successful!</h3>
+        <p className="mb-5 text-gray-600">The staff member has been added. Their temporary password is:</p>
+        <div className="bg-gray-100 p-4 rounded-lg mb-6 border border-gray-200">
+          <p className="text-2xl font-mono font-bold tracking-widest text-gray-900 select-all">{password}</p>
+        </div>
+        <button
+          onClick={onClose}
+          className="w-full bg-[#7853C2] text-white font-bold py-3 px-6 rounded-md hover:bg-[#6643b1] transition-colors duration-300"
+        >
+          Close & Finish
+        </button>
+      </div>
+    </div>
+  );
+};
+
 
 function AddStaffForm() {
   // State for form fields
@@ -34,6 +57,15 @@ function AddStaffForm() {
   const [adharNumber, setAdharNumber] = useState('');
   const [adharImage, setAdharImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  
+  // State for "Other" role and password popup
+  const [otherRole, setOtherRole] = useState(''); 
+  const [showPasswordPopup, setShowPasswordPopup] = useState(false);
+  const [generatedPassword, setGeneratedPassword] = useState('');
+  
+  // *** START: New state for loading indicator ***
+  const [isLoading, setIsLoading] = useState(false);
+  // *** END: New state ***
 
   // State for alert notifications
   const [alertInfo, setAlertInfo] = useState({ show: false, message: '', type: 'success' });
@@ -41,13 +73,13 @@ function AddStaffForm() {
   // Ref for the file input to allow programmatic clearing
   const adharImageRef = useRef(null);
   
-  // Hides the alert automatically after 4 seconds
+  // Hides the alert automatically
   useEffect(() => {
     if (alertInfo.show) {
       const timer = setTimeout(() => {
         setAlertInfo({ ...alertInfo, show: false });
       }, 4000);
-      return () => clearTimeout(timer); // Cleanup timer on component unmount or if alert changes
+      return () => clearTimeout(timer);
     }
   }, [alertInfo]);
 
@@ -64,19 +96,19 @@ function AddStaffForm() {
   const handleRemovePreview = () => {
     setAdharImage(null);
     setPreviewUrl(null);
-    // Reset the file input value
     if (adharImageRef.current) {
       adharImageRef.current.value = '';
     }
   };
   
-  // Resets all form fields and the image preview
+  // Resets all form fields
   const resetForm = () => {
     setName('');
     setMobile('');
     setRole('');
     setDob('');
     setAdharNumber('');
+    setOtherRole('');
     handleRemovePreview();
   };
 
@@ -84,21 +116,25 @@ function AddStaffForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!name || !mobile || !role) {
-      setAlertInfo({ show: true, message: 'Please fill in all required fields.', type: 'danger' });
+    const finalRole = role === 'Other' ? otherRole : role;
+
+    // Client-side validation
+    if (!name || !mobile || !finalRole || !adharImage) {
+      setAlertInfo({ show: true, message: 'Please fill in all required fields, including Aadhar image.', type: 'danger' });
       return;
     }
+
+    setIsLoading(true); // Set loading to true before the API call
 
     const formData = new FormData();
     formData.append('name', name);
     formData.append('mobile', mobile);
-    formData.append('role', role);
+    formData.append('role', finalRole);
     if (dob) formData.append('dob', dob);
     if (adharNumber) formData.append('adharNumber', adharNumber);
     if (adharImage) formData.append('adharImage', adharImage);
 
     try {
-      // Replace with your actual API endpoint
       const res = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/staff/add-employees', {
         method: 'POST',
         body: formData,
@@ -107,15 +143,25 @@ function AddStaffForm() {
       const result = await res.json();
 
       if (res.ok) {
-        setAlertInfo({ show: true, message: '✅ Staff added successfully!', type: 'success' });
-        resetForm();
+        setGeneratedPassword(result.password || 'Not Available');
+        setShowPasswordPopup(true);
       } else {
         setAlertInfo({ show: true, message: result.message || '❌ Submission failed. Please check inputs.', type: 'danger' });
       }
     } catch (error) {
       console.error('Network error:', error);
       setAlertInfo({ show: true, message: '🚨 Network error. Please try again later.', type: 'danger' });
+    } finally {
+      setIsLoading(false); // Set loading to false after the API call finishes
     }
+  };
+
+  // Handler to close popup and reset form
+  const handleClosePasswordPopup = () => {
+    setShowPasswordPopup(false);
+    setGeneratedPassword('');
+    setAlertInfo({ show: true, message: '✅ Staff added successfully!', type: 'success' });
+    resetForm();
   };
 
   const roleOptions = ['Operator', 'Helper', 'Mixture', 'Other'];
@@ -128,9 +174,14 @@ function AddStaffForm() {
         show={alertInfo.show}
         onClose={() => setAlertInfo({ ...alertInfo, show: false })}
       />
+      
+      <PasswordPopup
+        show={showPasswordPopup}
+        password={generatedPassword}
+        onClose={handleClosePasswordPopup}
+      />
 
       <div 
-        // Replicating the .form-container styles with Tailwind CSS and arbitrary values
         className="bg-[#f5f5f5] p-8 rounded-xl shadow-lg max-w-2xl mx-auto mt-5"
       >
         <h4 className="text-2xl font-semibold text-center mb-6 flex items-center justify-center gap-2">
@@ -138,7 +189,7 @@ function AddStaffForm() {
         </h4>
         
         <form onSubmit={handleSubmit} noValidate>
-          {/* Full Name Input */}
+          {/* Form fields remain the same */}
           <div className="mb-4">
             <label htmlFor="name" className="block text-gray-700 font-medium mb-2">
               Full Name<span className="text-red-500">*</span>
@@ -153,7 +204,6 @@ function AddStaffForm() {
             />
           </div>
 
-          {/* Mobile No Input */}
           <div className="mb-4">
             <label htmlFor="mobile" className="block text-gray-700 font-medium mb-2">
               Mobile No<span className="text-red-500">*</span>
@@ -168,7 +218,6 @@ function AddStaffForm() {
             />
           </div>
 
-          {/* Role Select */}
           <div className="mb-4">
             <label htmlFor="role" className="block text-gray-700 font-medium mb-2">
               Role<span className="text-red-500">*</span>
@@ -184,8 +233,24 @@ function AddStaffForm() {
               {roleOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
             </select>
           </div>
+          
+          {role === 'Other' && (
+            <div className="mb-4">
+                <label htmlFor="otherRole" className="block text-gray-700 font-medium mb-2">
+                    Specify Role<span className="text-red-500">*</span>
+                </label>
+                <input
+                    type="text"
+                    id="otherRole"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7853C2]"
+                    placeholder="please specify the role"
+                    value={otherRole}
+                    onChange={(e) => setOtherRole(e.target.value)}
+                    required
+                />
+            </div>
+          )}
 
-          {/* Date of Birth Input */}
           <div className="mb-4">
             <label htmlFor="dob" className="block text-gray-700 font-medium mb-2">Date of Birth</label>
             <input 
@@ -197,7 +262,6 @@ function AddStaffForm() {
             />
           </div>
 
-          {/* Aadhar Number Input */}
           <div className="mb-4">
             <label htmlFor="adharNumber" className="block text-gray-700 font-medium mb-2">Aadhar Number</label>
             <input 
@@ -209,9 +273,8 @@ function AddStaffForm() {
             />
           </div>
 
-          {/* Aadhar Image Input */}
           <div className="mb-6">
-            <label htmlFor="adharImage" className="block text-gray-700 font-medium mb-2">Aadhar Image</label>
+            <label htmlFor="adharImage" className="block text-gray-700 font-medium mb-2">Aadhar Image<span className="text-red-500">*</span></label>
             <input 
               type="file" 
               id="adharImage" 
@@ -220,14 +283,12 @@ function AddStaffForm() {
               accept="image/*"
               onChange={handleImageChange}
             />
-            {/* Image Preview */}
             {previewUrl && (
               <div className="relative inline-block mt-4">
                 <img src={previewUrl} alt="Preview" className="w-[100px] h-auto rounded-md" />
                 <button 
                   type="button" 
                   onClick={handleRemovePreview}
-                  // Replicating the .remove-image styles
                   className="absolute top-[-8px] right-[-8px] bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-lg font-bold cursor-pointer border-2 border-white"
                 >
                   ×
@@ -236,13 +297,25 @@ function AddStaffForm() {
             )}
           </div>
           
+          {/* *** START: Updated Submit Button with Loader *** */}
           <button 
             type="submit" 
-            // Replicating the .btn custom styles
-            className="w-full bg-[#7853C2] text-white font-bold py-3 px-4 rounded-md hover:bg-[#6643b1] transition-colors duration-300"
+            disabled={isLoading}
+            className="w-full bg-[#7853C2] text-white font-bold py-3 px-4 rounded-md hover:bg-[#6643b1] transition-colors duration-300 flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Save Staff
+            {isLoading ? (
+                <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Saving...
+                </>
+            ) : (
+                'Save Staff'
+            )}
           </button>
+          {/* *** END: Updated Submit Button *** */}
         </form>
       </div>
     </div>

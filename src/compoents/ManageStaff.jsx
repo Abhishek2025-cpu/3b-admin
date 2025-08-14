@@ -182,10 +182,38 @@ function ManageStaff() {
   const paginatedStaff = useMemo(() => filteredStaff.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage), [filteredStaff, currentPage, rowsPerPage]);
   
   const totalPages = useMemo(() => Math.ceil(filteredStaff.length / rowsPerPage), [filteredStaff.length, rowsPerPage]);
+const handleDelete = useCallback(async (staffId) => {
+    // 1. Confirm with the user before deleting
+    if (!window.confirm('Are you sure you want to delete this staff member? This action cannot be undone.')) {
+        return; // If the user clicks "Cancel", stop the function
+    }
 
-  const handleDelete = useCallback(async (staffId) => {
-    // This function is unchanged
-  }, [fetchStaff]);
+    try {
+        // 2. Make the API call to the delete endpoint
+        const response = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/staff/delete-employees/${staffId}`, {
+            method: 'DELETE',
+        });
+
+        // 3. Handle the response
+        if (response.ok) {
+            // If deletion is successful
+            alert('Staff member deleted successfully.'); // You can replace this with your custom Alert component
+            
+            // 4. Refresh the staff list to update the UI
+            fetchStaff(); 
+
+        } else {
+            // If the server returns an error (e.g., staff not found)
+            const errorData = await response.json();
+            alert(errorData.message || 'Failed to delete staff member.');
+            console.error('Server error on delete:', errorData);
+        }
+    } catch (error) {
+        // 5. Handle network errors (e.g., no internet connection)
+        console.error('Network error on delete:', error);
+        alert('An error occurred. Please check your network and try again.');
+    }
+}, [fetchStaff]); // fetchStaff is a necessary dependency to refresh the list
   
   const handleToggleStatus = async () => {
     if (!selectedStaff) return;
