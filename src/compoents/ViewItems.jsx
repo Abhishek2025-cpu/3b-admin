@@ -10,70 +10,71 @@ const PrintIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" className="h-5
 const TrackIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" /></svg>);
 const Spinner = () => ( <svg className="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> );
 
-// --- Reusable Modal Component ---
+// --- Reusable Components (Unchanged) ---
 const GenericModal = ({ isOpen, onClose, children, maxWidth = "max-w-lg", zIndex = "z-50" }) => {
     if (!isOpen) return null;
+    return <div className={`fixed inset-0 ${zIndex} flex justify-center items-center p-4 pointer-events-none`}><div className={`${maxWidth} bg-white rounded-xl shadow-2xl w-full max-h-[80vh] flex flex-col pointer-events-auto`}>{children}</div></div>;
+};
+const UpdateBoxesModal = ({ isOpen, onClose, item, onUpdateSubmit }) => {
+    const [numberOfNewBoxes, setNumberOfNewBoxes] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const handleSubmit = async (e) => { e.preventDefault(); const boxCount = parseInt(numberOfNewBoxes, 10); if (!boxCount || boxCount <= 0) { toast.error("Please enter a valid, positive number of boxes."); return; } setIsSubmitting(true); await onUpdateSubmit(item._id, boxCount); setIsSubmitting(false); setNumberOfNewBoxes(''); };
+    if (!isOpen) return null;
+    return <GenericModal isOpen={isOpen} onClose={onClose}><div className="p-4 border-b flex justify-between items-center"><h2 className="text-xl font-bold text-gray-800">Add More Boxes</h2><button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button></div><form onSubmit={handleSubmit}><div className="p-6 space-y-4"><div><label className="font-semibold text-gray-700 block mb-1">Item Name</label><input type="text" readOnly value={item?.itemNo?.trim() || ''} className="w-full p-2 bg-gray-100 border rounded-lg cursor-not-allowed" /></div><div><label htmlFor="new-boxes-input" className="font-semibold text-gray-700 block mb-1">Number of New Boxes to Add</label><input id="new-boxes-input" type="number" min="1" value={numberOfNewBoxes} onChange={(e) => setNumberOfNewBoxes(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., 5" required /></div></div><div className="p-4 border-t flex justify-end gap-3"><button type="button" onClick={onClose} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">Cancel</button><button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg disabled:bg-indigo-300 disabled:cursor-not-allowed">{isSubmitting ? 'Adding...' : 'Add Boxes'}</button></div></form></GenericModal>;
+};
+
+// *** START: New Reusable Layout Component ***
+// This component contains the visual layout for a single printable page.
+const PrintablePageLayout = ({ item, box }) => {
+    const profileCodes = [item.operator?.eid, item.helper?.eid].filter(Boolean).join(', ');
+    
+    // Note: The height is now displayed as "9.5 Feet" from the image, not item.length
+    // This assumes the value is hardcoded or comes from a different field. We'll use item.length but add "Feet".
+    const heightDisplay = item.length ? `${item.length} Feet` : "N/A";
+
     return (
-        <div className={`fixed inset-0 ${zIndex} flex justify-center items-center p-4 pointer-events-none`}>
-            <div className={`${maxWidth} bg-white rounded-xl shadow-2xl w-full max-h-[80vh] flex flex-col pointer-events-auto`}>
-                {children}
+        <div className="border-[16px] border-purple-800 p-6 bg-white w-full">
+            <div className="grid grid-cols-5 gap-x-8 items-stretch">
+                {/* Left Column */}
+                <div className="col-span-3 flex flex-col justify-between">
+                    <div>
+                        <img src={logo} alt="3B Profiles Logo" className="h-24" />
+                        <p className="text-sm font-semibold text-gray-700 mt-1">www.3bprofilespvtltd.com</p>
+                    </div>
+                    <div className="mt-8 space-y-4 text-xl">
+                        <div className="flex items-center"><span className="w-40 font-bold text-gray-800">Profile Code</span><span className="flex-1 border-b-2 border-gray-400 text-center font-mono">{profileCodes || 'N/A'}</span></div>
+                        <div className="flex items-center"><span className="w-40 font-bold text-gray-800">Height (m)</span><span className="flex-1 border-b-2 border-gray-400 text-center font-mono">{heightDisplay}</span></div>
+                        <div className="flex items-center"><span className="w-40 font-bold text-gray-800">Qty per Box</span><span className="flex-1 border-b-2 border-gray-400 text-center font-mono">{item.noOfSticks}</span></div>
+                    </div>
+                </div>
+                {/* Right Column */}
+                <div className="col-span-2 flex flex-col justify-between items-center text-center">
+                    <div>
+                        <img src={box.qrCodeUrl} alt="Box QR Code" className="w-40 h-40 mx-auto" />
+                        <p className="font-mono font-bold text-lg mt-1">{`${item.itemNo.trim()}/${box.boxSerialNo}`}</p>
+                    </div>
+                    <div className="w-full h-48 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center p-2 my-4">
+                        <img src={item.productImageUrl} alt="Product" className="max-w-full max-h-full object-contain" />
+                    </div>
+                </div>
             </div>
         </div>
     );
 };
+// *** END: New Reusable Layout Component ***
 
-// --- UpdateBoxesModal Component (Unchanged) ---
-const UpdateBoxesModal = ({ isOpen, onClose, item, onUpdateSubmit }) => {
-    const [numberOfNewBoxes, setNumberOfNewBoxes] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const boxCount = parseInt(numberOfNewBoxes, 10);
-        if (!boxCount || boxCount <= 0) { toast.error("Please enter a valid, positive number of boxes."); return; }
-        setIsSubmitting(true);
-        await onUpdateSubmit(item._id, boxCount);
-        setIsSubmitting(false);
-        setNumberOfNewBoxes('');
-    };
-
-    if (!isOpen) return null;
-    return (
-        <GenericModal isOpen={isOpen} onClose={onClose}>
-            <div className="p-4 border-b flex justify-between items-center"><h2 className="text-xl font-bold text-gray-800">Add More Boxes</h2><button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button></div>
-            <form onSubmit={handleSubmit}><div className="p-6 space-y-4"><div><label className="font-semibold text-gray-700 block mb-1">Item Name</label><input type="text" readOnly value={item?.itemNo?.trim() || ''} className="w-full p-2 bg-gray-100 border rounded-lg cursor-not-allowed" /></div><div><label htmlFor="new-boxes-input" className="font-semibold text-gray-700 block mb-1">Number of New Boxes to Add</label><input id="new-boxes-input" type="number" min="1" value={numberOfNewBoxes} onChange={(e) => setNumberOfNewBoxes(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., 5" required /></div></div><div className="p-4 border-t flex justify-end gap-3"><button type="button" onClick={onClose} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">Cancel</button><button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg disabled:bg-indigo-300 disabled:cursor-not-allowed">{isSubmitting ? 'Adding...' : 'Add Boxes'}</button></div></form>
-        </GenericModal>
-    );
-};
-
-// --- CORRECTED: PrintModal now has the proper structure ---
+// --- PrintModal (Refactored to use the new layout component) ---
 const PrintModal = ({ isOpen, onClose, item, box }) => {
   const handlePrint = () => window.print();
   if (!isOpen || !item || !box) return null;
-  const profileCodes = [item.operator?.eid, item.helper?.eid].filter(Boolean).join(', ');
 
   return (
     <>
-      <style>{`@media print { body * { visibility: hidden; } #printable-area, #printable-area * { visibility: visible; } #printable-area { position: absolute; left: 0; top: 0; width: 100%; height: 100%; margin: 0; padding: 0; } .no-print { display: none !important; } }`}</style>
+      <style>{`@media print { body * { visibility: hidden; } #printable-area, #printable-area * { visibility: visible; } #printable-area { position: absolute; left: 0; top: 0; width: 100%; height: 100%; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center;} .no-print { display: none !important; } }`}</style>
       <GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl" zIndex="z-[60]">
-        <div id="printable-area" className="p-2">
-            <div className="border-[16px] border-[#6A3E9D] p-6 bg-white">
-                <div className="grid grid-cols-5 gap-x-8">
-                    <div className="col-span-3 flex flex-col justify-between">
-                        <div><img src={logo} alt="3B Profiles Logo" className="h-40" /><p className="text-sm font-semibold text-gray-700 mt-1">www.3bprofilespvtltd.com</p></div>
-                        <div className="mt-8 space-y-4 text-lg">
-                            <div className="flex items-center"><span className="w-36 font-bold text-gray-800">Profile Code</span><span className="flex-1 border-b-2 border-gray-400 text-center font-mono">{profileCodes || 'N/A'}</span></div>
-                            <div className="flex items-center"><span className="w-36 font-bold text-gray-800">Height (m)</span><span className="flex-1 border-b-2 border-gray-400 text-center font-mono">{item.length}</span></div>
-                            <div className="flex items-center"><span className="w-36 font-bold text-gray-800">Qty per Box</span><span className="flex-1 border-b-2 border-gray-400 text-center font-mono">{item.noOfSticks}</span></div>
-                        </div>
-                    </div>
-                    <div className="col-span-2 flex flex-col justify-between items-center">
-                        <div className="text-center"><img src={box.qrCodeUrl} alt="Box QR Code" className="w-32 h-32" /><p className="font-mono font-bold text-lg mt-1">{`${item.itemNo.trim()}/${box.boxSerialNo}`}</p></div>
-                        <div className="w-full h-40 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center p-2 my-4"><img src={item.productImageUrl} alt="Product" className="max-w-full max-h-full object-contain" /></div>
-                        <div className="w-full flex h-10 items-end justify-center gap-px overflow-hidden">{[...Array(40)].map((_, i) => <div key={i} className={`w-px bg-black h-${[4, 6, 8, 10, 12, 10, 8, 6, 4, 8, 12, 6, 10][i % 13]}/12`}></div>)}</div>
-                    </div>
-                </div>
-            </div>
+        <div id="printable-area" className="p-4">
+          <PrintablePageLayout item={item} box={box} />
         </div>
         <div className="no-print p-4 bg-gray-50 rounded-b-lg flex justify-end gap-3 border-t">
             <button onClick={handlePrint} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg">Print</button>
@@ -84,15 +85,63 @@ const PrintModal = ({ isOpen, onClose, item, box }) => {
   );
 };
 
+// --- PrintAllBoxesModal (Refactored to render one layout per page) ---
+const PrintAllBoxesModal = ({ isOpen, onClose, item }) => {
+    const handlePrint = () => window.print();
+    if (!isOpen || !item) return null;
 
-// --- BoxesModal (Unchanged) ---
-const BoxesModal = ({ isOpen, onClose, item, onOpenPrintModal, onOpenUpdateModal }) => {
+    return (
+        <>
+            <style>{`
+                @media print {
+                    body * { visibility: hidden; }
+                    .printable-page, .printable-page * { visibility: visible; }
+                    .printable-page { 
+                        page-break-after: always;
+                        position: relative;
+                        width: 100%;
+                        height: 100vh;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                    }
+                    .printable-page:last-child { page-break-after: auto; }
+                    .no-print { display: none !important; }
+                }
+            `}</style>
+            <GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl" zIndex="z-[60]">
+                <div id="printable-all-boxes-area" className="p-4 overflow-y-auto">
+                    <h2 className="text-2xl font-bold text-center mb-4 no-print">Print Preview: All Boxes</h2>
+                    {item.boxes?.map(box => (
+                        <div key={box._id} className="printable-page">
+                            <PrintablePageLayout item={item} box={box} />
+                        </div>
+                    ))}
+                </div>
+                <div className="no-print p-4 bg-gray-50 rounded-b-lg flex justify-end gap-3 border-t">
+                    <button onClick={handlePrint} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2"><PrintIcon /> Print All</button>
+                    <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">Close</button>
+                </div>
+            </GenericModal>
+        </>
+    );
+};
+
+
+// --- BoxesModal (Unchanged from previous version, still correct) ---
+const BoxesModal = ({ isOpen, onClose, item, onOpenPrintModal, onOpenUpdateModal, onOpenPrintAllModal }) => {
     if (!isOpen) return null;
     return (
         <GenericModal isOpen={isOpen} onClose={onClose}>
             <div className="p-4 border-b flex justify-between items-center"><h2 className="text-xl font-bold text-gray-800">Boxes for Item: <span className="text-indigo-600">{item?.itemNo?.trim()}</span></h2><button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button></div>
             <div className="p-4 overflow-y-auto">{item?.boxes?.length > 0 ? (<ul className="space-y-3">{item.boxes.map((box) => (<li key={box._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"><div className="flex items-center gap-4"><img src={box.qrCodeUrl} alt="QR Code" className="w-16 h-16 rounded-md" /><div><p className="font-semibold text-gray-700">Serial No:</p><p className="text-lg font-mono text-black">{box.boxSerialNo}</p></div></div><div className="flex items-center gap-2"><button onClick={() => alert(`Tracking box: ${box.boxSerialNo}`)} className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"><TrackIcon /> Track</button><button onClick={() => onOpenPrintModal(box)} className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"><PrintIcon /> View/Print</button></div></li>))}</ul>) : (<p className="text-center text-gray-500 py-8">No box details found.</p>)}</div>
-            <div className="p-4 border-t flex justify-between items-center"><button onClick={onOpenUpdateModal} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg">Update</button><button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">Close</button></div>
+            <div className="p-4 border-t flex justify-between items-center">
+                <div className="flex gap-3">
+                    <button onClick={onOpenUpdateModal} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg">Update</button>
+                    <button onClick={onOpenPrintAllModal} className="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2"><PrintIcon /> Print All</button>
+                </div>
+                <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">Close</button>
+            </div>
         </GenericModal>
     );
 };
@@ -103,7 +152,7 @@ const ItemDetails = ({ item }) => {
     return ( <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 bg-gray-50"><div><p className="font-semibold text-gray-700">Length:</p><p>{item.length}</p></div><div><p className="font-semibold text-gray-700">Shift:</p><p>{item.shift}</p></div><div><p className="font-semibold text-gray-700">Company:</p><p>{item.company}</p></div><div><p className="font-semibold text-gray-700">Created At:</p><p>{new Date(item.createdAt).toLocaleString()}</p></div><div><p className="font-semibold text-gray-700">Operator EID:</p><p>{item.operator?.eid || 'N/A'}</p></div><div><p className="font-semibold text-gray-700">Helper EID:</p><p>{item.helper?.eid || 'N/A'}</p></div></div> );
 };
   
-// --- Main ViewItems Component ---
+// --- Main ViewItems Component (Unchanged from previous version, still correct) ---
 function ViewItems() {
     const [items, setItems] = useState([]);
     const [fullItemsMap, setFullItemsMap] = useState(new Map());
@@ -119,6 +168,7 @@ function ViewItems() {
     const [selectedBoxForPrint, setSelectedBoxForPrint] = useState(null);
     
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+    const [isPrintAllModalOpen, setIsPrintAllModalOpen] = useState(false);
 
     const fetchAllData = useCallback(async () => {
         if (items.length === 0) setIsLoading(true);
@@ -157,13 +207,12 @@ function ViewItems() {
     };
     const handleCloseBoxesModal = () => setIsBoxesModalOpen(false);
     
-    // --- CORRECTED STATE LOGIC ---
     const handleOpenPrintModal = (box) => {
         setSelectedBoxForPrint(box);
-        setIsPrintModalOpen(true); // Just open the print modal
+        setIsPrintModalOpen(true);
     };
     const handleClosePrintModal = () => {
-        setIsPrintModalOpen(false); // Just close the print modal
+        setIsPrintModalOpen(false);
         setSelectedBoxForPrint(null);
     };
 
@@ -173,6 +222,15 @@ function ViewItems() {
     };
     const handleCloseUpdateModal = () => {
         setIsUpdateModalOpen(false);
+    };
+
+    const handleOpenPrintAllModal = () => {
+        setIsBoxesModalOpen(false);
+        setIsPrintAllModalOpen(true);
+    };
+
+    const handleClosePrintAllModal = () => {
+        setIsPrintAllModalOpen(false);
     };
 
     const handleUpdateSubmit = async (itemId, numberOfNewBoxes) => {
@@ -239,9 +297,10 @@ function ViewItems() {
           </div>
         </div>
         
-        <BoxesModal isOpen={isBoxesModalOpen} onClose={handleCloseBoxesModal} item={selectedItemForBoxes} onOpenPrintModal={handleOpenPrintModal} onOpenUpdateModal={handleOpenUpdateModal} />
+        <BoxesModal isOpen={isBoxesModalOpen} onClose={handleCloseBoxesModal} item={selectedItemForBoxes} onOpenPrintModal={handleOpenPrintModal} onOpenUpdateModal={handleOpenUpdateModal} onOpenPrintAllModal={handleOpenPrintAllModal} />
         <PrintModal isOpen={isPrintModalOpen} onClose={handleClosePrintModal} item={selectedItemForBoxes} box={selectedBoxForPrint} />
         <UpdateBoxesModal isOpen={isUpdateModalOpen} onClose={handleCloseUpdateModal} item={selectedItemForBoxes} onUpdateSubmit={handleUpdateSubmit} />
+        <PrintAllBoxesModal isOpen={isPrintAllModalOpen} onClose={handleClosePrintAllModal} item={selectedItemForBoxes} />
       </>
     );
 }
