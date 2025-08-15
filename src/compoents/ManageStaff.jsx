@@ -1,5 +1,3 @@
-// src/components/ManageStaff.jsx
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { FaUsers, FaPen, FaTrash, FaEye, FaPlus, FaEyeSlash } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
@@ -32,7 +30,6 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
 
 // --- Modal Components ---
 
-// MODIFIED: AadharImageModal now has no dark background (light-box style)
 const AadharImageModal = ({ imageUrl, isOpen, onClose }) => {
     if (!isOpen) return null;
     return (
@@ -60,34 +57,96 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, message }) => {
     );
 };
 
+// --- FIXED UpdateStaffModal ---
 const UpdateStaffModal = ({ staff, isOpen, onClose, onUpdateSuccess }) => {
   const [formData, setFormData] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  useEffect(() => { if (staff) setFormData({ name: staff.name || '', mobile: staff.mobile || '', role: staff.role || '', otherRole: staff.otherRole || '', dob: staff.dob ? new Date(staff.dob).toISOString().split('T')[0] : '', adharNumber: staff.adharNumber || '', adharImage: null }); }, [staff]);
+
+  useEffect(() => {
+    if (staff) {
+      setFormData({
+        name: staff.name || '',
+        mobile: staff.mobile || '',
+        role: staff.role || '',
+        otherRole: staff.otherRole || '',
+        dob: staff.dob ? new Date(staff.dob).toISOString().split('T')[0] : '',
+        adharNumber: staff.adharNumber || '',
+        adharImage: null, // Always reset file input on open
+      });
+    }
+  }, [staff]);
+
   if (!isOpen) return null;
+
   const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   const handleFileChange = (e) => setFormData(prev => ({ ...prev, adharImage: e.target.files[0] }));
+
   const handleSubmit = async (e) => {
-    e.preventDefault(); setIsSubmitting(true);
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    // FIX: Improved FormData creation.
+    // This correctly handles clearing text fields (sending an empty string)
+    // and only appends the 'adharImage' if a new file is selected.
     const data = new FormData();
-    Object.keys(formData).forEach(key => { if (formData[key]) data.append(key, formData[key]) });
+    for (const key in formData) {
+      if (key === 'adharImage') {
+        if (formData.adharImage) { // Check if a file is present
+          data.append(key, formData.adharImage);
+        }
+      } else if (formData[key] !== null && formData[key] !== undefined) {
+        // Append other fields, including empty strings like ""
+        data.append(key, formData[key]);
+      }
+    }
+
     try {
-      const response = await fetch(`${API_BASE_URL}/update-employees/${staff._id}`, { method: 'PATCH', body: data });
-      if (!response.ok) { const err = await response.json(); throw new Error(err.message || 'Failed to update employee'); }
+      // FIX: Changed method from PATCH to PUT.
+      // PUT is more reliably supported for multipart/form-data updates.
+      const response = await fetch(`${API_BASE_URL}/update-employees/${staff._id}`, {
+        method: 'PUT',
+        body: data,
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || 'Failed to update employee');
+      }
       toast.success('Employee updated successfully!');
       onUpdateSuccess();
-    } catch (error) { toast.error(`Update failed: ${error.message}`); } 
-    finally { setIsSubmitting(false); }
+    } catch (error) {
+      toast.error(`Update failed: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col"><h5 className="text-xl font-semibold p-4 border-b">Update Employee</h5><form onSubmit={handleSubmit} className="flex flex-col flex-grow overflow-hidden"><div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto"><div><label className="block mb-1 font-medium">Name</label><input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full p-2 border rounded" required /></div><div><label className="block mb-1 font-medium">Mobile</label><input type="text" name="mobile" value={formData.mobile} onChange={handleChange} className="w-full p-2 border rounded" required /></div><div><label className="block mb-1 font-medium">Role</label><select name="role" value={formData.role} onChange={handleChange} className="w-full p-2 border rounded bg-white" required><option value="">Select Role</option><option value="Helper">Helper</option><option value="Operator">Operator</option><option value="Mixture">Mixture</option><option value="Other">Other</option></select></div>{formData.role === 'Other' && <div><label className="block mb-1 font-medium">Other Role</label><input type="text" name="otherRole" value={formData.otherRole} onChange={handleChange} className="w-full p-2 border rounded" /></div>}<div><label className="block mb-1 font-medium">DOB</label><input type="date" name="dob" value={formData.dob} onChange={handleChange} className="w-full p-2 border rounded" /></div><div><label className="block mb-1 font-medium">Aadhar Number</label><input type="text" name="adharNumber" value={formData.adharNumber} onChange={handleChange} className="w-full p-2 border rounded" /></div><div><label className="block mb-1 font-medium">New Aadhar Image (Optional)</label><input type="file" name="adharImage" onChange={handleFileChange} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:font-semibold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200" /></div></div><div className="p-4 border-t mt-auto flex justify-end gap-3"><button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Cancel</button><button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300" disabled={isSubmitting}>{isSubmitting ? 'Updating...' : 'Update'}</button></div></form></div>
+    // FIX: Removed dark background and implemented pointer-events pattern
+    // to prevent interaction with the page behind, matching other modals.
+    <div className="fixed inset-0 flex justify-center items-center z-50 p-4 pointer-events-none">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col pointer-events-auto">
+        <h5 className="text-xl font-semibold p-4 border-b">Update Employee</h5>
+        <form onSubmit={handleSubmit} className="flex flex-col flex-grow overflow-hidden">
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto">
+            <div><label className="block mb-1 font-medium">Name</label><input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full p-2 border rounded" required /></div>
+            <div><label className="block mb-1 font-medium">Mobile</label><input type="text" name="mobile" value={formData.mobile} onChange={handleChange} className="w-full p-2 border rounded" required /></div>
+            <div><label className="block mb-1 font-medium">Role</label><select name="role" value={formData.role} onChange={handleChange} className="w-full p-2 border rounded bg-white" required><option value="">Select Role</option><option value="Helper">Helper</option><option value="Operator">Operator</option><option value="Mixture">Mixture</option><option value="Other">Other</option></select></div>
+            {formData.role === 'Other' && <div><label className="block mb-1 font-medium">Other Role</label><input type="text" name="otherRole" value={formData.otherRole} onChange={handleChange} className="w-full p-2 border rounded" /></div>}
+            <div><label className="block mb-1 font-medium">DOB</label><input type="date" name="dob" value={formData.dob} onChange={handleChange} className="w-full p-2 border rounded" /></div>
+            <div><label className="block mb-1 font-medium">Aadhar Number</label><input type="text" name="adharNumber" value={formData.adharNumber} onChange={handleChange} className="w-full p-2 border rounded" /></div>
+            <div><label className="block mb-1 font-medium">New Aadhar Image (Optional)</label><input type="file" name="adharImage" onChange={handleFileChange} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:font-semibold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200" /></div>
+          </div>
+          <div className="p-4 border-t mt-auto flex justify-end gap-3">
+            <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Cancel</button>
+            <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300" disabled={isSubmitting}>{isSubmitting ? 'Updating...' : 'Update'}</button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
 
-
-// MODIFIED: EmployeeDetails now includes a clickable Aadhar image
 const EmployeeDetails = ({ staff, onImageClick }) => {
     if (!staff) return null;
     return (
@@ -130,7 +189,6 @@ const EmployeeDetails = ({ staff, onImageClick }) => {
         </div>
     );
 };
-
 
 // --- Main Component ---
 function ManageStaff() {
@@ -182,38 +240,27 @@ function ManageStaff() {
   const paginatedStaff = useMemo(() => filteredStaff.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage), [filteredStaff, currentPage, rowsPerPage]);
   
   const totalPages = useMemo(() => Math.ceil(filteredStaff.length / rowsPerPage), [filteredStaff.length, rowsPerPage]);
-const handleDelete = useCallback(async (staffId) => {
-    // 1. Confirm with the user before deleting
-    if (!window.confirm('Are you sure you want to delete this staff member? This action cannot be undone.')) {
-        return; // If the user clicks "Cancel", stop the function
-    }
 
+  const handleDelete = useCallback(async (staffId) => {
+    if (!window.confirm('Are you sure you want to delete this staff member? This action cannot be undone.')) {
+        return;
+    }
     try {
-        // 2. Make the API call to the delete endpoint
-        const response = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/staff/delete-employees/${staffId}`, {
+        const response = await fetch(`${API_BASE_URL}/delete-employees/${staffId}`, {
             method: 'DELETE',
         });
-
-        // 3. Handle the response
         if (response.ok) {
-            // If deletion is successful
-            alert('Staff member deleted successfully.'); // You can replace this with your custom Alert component
-            
-            // 4. Refresh the staff list to update the UI
+            toast.success('Staff member deleted successfully.');
             fetchStaff(); 
-
         } else {
-            // If the server returns an error (e.g., staff not found)
             const errorData = await response.json();
-            alert(errorData.message || 'Failed to delete staff member.');
-            console.error('Server error on delete:', errorData);
+            toast.error(errorData.message || 'Failed to delete staff member.');
         }
     } catch (error) {
-        // 5. Handle network errors (e.g., no internet connection)
         console.error('Network error on delete:', error);
-        alert('An error occurred. Please check your network and try again.');
+        toast.error('An error occurred. Please check your network and try again.');
     }
-}, [fetchStaff]); // fetchStaff is a necessary dependency to refresh the list
+}, [fetchStaff]);
   
   const handleToggleStatus = async () => {
     if (!selectedStaff) return;
@@ -287,7 +334,7 @@ const handleDelete = useCallback(async (staffId) => {
                                   <input type="checkbox" checked={staff.status ?? false} onChange={() => handleOpenConfirmModal(staff)} className="sr-only peer" />
                                   <div className="w-11 h-6 bg-gray-300 rounded-full peer peer-focus:ring-2 peer-focus:ring-purple-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#6f42c1]"></div>
                               </label>
-                              {/* <FaPen onClick={() => handleOpenUpdateModal(staff)} className="cursor-pointer text-blue-600 hover:text-blue-800" title="Edit" size={18} /> */}
+                              <FaPen onClick={() => handleOpenUpdateModal(staff)} className="cursor-pointer text-blue-600 hover:text-blue-800" title="Edit" size={18} />
                               <FaTrash onClick={() => handleDelete(staff._id)} className="cursor-pointer text-red-600 hover:text-red-800" title="Delete" size={18} />
                             </div>
                           </td>
@@ -296,7 +343,7 @@ const handleDelete = useCallback(async (staffId) => {
                             <tr className="border-b">
                                 <td colSpan="6" className="p-0">
                                     <EmployeeDetails staff={staff} onImageClick={handleOpenAadharModal} />
-                                /</td>
+                                </td>
                             </tr>
                         )}
                       </React.Fragment>
