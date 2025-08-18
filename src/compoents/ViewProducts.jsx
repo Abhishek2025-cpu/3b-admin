@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faQrcode, faPenToSquare, faTrash, faPlus } from '@fortawesome/free-solid-svg-icons';
@@ -6,9 +6,6 @@ import imageCompression from 'browser-image-compression';
 
 
 // --- Reusable Components ---
-
-// FIX: Reverted to the "no background" version as requested.
-// This uses pointer-events to prevent interaction with the page behind it.
 const Modal = ({ isOpen, onClose, children, maxWidth = "max-w-lg" }) => {
   if (!isOpen) return null;
   return (
@@ -27,7 +24,7 @@ const ImageThumb = ({ file, onRemove, isUrl = false }) => (
   </div>
 );
 
-// --- Add Product Modal Component (No BG) ---
+// --- Add Product Modal Component ---
 const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensions, onDimensionAdded }) => {
   const [formData, setFormData] = useState({ categoryId: '', about: '', quantity: 500, pricePerPiece: '', totalPiecesPerBox: '', discountPercentage: 0 });
   const [productFrameParts, setProductFrameParts] = useState(Array(10).fill(''));
@@ -44,6 +41,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
         setProductFrameParts(Array(10).fill(''));
         setShowAllFrameBoxes(false);
         setSelectedDimensions([]);
+        setNewDimensionInput('');
         setColorImages([]);
         setProductImages([]);
         setIsCompressing(false);
@@ -90,7 +88,35 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
     e.target.value = '';
   };
   
-  const handleAddNewDimension = async () => { /* ... implementation unchanged ... */ };
+  const handleAddNewDimension = async () => {
+    const value = newDimensionInput.trim();
+    if (!value) {
+      toast.error("Please enter a dimension value.");
+      return;
+    }
+    
+    const promise = fetch('https://threebappbackend.onrender.com/api/dimensions/add-dimensions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value })
+      }).then(async (res) => {
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message || 'Failed to add dimension');
+        }
+        return res.json();
+      });
+
+    toast.promise(promise, {
+        loading: 'Adding dimension...',
+        success: () => {
+            setNewDimensionInput('');
+            onDimensionAdded();
+            return 'Dimension added successfully!';
+        },
+        error: (err) => `Error: ${err.message}`,
+    });
+  };
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
@@ -108,7 +134,13 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
     
     const promise = fetch('https://threebapi-1067354145699.asia-south1.run.app/api/products/add', {
       method: 'POST', body: submissionData,
-    }).then(async (res) => { /* ... implementation unchanged ... */ });
+    }).then(async (res) => {
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message || 'Failed to add product');
+        }
+        return res.json();
+     });
 
     toast.promise(promise, {
       loading: 'Adding product...',
@@ -122,7 +154,6 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
   const visibleBoxes = showAllFrameBoxes ? 10 : 4;
 
   return (
-    // FIX: This modal now correctly has no dark background because the base Modal component was fixed
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-3xl">
       <div className="p-6 border-b flex justify-between items-center flex-shrink-0">
         <h3 className="text-2xl font-bold text-gray-800">Add New Product</h3>
@@ -142,10 +173,17 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
           </div>
           <div><label className="text-sm font-semibold text-gray-700">About</label><textarea name="about" value={formData.about} onChange={handleInputChange} rows="3" required placeholder="Product description" className={inputClass}></textarea></div>
           <div><label className="text-sm font-semibold text-gray-700">Upload Color Images</label><input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, setColorImages, colorImages)} className={`${fileInputClass} mt-1`} disabled={isCompressing} /><div className="flex flex-wrap mt-2 gap-4">{colorImages.map((file, index) => <ImageThumb key={index} file={file} onRemove={() => setColorImages(prev => prev.filter((_, i) => i !== index))} />)}</div></div>
+          
           <div>
-            <label className="text-sm font-semibold text-gray-700">Dimensions</label><select onChange={handleDimensionSelect} className={`${inputClass} mb-2`}><option value="">-- Select to add --</option>{dimensions.map(dim => <option key={dim._id} value={dim._id}>{dim.value}</option>)}</select>
-            <div className="mt-1 min-h-[2rem] p-2 bg-gray-50 rounded-lg">{selectedDimensions.length > 0 ? selectedDimensions.map(dim => (<span key={dim._id} className="inline-flex items-center bg-[#6A3E9D] text-white text-xs font-medium mr-2 mb-2 px-3 py-1 rounded-full">{dim.value}<button type="button" onClick={() => setSelectedDimensions(prev => prev.filter(d => d._id !== dim._id))} className="ml-2 font-bold hover:text-gray-200">×</button></span>)) : <span className="text-gray-400 text-sm">No dimensions selected.</span>}</div>
+            <label className="text-sm font-semibold text-gray-700 block mb-1">Dimensions</label>
+            <div className="flex items-center gap-2">
+                <select onChange={handleDimensionSelect} className={inputClass + ' mt-0 flex-grow'}><option value="">-- Select to add --</option>{dimensions.map(dim => <option key={dim._id} value={dim._id}>{dim.value}</option>)}</select>
+                <input type="text" placeholder="Add new dimension" value={newDimensionInput} onChange={e => setNewDimensionInput(e.target.value)} className={inputClass + ' mt-0'} />
+                <button type="button" onClick={handleAddNewDimension} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg flex-shrink-0">Add</button>
+            </div>
+            <div className="mt-2 min-h-[2rem] p-2 bg-gray-50 rounded-lg">{selectedDimensions.length > 0 ? selectedDimensions.map(dim => (<span key={dim._id} className="inline-flex items-center bg-[#6A3E9D] text-white text-xs font-medium mr-2 mb-2 px-3 py-1 rounded-full">{dim.value}<button type="button" onClick={() => setSelectedDimensions(prev => prev.filter(d => d._id !== dim._id))} className="ml-2 font-bold hover:text-gray-200">×</button></span>)) : <span className="text-gray-400 text-sm">No dimensions selected.</span>}</div>
           </div>
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div><label className="text-sm font-semibold text-gray-700">Quantity</label><input type="number" name="quantity" value={formData.quantity} onChange={handleInputChange} min="500" required className={inputClass} /></div>
             <div><label className="text-sm font-semibold text-gray-700">Price/Piece</label><input type="number" name="pricePerPiece" value={formData.pricePerPiece} onChange={handleInputChange} min="0" step="0.01" required className={inputClass} /></div>
@@ -164,13 +202,12 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
 };
 
 
-// --- FIXED: Update Product Modal (with Image Upload) ---
+// --- Update Product Modal ---
 const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product }) => {
     const [formData, setFormData] = useState({});
-    // FIX: State for managing existing and new images
     const [existingImages, setExistingImages] = useState([]);
     const [newImages, setNewImages] = useState([]);
-    const [imagesToDelete, setImagesToDelete] = useState([]); // Stores public_ids of images to delete
+    const [imagesToDelete, setImagesToDelete] = useState([]); 
     const [isCompressing, setIsCompressing] = useState(false);
 
     useEffect(() => {
@@ -189,10 +226,9 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product }) => {
         }
     }, [product]);
     
-    // FIX: Added file handling logic, copied from AddProductModal for consistency
     const handleFileChange = async (e) => {
         const filesToProcess = Array.from(e.target.files);
-        e.target.value = null; // Reset file input
+        e.target.value = null; 
         const limit = 10;
         if (filesToProcess.length + existingImages.length + newImages.length > limit) {
           toast.error(`You can only have a maximum of ${limit} images in total.`);
@@ -213,10 +249,9 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product }) => {
         }
     };
     
-    // FIX: Handlers to manage image state
     const handleRemoveExistingImage = (imageToRemove) => {
-        setExistingImages(prev => prev.filter(img => img.public_id !== imageToRemove.public_id));
-        setImagesToDelete(prev => [...prev, imageToRemove.public_id]);
+        setExistingImages(prev => prev.filter(img => img.id !== imageToRemove.id));
+        setImagesToDelete(prev => [...prev, imageToRemove.id]);
     };
     
     const handleRemoveNewImage = (indexToRemove) => {
@@ -228,25 +263,20 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product }) => {
     const handleFormSubmit = async (e) => {
         e.preventDefault();
         
-        // FIX: Switched to FormData to handle file uploads
         const data = new FormData();
         const dimensionsArray = formData.dimensions.split(',').map(d => d.trim()).filter(Boolean);
 
-        // Append text data
         Object.entries(formData).forEach(([key, value]) => data.append(key, value));
-        data.set('dimensions', dimensionsArray.join(',')); // Override dimensions with cleaned string
+        data.set('dimensions', dimensionsArray.join(',')); 
 
-        // Append new images
         newImages.forEach(file => data.append('images', file, file.name));
         
-        // Append IDs of images to delete
         if (imagesToDelete.length > 0) {
             data.append('imagesToDelete', JSON.stringify(imagesToDelete));
         }
 
         const promise = fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/products/update/${product._id}`, {
             method: 'PUT',
-            // DO NOT set Content-Type header, browser does it for FormData
             body: data,
         }).then(res => {
             if (!res.ok) return res.json().then(err => { throw new Error(err.message || 'Update failed') });
@@ -281,7 +311,6 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product }) => {
                         <div><label className="text-sm font-semibold">Discount %</label><input type="number" name="discountPercentage" value={formData.discountPercentage} onChange={handleInputChange} className={inputClass} /></div>
                         <div><label className="text-sm font-semibold">Quantity</label><input type="number" name="quantity" value={formData.quantity} onChange={handleInputChange} required className={inputClass} /></div>
                     </div>
-                    {/* FIX: Image management section */}
                     <div>
                         <label className="text-sm font-semibold text-gray-700">Manage Product Images</label>
                         <div className="mt-2 p-3 border rounded-lg bg-gray-50 space-y-3">
@@ -289,7 +318,7 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product }) => {
                                 <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Existing Images</h4>
                                 {existingImages.length > 0 ? (
                                     <div className="flex flex-wrap gap-4">
-                                        {existingImages.map((img) => <ImageThumb key={img.public_id} file={img.url} onRemove={() => handleRemoveExistingImage(img)} isUrl={true}/>)}
+                                        {existingImages.map((img) => <ImageThumb key={img.id} file={img.url} onRemove={() => handleRemoveExistingImage(img)} isUrl={true}/>)}
                                     </div>
                                 ) : <p className="text-sm text-gray-400">No existing images.</p>}
                             </div>
@@ -330,10 +359,44 @@ function ViewProducts() {
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  const fetchData = useCallback(async () => { /* ... implementation unchanged ... */ });
-  useEffect(() => { fetchData(); }, [fetchData]);
+  // *** CORRECTED FETCHDATA FUNCTION ***
+  const fetchData = useCallback(async () => {
+    setError(null);
+    try {
+      const [productsRes, categoriesRes, dimensionsRes] = await Promise.all([
+        fetch('https://threebapi-1067354145699.asia-south1.run.app/api/products/all'),
+        fetch('https://threebapi-1067354145699.asia-south1.run.app/api/categories/all-category'),
+        fetch('https://threebappbackend.onrender.com/api/dimensions/get-dimensions')
+      ]);
 
-  const handleDimensionAdded = (newDimension) => setDimensionList(prevList => [...prevList, newDimension]);
+      if (!productsRes.ok || !categoriesRes.ok || !dimensionsRes.ok) {
+        throw new Error('Failed to fetch initial data.');
+      }
+
+      const productsData = await productsRes.json();
+      const categoriesData = await categoriesRes.json();
+      const dimensionsData = await dimensionsRes.json();
+      
+      // Handle nested response for products
+      setProducts(Array.isArray(productsData.products) ? productsData.products : []);
+      // Handle direct array response for categories and dimensions
+      setCategoryList(Array.isArray(categoriesData) ? categoriesData : []);
+      setDimensionList(Array.isArray(dimensionsData) ? dimensionsData : []);
+
+    } catch (err) {
+      setError(err.message);
+      toast.error("Could not fetch data.");
+      console.error("Fetch Data Error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { 
+    fetchData(); 
+  }, [fetchData]);
+
+  const handleDimensionAdded = () => { fetchData(); };
   const handleProductAdded = () => { fetchData(); };
   const showCarousel = (images) => { setCarouselImages(images.map(img => img.url)); setCarouselOpen(true); };
   const showQrCode = (url) => { setQrCodeUrl(url); setQrOpen(true); };
@@ -372,7 +435,13 @@ function ViewProducts() {
             <tbody>
               {products.map(product => (
                   <tr key={product._id} className="bg-white border-b hover:bg-gray-50 align-middle">
-                    <td className="px-6 py-4"><img src={product.images[0]?.url} onClick={() => showCarousel(product.images)} className="w-16 h-16 object-cover rounded-md cursor-pointer" alt={product.name} /></td>
+                    <td className="px-6 py-4">
+                      {product.images && product.images.length > 0 ? (
+                        <img src={product.images[0]?.url} onClick={() => showCarousel(product.images)} className="w-16 h-16 object-cover rounded-md cursor-pointer" alt={product.name} />
+                      ) : (
+                        <div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-500">No Image</div>
+                      )}
+                    </td>
                     <td className="px-6 py-4 font-medium text-gray-900">{product.name}</td>
                     <td className="px-6 py-4">{Array.isArray(product.dimensions) ? product.dimensions.join(', ') : '—'}</td>
                     <td className="px-6 py-4">₹{product.pricePerPiece}</td>
@@ -392,10 +461,9 @@ function ViewProducts() {
         </div>
       </div>
       
-      {/* All modals are now managed here */}
       <Modal isOpen={isCarouselOpen} onClose={() => setCarouselOpen(false)}>{carouselImages.length > 0 && <img src={carouselImages[0]} alt="Product Carousel" className="max-w-full max-h-[80vh] rounded-lg"/>}</Modal>
       <Modal isOpen={isQrOpen} onClose={() => setQrOpen(false)}>{qrCodeUrl && <img src={qrCodeUrl} alt="Product QR Code" className="w-64 h-64 rounded-lg"/>}</Modal>
-      <AddProductModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onProductAdded={handleProductAdded} categories={categoryList} dimensions={dimensionList} onDimensionAdded={handleDimensionAdded}/>
+      <AddProductModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onProductAdded={handleProductAdded} categories={categoryList} dimensions={dimensionList} onDimensionAdded={handleDimensionAdded} />
       <UpdateProductModal isOpen={isUpdateModalOpen} onClose={() => setIsUpdateModalOpen(false)} onUpdateSuccess={handleUpdateSuccess} product={selectedProduct}/>
     </div>
   );
