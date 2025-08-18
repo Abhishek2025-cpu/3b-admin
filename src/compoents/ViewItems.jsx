@@ -153,10 +153,64 @@ const PrintAllBoxesModal = ({ isOpen, onClose, item }) => {
     );
 };
 
-// --- BoxesModal & ItemDetails (Unchanged) ---
+// --- BoxesModal (UPDATED for responsiveness) & ItemDetails (Unchanged) ---
 const BoxesModal = ({ isOpen, onClose, item, onOpenPrintModal, onOpenUpdateModal, onOpenPrintAllModal }) => {
     if (!isOpen) return null;
-    return ( <GenericModal isOpen={isOpen} onClose={onClose}><div className="p-4 border-b flex justify-between items-center"><h2 className="text-xl font-bold text-gray-800">Boxes for Item: <span className="text-indigo-600">{item?.itemNo?.trim()}</span></h2><button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button></div><div className="p-4 overflow-y-auto">{item?.boxes?.length > 0 ? (<ul className="space-y-3">{item.boxes.map((box) => (<li key={box._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"><div className="flex items-center gap-4"><img src={box.qrCodeUrl} alt="QR Code" className="w-16 h-16 rounded-md" /><div><p className="font-semibold text-gray-700">Serial No:</p><p className="text-lg font-mono text-black">{box.boxSerialNo}</p></div></div><div className="flex items-center gap-2"><button onClick={() => alert(`Tracking box: ${box.boxSerialNo}`)} className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"><TrackIcon /> Track</button><button onClick={() => onOpenPrintModal(box)} className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"><PrintIcon /> View/Print</button></div></li>))}</ul>) : (<p className="text-center text-gray-500 py-8">No box details found.</p>)}</div><div className="p-4 border-t flex justify-between items-center"><div className="flex gap-3"><button onClick={onOpenUpdateModal} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg">Update</button><button onClick={onOpenPrintAllModal} className="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2"><PrintIcon /> Print All</button></div><button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">Close</button></div></GenericModal> );
+    return (
+        <GenericModal isOpen={isOpen} onClose={onClose}>
+            {/* Header */}
+            <div className="p-4 border-b flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-800">Boxes for Item: <span className="text-indigo-600">{item?.itemNo?.trim()}</span></h2>
+                <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            
+            {/* Body */}
+            <div className="p-4 overflow-y-auto">
+                {item?.boxes?.length > 0 ? (
+                    <ul className="space-y-3">
+                        {item.boxes.map((box) => (
+                            <li key={box._id} className="flex flex-col sm:flex-row items-center justify-between p-3 bg-gray-50 rounded-lg border gap-3">
+                                {/* Left side: QR and Serial */}
+                                <div className="flex items-center gap-4 w-full sm:w-auto">
+                                    <img src={box.qrCodeUrl} alt="QR Code" className="w-16 h-16 rounded-md flex-shrink-0" />
+                                    <div>
+                                        <p className="font-semibold text-gray-700">Serial No:</p>
+                                        <p className="text-lg font-mono text-black">{box.boxSerialNo}</p>
+                                    </div>
+                                </div>
+                                {/* Right side: Buttons */}
+                                <div className="flex flex-col sm:flex-row items-stretch gap-2 w-full sm:w-auto">
+                                    <button onClick={() => alert(`Tracking box: ${box.boxSerialNo}`)} className="flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                                        <TrackIcon /> Track
+                                    </button>
+                                    <button onClick={() => onOpenPrintModal(box)} className="flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                                        <PrintIcon /> View/Print
+                                    </button>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <p className="text-center text-gray-500 py-8">No box details found.</p>
+                )}
+            </div>
+            
+            {/* Footer */}
+            <div className="p-4 border-t flex flex-col sm:flex-row sm:justify-between items-center gap-3">
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <button onClick={onOpenUpdateModal} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg">
+                        Update
+                    </button>
+                    <button onClick={onOpenPrintAllModal} className="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-6 rounded-lg flex items-center justify-center gap-2">
+                        <PrintIcon /> Print All
+                    </button>
+                </div>
+                <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg w-full sm:w-auto">
+                    Close
+                </button>
+            </div>
+        </GenericModal>
+    );
 };
 const ItemDetails = ({ item }) => {
     if (!item) return null;
