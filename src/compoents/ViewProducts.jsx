@@ -24,11 +24,21 @@ const ImageThumb = ({ file, onRemove, isUrl = false }) => (
   </div>
 );
 
-// --- Add Product Modal Component ---
+// --- Add Product Modal Component (MODIFIED) ---
 const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensions, onDimensionAdded }) => {
-  const [formData, setFormData] = useState({ categoryId: '', about: '', quantity: 500, pricePerPiece: '', totalPiecesPerBox: '', discountPercentage: 0 });
-  const [productFrameParts, setProductFrameParts] = useState(Array(10).fill(''));
-  const [showAllFrameBoxes, setShowAllFrameBoxes] = useState(false);
+  // --- CHANGE: State now includes 'name', 'about', and separate state for description parts ---
+  const [formData, setFormData] = useState({ 
+    categoryId: '', 
+    name: '',       // For Model Number
+    about: '',      // For the textarea
+    quantity: 500, 
+    pricePerPiece: '', 
+    totalPiecesPerBox: '', 
+    discountPercentage: 0 
+  });
+  const [descriptionParts, setDescriptionParts] = useState(Array(10).fill('')); // For small description boxes
+  const [showAllDescriptionBoxes, setShowAllDescriptionBoxes] = useState(false);
+  
   const [selectedDimensions, setSelectedDimensions] = useState([]);
   const [newDimensionInput, setNewDimensionInput] = useState('');
   const [colorImages, setColorImages] = useState([]);
@@ -37,9 +47,9 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
 
   useEffect(() => {
     if (!isOpen) {
-        setFormData({ categoryId: '', about: '', quantity: 500, pricePerPiece: '', totalPiecesPerBox: '', discountPercentage: 0 });
-        setProductFrameParts(Array(10).fill(''));
-        setShowAllFrameBoxes(false);
+        setFormData({ categoryId: '', name: '', about: '', quantity: 500, pricePerPiece: '', totalPiecesPerBox: '', discountPercentage: 0 });
+        setDescriptionParts(Array(10).fill(''));
+        setShowAllDescriptionBoxes(false);
         setSelectedDimensions([]);
         setNewDimensionInput('');
         setColorImages([]);
@@ -47,11 +57,12 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
         setIsCompressing(false);
     }
   }, [isOpen]);
-
-  const handleFramePartChange = (e, index) => {
-    const newParts = [...productFrameParts];
+  
+  // --- CHANGE: Handler for the small description textboxes ---
+  const handleDescriptionPartChange = (e, index) => {
+    const newParts = [...descriptionParts];
     newParts[index] = e.target.value.substring(0, 20);
-    setProductFrameParts(newParts);
+    setDescriptionParts(newParts);
   };
 
   const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -120,14 +131,17 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    const combinedName = productFrameParts.filter(p => p.trim()).join(' ').trim();
-    if (!combinedName) return toast.error('Product Name/Frame is required.');
+    if (!formData.name.trim()) return toast.error('Model Number is required.');
     if (!formData.categoryId) return toast.error('Please select a category.');
     if (isCompressing) return toast.error('Please wait for images to finish processing.');
 
     const submissionData = new FormData();
     Object.entries(formData).forEach(([key, value]) => submissionData.append(key, value));
-    submissionData.append('name', combinedName);
+
+    // --- CHANGE: Combine description parts and append separately ---
+    const combinedDescription = descriptionParts.filter(p => p.trim()).join(' ').trim();
+    submissionData.append('description', combinedDescription);
+    
     submissionData.append('dimensions', selectedDimensions.map(d => d.value).join(','));
     colorImages.forEach(file => submissionData.append('colorImages', file, file.name));
     productImages.forEach(file => submissionData.append('images', file, file.name));
@@ -151,7 +165,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
 
   const inputClass = "w-full p-2 mt-1 border border-gray-300 rounded-xl focus:border-[#6A3E9D] focus:ring-1 focus:ring-[#6A3E9D] focus:outline-none transition";
   const fileInputClass = "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-[#6A3E9D] hover:file:bg-violet-100";
-  const visibleBoxes = showAllFrameBoxes ? 10 : 4;
+  const visibleDescriptionBoxes = showAllDescriptionBoxes ? 10 : 4;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-3xl">
@@ -162,16 +176,29 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
       <div className="overflow-y-auto px-6 py-6 flex-grow min-h-0">
         <form id="add-product-form" onSubmit={handleFormSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><label className="text-sm font-semibold text-gray-700">Category</label><select name="categoryId" value={formData.categoryId} onChange={handleInputChange} required className={inputClass}><option value="">Select Category</option>{categories.map(cat => <option key={cat._id} value={cat._id}>{cat.name}</option>)}</select></div>
               <div>
-                <label className="text-sm font-semibold text-gray-700">Product Name / Frame</label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
-                  {productFrameParts.slice(0, visibleBoxes).map((part, index) => (<input key={index} type="text" value={part} onChange={(e) => handleFramePartChange(e, index)} className="w-full h-10 text-center border border-gray-300 rounded-lg focus:border-[#6A3E9D] focus:ring-1 focus:ring-[#6A3E9D] focus:outline-none transition" maxLength="20"/>))}
-                </div>
-                {!showAllFrameBoxes && (<div className="text-right mt-2"><button type="button" onClick={() => setShowAllFrameBoxes(true)} className="text-sm text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 justify-end"><FontAwesomeIcon icon={faPlus} size="xs" /> Add More Boxes</button></div>)}
+                <label className="text-sm font-semibold text-gray-700">Category</label>
+                <select name="categoryId" value={formData.categoryId} onChange={handleInputChange} required className={inputClass}><option value="">Select Category</option>{categories.map(cat => <option key={cat._id} value={cat._id}>{cat.name}</option>)}</select>
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-700">Model Number</label>
+                <input type="text" name="name" value={formData.name} onChange={handleInputChange} required placeholder="Enter the product model number" className={inputClass}/>
               </div>
           </div>
-          <div><label className="text-sm font-semibold text-gray-700">About</label><textarea name="about" value={formData.about} onChange={handleInputChange} rows="3" required placeholder="Product description" className={inputClass}></textarea></div>
+          {/* --- CHANGE: Description multi-box input --- */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700">Description</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
+              {descriptionParts.slice(0, visibleDescriptionBoxes).map((part, index) => (<input key={index} type="text" value={part} onChange={(e) => handleDescriptionPartChange(e, index)} className="w-full h-10 text-center border border-gray-300 rounded-lg focus:border-[#6A3E9D] focus:ring-1 focus:ring-[#6A3E9D] focus:outline-none transition" maxLength="20"/>))}
+            </div>
+            {!showAllDescriptionBoxes && (<div className="text-right mt-2"><button type="button" onClick={() => setShowAllDescriptionBoxes(true)} className="text-sm text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 justify-end"><FontAwesomeIcon icon={faPlus} size="xs" /> Add More Boxes</button></div>)}
+          </div>
+          {/* --- CHANGE: About textarea below description --- */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700">About</label>
+            <textarea name="about" value={formData.about} onChange={handleInputChange} rows="3" placeholder="More details about the product" className={inputClass}></textarea>
+          </div>
+
           <div><label className="text-sm font-semibold text-gray-700">Upload Color Images</label><input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, setColorImages, colorImages)} className={`${fileInputClass} mt-1`} disabled={isCompressing} /><div className="flex flex-wrap mt-2 gap-4">{colorImages.map((file, index) => <ImageThumb key={index} file={file} onRemove={() => setColorImages(prev => prev.filter((_, i) => i !== index))} />)}</div></div>
           
           <div>
@@ -202,7 +229,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
 };
 
 
-// --- Update Product Modal ---
+// --- Update Product Modal (UNCHANGED) ---
 const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product }) => {
     const [formData, setFormData] = useState({});
     const [existingImages, setExistingImages] = useState([]);
@@ -344,7 +371,7 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product }) => {
 };
 
 
-// --- Main Component ---
+// --- Main Component (UNCHANGED) ---
 function ViewProducts() {
   const [products, setProducts] = useState([]);
   const [categoryList, setCategoryList] = useState([]);
