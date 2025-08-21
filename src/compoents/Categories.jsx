@@ -1,7 +1,7 @@
 // src/pages/Categories.jsx
 
 import React, { useEffect, useState, useMemo } from "react";
-import { FaArrowLeft, FaPlus, FaEdit, FaTrash, FaTimes } from "react-icons/fa";
+import { FaPlus, FaEdit, FaTrash, FaTimes } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
 const baseUrl = "https://threebapi-1067354145699.asia-south1.run.app/api/categories";
@@ -35,28 +35,33 @@ export default function Categories() {
       const res = await fetch(`${baseUrl}/all-category`);
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
-      setCategories(data);
+      
+      // --- FIX: Extract the array from the 'categories' property of the response object ---
+      const categoriesArray = Array.isArray(data.categories) ? data.categories : [];
+      setCategories(categoriesArray);
+
     } catch (error) {
       console.error("Failed to fetch categories:", error);
       alert("Failed to fetch categories.");
+      setCategories([]); 
     }
   }
 
   // --- SEARCH & PAGINATION LOGIC ---
 
-  // Filter categories based on search term
   const filteredCategories = useMemo(() => {
+    if (!Array.isArray(categories)) {
+        return [];
+    }
     return categories.filter(cat =>
-      cat.name.toLowerCase().includes(searchTerm.toLowerCase())
+      cat.name && cat.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [categories, searchTerm]);
 
-  // Reset to page 1 when search term changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  // Calculate items for the current page
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredCategories.slice(indexOfFirstItem, indexOfLastItem);
@@ -100,7 +105,8 @@ export default function Categories() {
     formData.append("name", formState.name);
     formState.newImages.forEach(file => formData.append("images", file));
     if (formState.imagesToDelete.length > 0) {
-      formData.append("imagesToDelete", JSON.stringify(formState.imagesToDelete));
+      const idsToDelete = formState.imagesToDelete.map(img => img.id).filter(Boolean);
+      formData.append("imagesToDelete", JSON.stringify(idsToDelete));
     }
     
     try {
@@ -151,7 +157,6 @@ export default function Categories() {
           </button> */}
         </div>
 
-        {/* Search and Controls */}
         <div className="mb-4">
             <input
                 type="text"
@@ -162,7 +167,6 @@ export default function Categories() {
             />
         </div>
 
-        {/* Categories Table */}
         <div className="bg-white rounded-lg shadow overflow-x-auto">
           <table className="w-full table-auto">
             <thead className="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
@@ -183,7 +187,7 @@ export default function Categories() {
                       <div className="flex items-center space-x-2">
                         {cat.images.slice(0, 5).map((img) => (
                           <img
-                            key={img.public_id || img.url}
+                            key={img.id || img._id}
                             className="w-10 h-10 rounded-full object-cover border-2 border-white shadow"
                             src={img.url}
                             alt={cat.name}
@@ -212,7 +216,6 @@ export default function Categories() {
           )}
         </div>
 
-        {/* Pagination Controls */}
         {totalPages > 1 && (
             <div className="flex justify-end items-center mt-4">
                 <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} className="px-3 py-1 mx-1 rounded bg-white border disabled:opacity-50">Prev</button>
@@ -222,7 +225,6 @@ export default function Categories() {
         )}
       </div>
 
-      {/* Edit Category Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
           <div className="bg-white p-6 rounded-lg shadow-xl max-w-lg w-full relative">
@@ -240,15 +242,13 @@ export default function Categories() {
                 <div className="border-2 border-dashed border-gray-300 rounded-md p-4">
                   <input type="file" multiple onChange={handleFileChange} className="mb-4" accept="image/*" />
                   
-                  {/* Image Preview Area */}
                   <div className="space-y-4">
-                    {/* Existing Images */}
                     {formState.existingImages.length > 0 && (
                         <div>
                             <h4 className="text-sm font-semibold text-gray-600 mb-2">Existing Images</h4>
                             <div className="flex flex-wrap gap-4">
                                 {formState.existingImages.map((img, idx) => (
-                                <div key={idx} className="relative">
+                                <div key={img.id || img._id} className="relative">
                                     <img src={img.url} alt="Existing" className="w-24 h-24 object-cover rounded-md shadow" />
                                     <button type="button" onClick={() => setFormState(prev => ({...prev, existingImages: prev.existingImages.filter((_, i) => i !== idx), imagesToDelete: [...prev.imagesToDelete, img]}))} className="absolute -top-2 -right-2 text-white bg-red-600 rounded-full p-1"><FaTimes size={10} /></button>
                                 </div>
@@ -257,7 +257,6 @@ export default function Categories() {
                         </div>
                     )}
                     
-                    {/* New Images Preview */}
                     {formState.newImages.length > 0 && (
                         <div>
                             <h4 className="text-sm font-semibold text-gray-600 mb-2">Newly Added Images</h4>
