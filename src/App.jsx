@@ -1,5 +1,7 @@
 
 
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LoginPage from './compoents/LoginPage'; 
 import ManagerLayout from './compoents/ManagerLayout';
@@ -20,9 +22,12 @@ import ManageOtherProducts from './compoents/ManageOtherProducts';
 import CompanyDetails from './compoents/CompanyDetails'; //np error
 import SubAdmins from './compoents/SubAdmins'; 
 import FeedbackAdmin from './compoents/FeedbackAdmin';
+import ReturnOrder from './compoents/ReturnOrder';
 
 function App() {
   return (
+    <>
+    
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
@@ -49,6 +54,7 @@ function App() {
           <Route path="company" element={<CompanyDetails />} />
           <Route path="admins" element={<SubAdmins />} />
           <Route path="Feedback" element={<FeedbackAdmin />} />
+          <Route path="order-returns" element={<ReturnOrder />} />
           
           {/* Add routes for 'add-staff', 'view-clients', etc. as you create them */}
         </Route>
@@ -57,7 +63,22 @@ function App() {
         <Route path="*" element={<h1>404: Page Not Found</h1>} />
       </Routes>
     </BrowserRouter>
+     <div>
+        <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+    </div>
+    </>
   );
+  
 }
 
 export default App;
