@@ -23,6 +23,7 @@ import CompanyDetails from './compoents/CompanyDetails'; //np error
 import SubAdmins from './compoents/SubAdmins'; 
 import FeedbackAdmin from './compoents/FeedbackAdmin';
 import ReturnOrder from './compoents/ReturnOrder';
+import Billings from './compoents/Billings';
 
 function App() {
   return (
@@ -55,6 +56,7 @@ function App() {
           <Route path="admins" element={<SubAdmins />} />
           <Route path="Feedback" element={<FeedbackAdmin />} />
           <Route path="order-returns" element={<ReturnOrder />} />
+          <Route path="billing" element={<Billings />} />
           
           {/* Add routes for 'add-staff', 'view-clients', etc. as you create them */}
         </Route>

@@ -426,15 +426,23 @@ const ManageOtherCategories = () => {
     const [editingCategory, setEditingCategory] = useState(null);
 
 
-    const API_URL_GET = "https://threebapi-1067354145699.asia-south1.run.app/api/other-categories/get";
+     const API_URL_GET = "https://threebapi-1067354145699.asia-south1.run.app/api/other-categories/get";
 
     const fetchCategories = useCallback(async () => {
         setLoading(true);
+        setError(null);
         try {
             const response = await axios.get(API_URL_GET);
-            setCategories(response.data || []);
+            if (response.data && response.data.success) {
+                // *** THE FIX IS HERE ***
+                setCategories(response.data.otherCategories || []);
+            } else {
+                throw new Error(response.data.message || "Failed to fetch categories.");
+            }
         } catch (err) {
-            setError("Failed to fetch categories.");
+            console.error("API Fetch Error:", err);
+            setError(err.message || "An unexpected error occurred.");
+            setCategories([]);
         } finally {
             setLoading(false);
         }

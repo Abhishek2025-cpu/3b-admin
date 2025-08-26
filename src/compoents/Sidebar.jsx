@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFileInvoiceDollar } from "@fortawesome/free-solid-svg-icons";
+
 import {
   faTachometerAlt, faStickyNote, faPlusSquare, faList, faUsers, faUserTie, faUserFriends,
   faComments, faUserPlus, faUsersCog, faThLarge, faBoxOpen, faBox,
@@ -125,6 +127,8 @@ function Sidebar({ isOpen, onClose }) {
 
         {/* Static Items */}
         <LinkMenuItem icon={faShoppingCart} text="Orders" to="/manager/orders" />
+    <LinkMenuItem icon={faFileInvoiceDollar} text="Billing" to="/manager/billing" />
+
         <LinkMenuItem icon={faUndo} text="Order Returns" to="/manager/order-returns" />
          <LinkMenuItem icon={faGlobe} text="Companies" to="/manager/company" />
          <LinkMenuItem icon={faUserShield} text="Admins" to="/manager/admins" />
