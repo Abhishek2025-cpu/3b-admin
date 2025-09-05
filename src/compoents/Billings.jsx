@@ -1,5 +1,234 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+// Assuming you have styles defined elsewhere or directly in this file
+const styles = {
+    pageContainer: {
+        fontFamily: 'Arial, sans-serif',
+        padding: '20px',
+        backgroundColor: '#f4f7f6',
+        minHeight: '100vh',
+    },
+    openCardButton: {
+        position: 'absolute',
+        top: '70px',
+        right: '20px',
+        padding: '10px 15px',
+        backgroundColor: '#007bff',
+        color: 'white',
+        border: 'none',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        fontSize: '16px',
+    },
+    billSelectionCard: {
+        position: 'absolute',
+        top: '60px',
+        right: '20px',
+        backgroundColor: 'white',
+        border: '1px solid #ccc',
+        borderRadius: '8px',
+        padding: '15px',
+        boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+        zIndex: 1000,
+        width: '300px',
+    },
+    cardHeader: {
+        marginTop: '0',
+        marginBottom: '15px',
+        color: '#333',
+    },
+    orderIdInput: {
+        width: 'calc(100% - 20px)',
+        padding: '10px',
+        marginBottom: '10px',
+        border: '1px solid #ddd',
+        borderRadius: '4px',
+    },
+    loadingText: {
+        color: '#007bff',
+    },
+    errorText: {
+        color: 'red',
+    },
+    suggestionsContainer: {
+        maxHeight: '200px',
+        overflowY: 'auto',
+        border: '1px solid #eee',
+        borderRadius: '4px',
+    },
+    suggestionItem: {
+        padding: '10px',
+        borderBottom: '1px solid #eee',
+        cursor: 'pointer',
+        backgroundColor: 'white',
+    },
+    suggestionItemHover: {
+        backgroundColor: '#f0f0f0',
+    },
+    noResultsText: {
+        padding: '10px',
+        color: '#666',
+    },
+    mainContent: {
+        maxWidth: '900px',
+        margin: '0 auto',
+        backgroundColor: 'white',
+        padding: '30px',
+        borderRadius: '8px',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+    },
+    mainHeader: {
+        textAlign: 'center',
+        color: '#333',
+        marginBottom: '30px',
+    },
+    addressSection: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginBottom: '30px',
+        gap: '20px',
+    },
+    addressBox: {
+        flex: '1',
+        border: '1px solid #eee',
+        borderRadius: '6px',
+        padding: '15px',
+        backgroundColor: '#f9f9f9',
+    },
+    sectionTitle: {
+        marginTop: '0',
+        color: '#555',
+        marginBottom: '10px',
+    },
+    textArea: {
+        width: '100%',
+        height: '150px',
+        padding: '10px',
+        border: '1px solid #ddd',
+        borderRadius: '4px',
+        fontSize: '14px',
+        lineHeight: '1.5',
+        resize: 'vertical',
+    },
+    warningText: {
+        color: '#ffc107',
+        fontSize: '0.9em',
+        marginTop: '10px',
+    },
+    saveNextButton: {
+        display: 'block',
+        width: '200px',
+        padding: '12px 20px',
+        backgroundColor: '#28a745',
+        color: 'white',
+        border: 'none',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        fontSize: '18px',
+        margin: '20px auto 0',
+        transition: 'background-color 0.2s',
+    },
+    saveNextButtonHover: {
+        backgroundColor: '#218838',
+    },
+    saveNextButtonDisabled: {
+        backgroundColor: '#6c757d',
+        cursor: 'not-allowed',
+    },
+    nextPartContent: {
+        paddingTop: '20px',
+    },
+    invoiceHeader: {
+        textAlign: 'center',
+        color: '#333',
+        marginBottom: '25px',
+    },
+    inputGroup: {
+        marginBottom: '15px',
+        display: 'flex',
+        alignItems: 'center',
+    },
+    inputGroupLabel: {
+        minWidth: '180px',
+        fontWeight: 'bold',
+        color: '#555',
+    },
+    inputField: {
+        flex: '1',
+        padding: '10px',
+        border: '1px solid #ddd',
+        borderRadius: '4px',
+        fontSize: '14px',
+    },
+    addTransporterButton: { // Changed from addPartnerButton
+        padding: '8px 12px',
+        backgroundColor: '#17a2b8',
+        color: 'white',
+        border: 'none',
+        borderRadius: '4px',
+        cursor: 'pointer',
+        marginLeft: '10px',
+        fontSize: '14px',
+    },
+    buttonContainer: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginTop: '30px',
+    },
+    prevButton: {
+        padding: '10px 20px',
+        backgroundColor: '#6c757d',
+        color: 'white',
+        border: 'none',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        fontSize: '16px',
+    },
+    modalOverlay: {
+        position: 'fixed',
+        top: '0',
+        left: '0',
+        right: '0',
+        bottom: '0',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 2000,
+    },
+    modalContent: {
+        backgroundColor: 'white',
+        padding: '30px',
+        borderRadius: '8px',
+        boxShadow: '0 5px 15px rgba(0, 0, 0, 0.3)',
+        width: '400px',
+        maxWidth: '90%',
+    },
+    modalButtonContainer: {
+        display: 'flex',
+        justifyContent: 'flex-end',
+        marginTop: '20px',
+        gap: '10px',
+    },
+    saveButton: {
+        padding: '10px 20px',
+        backgroundColor: '#007bff',
+        color: 'white',
+        border: 'none',
+        borderRadius: '5px',
+        cursor: 'pointer',
+    },
+    cancelButton: {
+        padding: '10px 20px',
+        backgroundColor: '#dc3545',
+        color: 'white',
+        border: 'none',
+        borderRadius: '5px',
+        cursor: 'pointer',
+    }
+};
+
+
 const Billings = () => {
   const [showCard, setShowCard] = useState(false);
   const [orders, setOrders] = useState([]);
@@ -13,8 +242,19 @@ const Billings = () => {
   // New state variables for totalPiecesPerBox and delivery date
   const [totalPiecesPerBox, setTotalPiecesPerBox] = useState(0);
   const [deliveredDate, setDeliveredDate] = useState('');
-  const [showPartnerModal, setShowPartnerModal] = useState(false); // Added state for partner modal
-  const [newPartner, setNewPartner] = useState(''); // State for new partner input
+  
+  // States for Vehicles dropdown
+  const [vehicles, setVehicles] = useState([]); 
+  const [selectedVehicle, setSelectedVehicle] = useState(''); 
+
+  // States for Transport Partners (Dispatch Through)
+  const [showTransporterModal, setShowTransporterModal] = useState(false); // Changed from showPartnerModal
+  const [transporterName, setTransporterName] = useState(''); // New input state for name
+  const [transporterNumber, setTransporterNumber] = useState(''); // New input state for number
+  const [transporterAddress, setTransporterAddress] = useState(''); // New input state for address
+  const [transportPartners, setTransportPartners] = useState([]); // State to store fetched partners
+  const [selectedTransportPartner, setSelectedTransportPartner] = useState(''); // State for selected partner in dropdown
+
 
   const sellerDetails = `3B PROFILES PRIVATE LIMITED -2025-2026
 NO.39/2, YALACHAGUPPE,RAMPUR VILLAGE,
@@ -40,6 +280,12 @@ CIN : U36996KA2022PTC165134`;
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Fetch vehicles and transport partners on component mount
+  useEffect(() => {
+    fetchVehicles();
+    fetchTransportPartners(); // New call
+  }, []); 
 
   const fetchOrders = async () => {
     if (orders.length > 0) {
@@ -69,6 +315,41 @@ CIN : U36996KA2022PTC165134`;
     }
   };
 
+  const fetchVehicles = async () => {
+    try {
+      const response = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/vehicles/get');
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const result = await response.json();
+      if (Array.isArray(result)) {
+        setVehicles(result);
+      } else {
+        throw new Error('API response for vehicles was not an array.');
+      }
+    } catch (err) {
+      console.error("Failed to fetch vehicles:", err);
+    }
+  };
+
+  // New function to fetch transport partners
+  const fetchTransportPartners = async () => {
+    try {
+      const response = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/transport-partners/get-transpoters');
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const result = await response.json();
+      if (Array.isArray(result)) {
+        setTransportPartners(result);
+      } else {
+        throw new Error('API response for transport partners was not an array.');
+      }
+    } catch (err) {
+      console.error("Failed to fetch transport partners:", err);
+    }
+  };
+
   const handleOrderInput = (event) => {
     const input = event.target.value;
     setOrderIdInput(input);
@@ -91,8 +372,7 @@ CIN : U36996KA2022PTC165134`;
     setSelectedOrder(order);
     setFilteredOrders([]);
 
-    // Fetch totalPiecesPerBox and delivery date
-    const product = order.products[0]; // Assuming you want the first product
+    const product = order.products[0]; 
     setTotalPiecesPerBox(product.totalPiecesPerBox || 0);
     setDeliveredDate(order.statusHistory.find(status => status.status === "Delivered")?.timestamp || '');
   };
@@ -113,7 +393,6 @@ CIN : U36996KA2022PTC165134`;
     }
   };
 
-  // Define the getBuyerDetailsText function
   const getBuyerDetailsText = () => {
     if (!selectedOrder) return "No order selected.";
 
@@ -133,12 +412,46 @@ CIN : U36996KA2022PTC165134`;
     return buyerInfo;
   };
 
-  const handleAddPartner = () => {
-    if (newPartner) {
-      // Logic to add the new partner
-      console.log("New partner added:", newPartner);
-      setNewPartner(''); // Clear the input
-      setShowPartnerModal(false); // Close the modal
+  // New function to handle adding a transporter
+  const handleAddTransporter = async () => {
+    if (!transporterName || !transporterNumber || !transporterAddress) {
+      alert('Please fill in all transporter details (Name, Number, Address).');
+      return;
+    }
+
+    try {
+      const response = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/transport-partners/add-transporter', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          name: transporterName, 
+          number: transporterNumber, 
+          address: transporterAddress 
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.msg || `HTTP error! Status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      alert(`Transporter "${result.partner.name}" added successfully!`);
+      
+      // Refresh the list of transport partners
+      fetchTransportPartners(); 
+
+      // Clear the input fields and close the modal
+      setTransporterName('');
+      setTransporterNumber('');
+      setTransporterAddress('');
+      setShowTransporterModal(false);
+
+    } catch (err) {
+      console.error("Failed to add transporter:", err);
+      alert(`Failed to add transporter: ${err.message}`);
     }
   };
 
@@ -222,58 +535,74 @@ CIN : U36996KA2022PTC165134`;
           <div style={styles.nextPartContent}>
             <h3 style={styles.invoiceHeader}>Invoice Details</h3>
             <div style={styles.inputGroup}>
-              <label>Invoice Number:</label>
+              <label style={styles.inputGroupLabel}>Invoice Number:</label>
               <input type="text" value={Math.floor(Math.random() * 9000) + 1200} readOnly style={styles.inputField} />
             </div>
             <div style={styles.inputGroup}>
-              <label>Date and Time of Bill:</label>
+              <label style={styles.inputGroupLabel}>Date and Time of Bill:</label>
               <input type="text" value={new Date().toLocaleString()} readOnly style={styles.inputField} />
             </div>
             <div style={styles.inputGroup}>
-              <label>Delivery Note:</label>
+              <label style={styles.inputGroupLabel}>Delivery Note:</label>
               <input type="text" value={`Total count of: ${totalPiecesPerBox}`} readOnly style={styles.inputField} />
             </div>
             <div style={styles.inputGroup}>
-              <label>Mode/Terms of Payment:</label>
+              <label style={styles.inputGroupLabel}>Mode/Terms of Payment:</label>
               <input type="text" value="30 DAYS" readOnly style={styles.inputField} />
             </div>
             <div style={styles.inputGroup}>
-              <label>Buyer's Order No:</label>
+              <label style={styles.inputGroupLabel}>Buyer's Order No:</label>
               <input type="text" value={selectedOrder?.orderId || ''} readOnly style={styles.inputField} />
             </div>
             <div style={styles.inputGroup}>
-              <label>Dated:</label>
+              <label style={styles.inputGroupLabel}>Dated:</label>
               <input type="text" value={selectedOrder?.createdAt || ''} readOnly style={styles.inputField} />
             </div>
             <div style={styles.inputGroup}>
-              <label>Doc Dispatch No:</label>
+              <label style={styles.inputGroupLabel}>Doc Dispatch No:</label>
               <input type="text" value={selectedOrder?.orderId || ''} readOnly style={styles.inputField} />
             </div>
             <div style={styles.inputGroup}>
-              <label>Delivery Date:</label>
+              <label style={styles.inputGroupLabel}>Delivery Date:</label>
               <input type="text" value={deliveredDate || ''} readOnly style={styles.inputField} />
             </div>
             <div style={styles.inputGroup}>
-              <label>Dispatch Through:</label>
-              <select style={styles.inputField}>
-                <option value="">Select Partner</option>
-                {/* Add partner options here */}
+              <label style={styles.inputGroupLabel}>Dispatch Through:</label>
+              <select 
+                style={styles.inputField}
+                value={selectedTransportPartner}
+                onChange={(e) => setSelectedTransportPartner(e.target.value)}
+              >
+                <option value="">Select Transporter</option>
+                {transportPartners.map((partner) => (
+                  <option key={partner._id} value={partner.name}>
+                    {partner.name}
+                  </option>
+                ))}
               </select>
-              <button onClick={() => setShowPartnerModal(true)} style={styles.addPartnerButton}>Add Partner</button>
+              <button onClick={() => setShowTransporterModal(true)} style={styles.addTransporterButton}>Add Transporter</button>
             </div>
             <div style={styles.inputGroup}>
-              <label>Destination:</label>
+              <label style={styles.inputGroupLabel}>Destination:</label>
               <input type="text" style={styles.inputField} />
             </div>
             <div style={styles.inputGroup}>
-              <label>Motor Vehicle Number:</label>
-              <select style={styles.inputField}>
+              <label style={styles.inputGroupLabel}>Motor Vehicle Number:</label>
+              <select 
+                style={styles.inputField} 
+                value={selectedVehicle} 
+                onChange={(e) => setSelectedVehicle(e.target.value)}
+              >
                 <option value="">Select Vehicle</option>
-                {/* Fetch vehicle options dynamically */}
+                {vehicles.map((vehicle) => (
+                  <option key={vehicle._id} value={vehicle.vehicleNumber}>
+                    {vehicle.vehicleNumber} ({vehicle.name})
+                  </option>
+                ))}
               </select>
             </div>
             <div style={styles.inputGroup}>
-              <label>Bill of Lading/LR-RR NO:</label>
+              <label style={styles.inputGroupLabel}>Bill of Lading/LR-RR NO:</label>
               <input type="text" placeholder="Optional" style={styles.inputField} />
             </div>
             <div style={styles.buttonContainer}>
@@ -284,20 +613,43 @@ CIN : U36996KA2022PTC165134`;
         )}
       </div>
 
-      {showPartnerModal && (
+      {showTransporterModal && ( // Changed from showPartnerModal
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
-            <h4>Add Partner</h4>
-            <input
-              type="text"
-              placeholder="Enter Partner Name"
-              value={newPartner}
-              onChange={(e) => setNewPartner(e.target.value)}
-              style={styles.inputField}
-            />
+            <h4>Add New Transporter</h4> {/* Changed title */}
+            <div style={styles.inputGroup}>
+              <label style={styles.inputGroupLabel}>Name:</label>
+              <input
+                type="text"
+                placeholder="Transporter Name"
+                value={transporterName}
+                onChange={(e) => setTransporterName(e.target.value)}
+                style={styles.inputField}
+              />
+            </div>
+            <div style={styles.inputGroup}>
+              <label style={styles.inputGroupLabel}>Number:</label>
+              <input
+                type="text"
+                placeholder="Contact Number"
+                value={transporterNumber}
+                onChange={(e) => setTransporterNumber(e.target.value)}
+                style={styles.inputField}
+              />
+            </div>
+            <div style={styles.inputGroup}>
+              <label style={styles.inputGroupLabel}>Address:</label>
+              <input
+                type="text"
+                placeholder="Transporter Address"
+                value={transporterAddress}
+                onChange={(e) => setTransporterAddress(e.target.value)}
+                style={styles.inputField}
+              />
+            </div>
             <div style={styles.modalButtonContainer}>
-              <button onClick={handleAddPartner} style={styles.saveButton}>Save</button>
-              <button onClick={() => setShowPartnerModal(false)} style={styles.cancelButton}>Cancel</button>
+              <button onClick={handleAddTransporter} style={styles.saveButton}>Save Transporter</button>
+              <button onClick={() => setShowTransporterModal(false)} style={styles.cancelButton}>Cancel</button>
             </div>
           </div>
         </div>
@@ -306,246 +658,4 @@ CIN : U36996KA2022PTC165134`;
   );
 };
 
-// Styles remain unchanged
-const styles = {
-  pageContainer: {
-    position: 'relative',
-    minHeight: '100vh',
-    padding: '20px',
-    fontFamily: 'Arial, sans-serif',
-    backgroundColor: '#f8f9fa',
-  },
-  openCardButton: {
-    position: 'fixed',
-    top: '75px',
-    right: '20px',
-    padding: '8px 15px',
-    fontSize: '0.9rem',
-    cursor: 'pointer',
-    backgroundColor: '#7853C2',
-    color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-    zIndex: 1000,
-  },
-  billSelectionCard: {
-    position: 'absolute',
-    top: '60px',
-    right: '20px',
-    width: '300px',
-    maxHeight: '400px',
-    overflowY: 'auto',
-    backgroundColor: 'white',
-    border: '1px solid #ddd',
-    borderRadius: '8px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    padding: '15px',
-    zIndex: 999,
-  },
-  cardHeader: {
-    textAlign: 'center',
-    marginBottom: '10px',
-    fontSize: '1rem',
-    color: '#333',
-  },
-  orderIdInput: {
-    width: 'calc(100% - 20px)',
-    padding: '8px 10px',
-    marginBottom: '10px',
-    fontSize: '0.9rem',
-    borderRadius: '4px',
-    border: '1px solid #ccc',
-  },
-  loadingText: {
-    textAlign: 'center',
-    fontSize: '0.85rem',
-    color: '#666',
-  },
-  errorText: {
-    color: 'red',
-    textAlign: 'center',
-    fontSize: '0.85rem',
-  },
-  suggestionsContainer: {
-    marginTop: '5px',
-    borderTop: '1px solid #eee',
-    paddingTop: '5px',
-  },
-  suggestionItem: {
-    padding: '8px 10px',
-    cursor: 'pointer',
-    fontSize: '0.85rem',
-    borderBottom: '1px solid #eee',
-  },
-  noResultsText: {
-    textAlign: 'center',
-    fontSize: '0.85rem',
-    color: '#999',
-    padding: '10px 0',
-  },
-  mainContent: {
-    marginTop: '60px',
-    padding: '20px',
-    backgroundColor: 'white',
-    borderRadius: '8px',
-    boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
-    maxWidth: '900px',
-    margin: '60px auto 20px auto',
-  },
-  mainHeader: {
-    textAlign: 'center',
-    marginBottom: '30px',
-    color: '#333',
-  },
-  invoiceHeader: {
-    textAlign: 'center',
-    marginBottom: '20px',
-    color: '#333',
-  },
-  addressSection: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: '20px',
-    marginBottom: '30px',
-    flexWrap: 'wrap',
-  },
-  addressBox: {
-    flex: '1 1 45%',
-    minWidth: '300px',
-    border: '1px solid #e0e0e0',
-    borderRadius: '6px',
-    padding: '15px',
-    backgroundColor: '#fcfcfc',
-  },
-  sectionTitle: {
-    fontSize: '1.1rem',
-    marginBottom: '10px',
-    color: '#555',
-    borderBottom: '1px solid #eee',
-    paddingBottom: '5px',
-  },
-  textArea: {
-    width: '100%',
-    height: '200px',
-    padding: '10px',
-    fontSize: '0.9rem',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    backgroundColor: '#e9ecef',
-    color: '#333',
-    resize: 'vertical',
-    fontFamily: 'monospace',
-  },
-  warningText: {
-    color: '#dc3545',
-    fontSize: '0.85rem',
-    marginTop: '10px',
-    textAlign: 'center',
-  },
-  saveNextButton: {
-    padding: '12px 25px',
-    fontSize: '1rem',
-    cursor: 'pointer',
-    backgroundColor: '#7853C2',
-    color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-    transition: 'background-color 0.3s ease',
-  },
-  buttonContainer: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    marginTop: '20px',
-  },
-  prevButton: {
-    padding: '12px 25px',
-    fontSize: '1rem',
-    cursor: 'pointer',
-    backgroundColor: '#7853C2',
-    color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-    transition: 'background-color 0.3s ease',
-  },
-  inputField: {
-    width: '100%',
-    padding: '10px',
-    marginBottom: '15px',
-    borderRadius: '4px',
-    border: '1px solid #ccc',
-    fontSize: '0.9rem',
-  },
-  nextPartContent: {
-    marginTop: '40px',
-    padding: '20px',
-    border: '1px dashed #007bff',
-    borderRadius: '8px',
-    backgroundColor: '#eaf5ff',
-    textAlign: 'left',
-  },
-  modalOverlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1001,
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    padding: '20px',
-    borderRadius: '8px',
-    boxShadow: '0 4px 10px rgba(0,0,0,0.2)',
-    width: '300px',
-    textAlign: 'center',
-  },
-  modalButtonContainer: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    marginTop: '15px',
-  },
-  saveButton: {
-    padding: '10px 15px',
-    fontSize: '0.9rem',
-    cursor: 'pointer',
-    backgroundColor: '#7853C2',
-    color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-  },
-   cancelButton: {
-    padding: '10px 15px',
-    fontSize: '0.9rem',
-    cursor: 'pointer',
-    backgroundColor: '#dc3545',
-    color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-  },
-  addPartnerButton: {
-    marginLeft: '10px',
-    padding: '8px 15px',
-    backgroundColor: '#7853C2',
-    color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-  },
-};
-
 export default Billings;
-
-
-
-
-
-
