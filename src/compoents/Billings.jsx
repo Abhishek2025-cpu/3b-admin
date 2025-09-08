@@ -350,7 +350,7 @@ const Billings = () => {
   const [descriptionItems, setDescriptionItems] = useState([
     { id: 1, purchaseItem: '', hsnSac: '', qty: 0, rate: 0, rateType: 'Without GST', subtotal: 0, cgst: 0, sgst: 0, totalAmount: 0 }
   ]);
-  const [companyBankDetails, setCompanyBankDetails] = useState('Account Name: 3B PROFILES\nBank: HDFC Bank\nAccount No: XXXXXXXXXX\nIFSC: HDFC000XXXX');
+  const [companyBankDetails, setCompanyBankDetails] = useState('Account Name: 3B PROFILES\nBank:  KOTAK MAHINDRA BANK\nAccount No: 4647279768\nIFSC: KKBK0008262');
   const [isDeclarationChecked, setIsDeclarationChecked] = useState(false);
 
   const [hsnCodes, setHsnCodes] = useState([]); // New state for HSN codes
@@ -922,8 +922,8 @@ CIN : U36996KA2022PTC165134`;
                         onChange={(e) => handleItemChange(item.id, 'rateType', e.target.value)}
                         style={styles.rateDropdown}
                       >
-                        <option value="Without GST">Without GST</option>
-                        <option value="With GST">With GST</option>
+                        <option value="Without GST">With GST</option>
+                        <option value="With GST">Without GST</option>
                       </select>
                     </td>
                     <td style={styles.tableCell}>{item.subtotal !== undefined ? item.subtotal.toFixed(2) : '0.00'}</td>

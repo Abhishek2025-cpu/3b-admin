@@ -31,12 +31,68 @@ const PrintablePageLayout = ({ item, box }) => {
 const PrintModal = ({ isOpen, onClose, item, box }) => {
   const handlePrint = () => window.print();
   if (!isOpen || !item || !box) return null;
-  return ( <> <style>{`@media print { body * { visibility: hidden; } #printable-area, #printable-area * { visibility: visible; } #printable-area { position: absolute; left: 0; top: 0; width: 100%; height: 100%; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center;} .no-print { display: none !important; } }`}</style> <GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl" zIndex="z-[60]"><div id="printable-area" className="p-4"><PrintablePageLayout item={item} box={box} /></div><div className="no-print p-4 bg-gray-50 rounded-b-lg flex justify-end gap-3 border-t"><button onClick={handlePrint} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg">Print</button><button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">Close</button></div></GenericModal> </> );
+  return ( <> <style>{`
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+    #printable-area, #printable-area * {
+      visibility: visible;
+    }
+    #printable-area {
+      position: fixed;         /* Stick to viewport */
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .no-print {
+      display: none !important;
+    }
+
+    /* Remove browser margins */
+    @page {
+      margin: 0;
+      size: A4 portrait;  /* or "auto" if you want browser default */
+    }
+  }
+`}</style>
+
+ <GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl" zIndex="z-[60]"><div id="printable-area" className="p-4"><PrintablePageLayout item={item} box={box} /></div><div className="no-print p-4 bg-gray-50 rounded-b-lg flex justify-end gap-3 border-t"><button onClick={handlePrint} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg">Print</button><button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">Close</button></div></GenericModal> </> );
 };
 const PrintAllBoxesModal = ({ isOpen, onClose, item }) => {
     const handlePrint = () => window.print();
     if (!isOpen || !item) return null;
-    return ( <> <style>{` @media print { body * { visibility: hidden; } .printable-page, .printable-page * { visibility: visible; } .printable-page { page-break-after: always; position: relative; width: 100%; height: 100vh; display: flex; justify-content: center; align-items: center; } .printable-page:last-child { page-break-after: auto; } .no-print { display: none !important; } } `}</style> <GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl" zIndex="z-[60]"><div id="printable-all-boxes-area" className="p-4 overflow-y-auto"><h2 className="text-2xl font-bold text-center mb-4 no-print">Print Preview: All Boxes</h2>{item.boxes?.map(box => ( <div key={box._id} className="printable-page"><PrintablePageLayout item={item} box={box} /></div> ))}</div><div className="no-print p-4 bg-gray-50 rounded-b-lg flex justify-end gap-3 border-t"><button onClick={handlePrint} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2"><PrintIcon /> Print All</button><button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">Close</button></div></GenericModal> </> );
+    return ( <> 
+    <style>{`
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+    .printable-page, .printable-page * {
+      visibility: visible;
+    }
+    .printable-page {
+      page-break-after: always;
+      position: static;    /* ✅ don’t force absolute */
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    .printable-page:last-child {
+      page-break-after: auto;
+    }
+    .no-print {
+      display: none !important;
+    }
+  }
+`}</style>
+ <GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl" zIndex="z-[60]"><div id="printable-all-boxes-area" className="p-4 overflow-y-auto"><h2 className="text-2xl font-bold text-center mb-4 no-print">Print Preview: All Boxes</h2>{item.boxes?.map(box => ( <div key={box._id} className="printable-page"><PrintablePageLayout item={item} box={box} /></div> ))}</div><div className="no-print p-4 bg-gray-50 rounded-b-lg flex justify-end gap-3 border-t"><button onClick={handlePrint} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2"><PrintIcon /> Print All</button><button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">Close</button></div></GenericModal> </> );
 };
 
 // --- BoxesModal (UPDATED for responsiveness) & ItemDetails (Unchanged) ---
