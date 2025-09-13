@@ -24,6 +24,7 @@ import SubAdmins from './compoents/SubAdmins';
 import FeedbackAdmin from './compoents/FeedbackAdmin';
 import ReturnOrder from './compoents/ReturnOrder';
 import Billings from './compoents/Billings';
+import GetBills from './compoents/GetBills';
 
 function App() {
   return (
@@ -57,6 +58,7 @@ function App() {
           <Route path="Feedback" element={<FeedbackAdmin />} />
           <Route path="order-returns" element={<ReturnOrder />} />
           <Route path="billing" element={<Billings />} />
+          <Route path="get-bills" element={<GetBills />} />
           
           {/* Add routes for 'add-staff', 'view-clients', etc. as you create them */}
         </Route>

@@ -156,13 +156,29 @@ function AddStaffForm() {
     }
   };
 
-  // Handler to close popup and reset form
-  const handleClosePasswordPopup = () => {
-    setShowPasswordPopup(false);
-    setGeneratedPassword('');
-    setAlertInfo({ show: true, message: '✅ Staff added successfully!', type: 'success' });
-    resetForm();
+const handleClosePasswordPopup = () => {
+  setShowPasswordPopup(false);
+  setGeneratedPassword('');
+  setAlertInfo({ show: true, message: '✅ Staff added successfully!', type: 'success' });
+
+  // Prepare activity object
+  const activity = {
+    text: `Staff member "${name}" added as ${role === 'Other' ? otherRole : role}`,
+    time: "Just now"
   };
+
+  // 🔥 Dispatch event for Dashboard to update immediately
+  window.dispatchEvent(new CustomEvent("recent-activity", { detail: activity }));
+
+  // 💾 Save to sessionStorage
+  const existingActivities = JSON.parse(sessionStorage.getItem("activities") || "[]");
+  sessionStorage.setItem("activities", JSON.stringify([activity, ...existingActivities]));
+
+  resetForm();
+};
+
+
+
 
   const roleOptions = ['Operator', 'Helper', 'Mixture', 'Other'];
 

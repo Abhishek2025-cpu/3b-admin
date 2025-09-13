@@ -126,20 +126,32 @@ function AddItem() {
 
       const responseData = await response.json();
 
-      if (response.ok) {
-        // MODIFICATION: Using toast for success message
-        toast.success(`Successfully created item with ${responseData.boxes.length} boxes!`);
-        e.target.reset(); // Reset form fields
-        // Manually reset state since e.target.reset() doesn't trigger state updates
-        setFormData({
-            itemNo: '', length: '9.5 Feet', noOfSticks: '', noOfBoxes: '', helperEid: '',
-            operatorEid: '', shift: '', company: '', productImage: null,
-        });
-        removeImage();
-      } else {
-        // MODIFICATION: Using toast for error message from the API
-        toast.error(responseData.error || 'An unknown error occurred.');
-      }
+   if (response.ok) {
+  toast.success(`Successfully created item with ${responseData.boxes.length} boxes!`);
+
+  // 🔥 Add Recent Activity
+  const activity = {
+    text: `New item "${formData.itemNo}" added with ${formData.noOfBoxes} boxes`,
+    time: "Just now"
+  };
+
+  // Update sessionStorage
+  const existingActivities = JSON.parse(sessionStorage.getItem("activities") || "[]");
+  sessionStorage.setItem("activities", JSON.stringify([activity, ...existingActivities]));
+
+  // Dispatch event for Dashboard to update immediately if open
+  window.dispatchEvent(new CustomEvent("recent-activity", { detail: activity }));
+
+  e.target.reset(); // Reset form
+  setFormData({
+    itemNo: '', length: '9.5 Feet', noOfSticks: '', noOfBoxes: '', helperEid: '',
+    operatorEid: '', shift: '', company: '', productImage: null,
+  });
+  removeImage();
+} else {
+  toast.error(responseData.error || 'An unknown error occurred.');
+}
+
     } catch (err) {
       // MODIFICATION: Using toast for network/submission error
       toast.error('Submission failed. Please check your connection.');

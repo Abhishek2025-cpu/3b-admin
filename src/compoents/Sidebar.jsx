@@ -128,6 +128,7 @@ function Sidebar({ isOpen, onClose }) {
         {/* Static Items */}
         <LinkMenuItem icon={faShoppingCart} text="Orders" to="/manager/orders" />
     <LinkMenuItem icon={faFileInvoiceDollar} text="Billing" to="/manager/billing" />
+      <LinkMenuItem icon={faFileInvoiceDollar} text="All Bills" to="/manager/get-bills" />
 
         <LinkMenuItem icon={faUndo} text="Order Returns" to="/manager/order-returns" />
          <LinkMenuItem icon={faGlobe} text="Companies" to="/manager/company" />
