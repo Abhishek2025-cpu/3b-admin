@@ -5,10 +5,12 @@ import { Link, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileInvoiceDollar } from "@fortawesome/free-solid-svg-icons";
 
+
+
 import {
   faTachometerAlt, faStickyNote, faPlusSquare, faList, faUsers, faUserTie, faUserFriends,
   faComments, faUserPlus, faUsersCog, faThLarge, faBoxOpen, faBox,
-  faShoppingCart, faCog, faChevronDown,faGlobe,faUserShield,faUndo
+  faShoppingCart, faCog, faChevronDown,faGlobe,faUserShield,faUndo,faBell
 } from '@fortawesome/free-solid-svg-icons';
 
 import profilePic from '../assets/3b.png'; 
@@ -133,6 +135,13 @@ function Sidebar({ isOpen, onClose }) {
         <LinkMenuItem icon={faUndo} text="Order Returns" to="/manager/order-returns" />
          <LinkMenuItem icon={faGlobe} text="Companies" to="/manager/company" />
          <LinkMenuItem icon={faUserShield} text="Admins" to="/manager/admins" />
+  <LinkMenuItem
+  text="Push Notifications"
+  to="/manager/notifications"
+  icon={faBell} // <-- pass the icon object, NOT JSX
+/>
+
+
 
         <LinkMenuItem icon={faComments} text="App Feedback" to="/manager/feedback" />
         <LinkMenuItem icon={faCog} text="Settings" to="/manager/settings" />

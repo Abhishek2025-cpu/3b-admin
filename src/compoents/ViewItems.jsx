@@ -40,7 +40,7 @@ const PrintModal = ({ isOpen, onClose, item, box }) => {
       visibility: visible;
     }
     #printable-area {
-      position: fixed;         /* Stick to viewport */
+      position: fixed;       
       top: 0;
       left: 0;
       width: 100%;
@@ -55,10 +55,15 @@ const PrintModal = ({ isOpen, onClose, item, box }) => {
       display: none !important;
     }
 
-    /* Remove browser margins */
+  
     @page {
       margin: 0;
-      size: A4 portrait;  /* or "auto" if you want browser default */
+    
+      border: none;
+      size: A4 portrait;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+     
     }
   }
 `}</style>
@@ -313,3 +318,7 @@ function ViewItems() {
 }
   
 export default ViewItems;
+
+
+
+
