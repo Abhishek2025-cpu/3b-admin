@@ -159,6 +159,7 @@ const AddProductForm = ({ isOpen, onClose, companies, selectedCategoryId, onProd
       success: () => {
         onClose(); // Close the modal
         setTimeout(() => onProductAdded(), 1000); // Trigger page refresh
+        console.log("Product added successfully!"); // Add console log here
         return 'Product added successfully!';
       },
       error: (err) => err.response?.data?.message || 'Failed to add product.',
@@ -244,20 +245,38 @@ function ManageOtherProducts() {
           axios.get('https://threebapi-1067354145699.asia-south1.run.app/api/other-categories/get'),
           axios.get('https://threebapi-1067354145699.asia-south1.run.app/api/company/get-company')
         ]);
-        if (catRes.data && Array.isArray(catRes.data)) {
-          setCategories(catRes.data);
-          if (catRes.data.length > 0) {
-            setSelectedId(catRes.data[0]._id);
-          } else {
-            setIsLoading(false);
-          }
-        }
+      let catData = [];
+if (Array.isArray(catRes.data)) {
+  catData = catRes.data;
+} else if (catRes.data && Array.isArray(catRes.data.otherCategories)) {
+  catData = catRes.data.otherCategories;
+} else if (catRes.data && Array.isArray(catRes.data.categories)) {
+  catData = catRes.data.categories;
+}
+setCategories(catData);
+if (catData.length > 0) {
+  setSelectedId(catData[0]._id);
+}
+
+
+        // Handle companies - support both flat array and nested (unchanged, but consistent)
+        let compData = [];
         if (Array.isArray(compRes.data)) {
-          setCompanies(compRes.data);
+          compData = compRes.data;
+        } else if (compRes.data && Array.isArray(compRes.data.companies)) {
+          compData = compRes.data.companies;
         }
-      } catch (err) {
-        setError("Failed to load initial data. Please refresh the page.");
+        setCompanies(compData);
+
+        // FIXED: Always set isLoading to false after processing both responses (prevents infinite loading if categories exist)
         setIsLoading(false);
+      } catch (err) {
+        // FIXED: Set empty arrays in catch to ensure consistent state
+        setCategories([]);
+        setCompanies([]);
+        setError("Failed to load initial data. Please refresh the page.");
+        console.error("Fetch Initial Data Error:", err);
+        setIsLoading(false); // Ensure loading is false on error
       } 
     }
     fetchInitialData();
@@ -284,13 +303,14 @@ function ManageOtherProducts() {
         }
       } catch (err) {
         setError('Failed to fetch products for this category.');
+        console.error("Fetch Products Error:", err); // Added console.error
         setProducts([]);
       } finally {
         setIsLoading(false);
       }
     }
     fetchProducts();
-  }, [selectedId]); // Removed refetch as we are now reloading the page
+  }, [selectedId]); 
   
   // MODIFIED: This function now just reloads the page.
   const handleActionSuccess = () => {
@@ -329,7 +349,7 @@ function ManageOtherProducts() {
           className="flex-grow p-2 border rounded-xl bg-gray-50"
           disabled={isLoading || categories.length === 0}
         >
-          {categories.length === 0 && <option>No categories found</option>}
+          {categories.length === 0 && <option value="">No categories found</option>}
           {categories.map(cat => (
             <option key={cat._id} value={cat._id}>{cat.name}</option>
           ))}

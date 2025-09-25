@@ -158,7 +158,12 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
 
     toast.promise(promise, {
       loading: 'Adding product...',
-      success: () => { onProductAdded(); onClose(); return 'Product added successfully!'; },
+      success: () => { 
+        onProductAdded(); 
+        onClose(); 
+        console.log("Product added successfully!"); // Console log for success
+        return 'Product added successfully!'; 
+      },
       error: (err) => `Error: ${err.message}`,
     });
   };
@@ -371,7 +376,7 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product }) => {
 };
 
 
-// --- Main Component (UNCHANGED) ---
+// --- Main Component (MODIFIED) ---
 function ViewProducts() {
   const [products, setProducts] = useState([]);
   const [categoryList, setCategoryList] = useState([]);
@@ -406,8 +411,11 @@ function ViewProducts() {
       
       // Handle nested response for products
       setProducts(Array.isArray(productsData.products) ? productsData.products : []);
-      // Handle direct array response for categories and dimensions
-      setCategoryList(Array.isArray(categoriesData) ? categoriesData : []);
+      
+      // --- FIX: Access the 'categories' array within the categoriesData object ---
+      setCategoryList(Array.isArray(categoriesData.categories) ? categoriesData.categories : []);
+      
+      // Handle direct array response for dimensions
       setDimensionList(Array.isArray(dimensionsData) ? dimensionsData : []);
 
     } catch (err) {
@@ -489,6 +497,7 @@ function ViewProducts() {
       </div>
       
       <Modal isOpen={isCarouselOpen} onClose={() => setCarouselOpen(false)}>{carouselImages.length > 0 && <img src={carouselImages[0]} alt="Product Carousel" className="max-w-full max-h-[80vh] rounded-lg"/>}</Modal>
+        <Modal isOpen={isCarouselOpen} onClose={() => setCarouselOpen(false)}>{carouselImages.length > 0 && <img src={carouselImages[0]} alt="Product Carousel" className="max-w-full max-h-[80vh] rounded-lg"/>}</Modal>
       <Modal isOpen={isQrOpen} onClose={() => setQrOpen(false)}>{qrCodeUrl && <img src={qrCodeUrl} alt="Product QR Code" className="w-64 h-64 rounded-lg"/>}</Modal>
       <AddProductModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onProductAdded={handleProductAdded} categories={categoryList} dimensions={dimensionList} onDimensionAdded={handleDimensionAdded} />
       <UpdateProductModal isOpen={isUpdateModalOpen} onClose={() => setIsUpdateModalOpen(false)} onUpdateSuccess={handleUpdateSuccess} product={selectedProduct}/>
