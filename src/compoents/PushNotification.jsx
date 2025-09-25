@@ -27,7 +27,7 @@ const PushNotification = () => {
       }
 
       const response = await axios.post(
-        "http://localhost:8080/api/notifications/admin/send",
+        "https://threebtest.onrender.com/api/notifications/admin/send",
         formData,
         {
           headers: {
