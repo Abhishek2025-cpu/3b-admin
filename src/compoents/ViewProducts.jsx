@@ -31,7 +31,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
     categoryId: '', 
     name: '',       // For Model Number
     about: '',      // For the textarea
-    quantity: 500, 
+    quantity: '', 
     pricePerPiece: '', 
     totalPiecesPerBox: '', 
     discountPercentage: 0 
