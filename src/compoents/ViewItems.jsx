@@ -41,7 +41,7 @@ const PrintModal = ({ isOpen, onClose, item, box }) => {
     }
     #printable-area {
       position: fixed;       
-      top: 0;
+      top:0;
       left: 0;
       width: 100%;
       height: 100%;
@@ -57,8 +57,7 @@ const PrintModal = ({ isOpen, onClose, item, box }) => {
 
   
     @page {
-      margin: 0;
-    
+      margin: 4mm;
       border: none;
       size: A4 portrait;
       -webkit-print-color-adjust: exact;
@@ -84,7 +83,7 @@ const PrintAllBoxesModal = ({ isOpen, onClose, item }) => {
     }
     .printable-page {
       page-break-after: always;
-      position: static;    /* ✅ don’t force absolute */
+      position: static;
       width: 100%;
       margin: 0;
       padding: 0;
