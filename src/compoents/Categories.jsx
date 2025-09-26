@@ -1,10 +1,15 @@
 // src/pages/Categories.jsx
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { FaPlus, FaEdit, FaTrash, FaTimes } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
+// Base URL for fetching all categories and deleting
 const baseUrl = "https://threebapi-1067354145699.asia-south1.run.app/api/categories";
+// Specific base URL for updating categories
+const updateBaseUrl = "https://threebtest.onrender.com/api/categories";
 
 export default function Categories() {
   // --- STATE MANAGEMENT ---
@@ -13,6 +18,7 @@ export default function Categories() {
   const [formState, setFormState] = useState({
     id: null,
     name: "",
+    position: "", // Added position field
     newImages: [],
     existingImages: [],
     imagesToDelete: [],
@@ -24,6 +30,7 @@ export default function Categories() {
   const itemsPerPage = 10;
 
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
 
   // --- DATA FETCHING ---
   useEffect(() => {
@@ -33,29 +40,31 @@ export default function Categories() {
   async function loadCategories() {
     try {
       const res = await fetch(`${baseUrl}/all-category`);
-      if (!res.ok) throw new Error("Failed to fetch");
+      if (!res.ok) throw new Error("Failed to fetch categories.");
       const data = await res.json();
       
-      // --- FIX: Extract the array from the 'categories' property of the response object ---
       const categoriesArray = Array.isArray(data.categories) ? data.categories : [];
-      setCategories(categoriesArray);
+      // Sort categories by position initially
+      const sortedCategories = categoriesArray.sort((a, b) => (a.position || 0) - (b.position || 0));
+      setCategories(sortedCategories);
 
     } catch (error) {
       console.error("Failed to fetch categories:", error);
-      alert("Failed to fetch categories.");
+      toast.error("Failed to load categories.");
       setCategories([]); 
     }
   }
 
   // --- SEARCH & PAGINATION LOGIC ---
-
   const filteredCategories = useMemo(() => {
     if (!Array.isArray(categories)) {
         return [];
     }
-    return categories.filter(cat =>
+    const filtered = categories.filter(cat =>
       cat.name && cat.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
+    // Ensure filtered results are also sorted by position
+    return filtered.sort((a, b) => (a.position || 0) - (b.position || 0));
   }, [categories, searchTerm]);
 
   useEffect(() => {
@@ -74,6 +83,7 @@ export default function Categories() {
     setFormState({
       id: category._id,
       name: category.name,
+      position: category.position !== undefined ? String(category.position) : "", // Convert to string for input
       newImages: [],
       existingImages: category.images || [],
       imagesToDelete: [],
@@ -84,48 +94,89 @@ export default function Categories() {
   const closeModal = () => {
     setShowModal(false);
     setFormState({
-      id: null, name: "", newImages: [], existingImages: [], imagesToDelete: [],
+      id: null, name: "", position: "", newImages: [], existingImages: [], imagesToDelete: [],
     });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   function handleFileChange(e) {
+    const files = Array.from(e.target.files);
     setFormState((prev) => ({
       ...prev,
-      newImages: [...prev.newImages, ...Array.from(e.target.files)],
+      newImages: [...prev.newImages, ...files],
     }));
-    e.target.value = null;
   }
+
+  const handleRemoveExistingImage = (imageToRemoveId) => {
+    setFormState(prev => {
+      const imgObjToRemove = prev.existingImages.find(img => img._id === imageToRemoveId);
+      if (!imgObjToRemove) return prev; 
+
+      return {
+        ...prev,
+        existingImages: prev.existingImages.filter(img => img._id !== imageToRemoveId),
+        imagesToDelete: [...prev.imagesToDelete, imgObjToRemove],
+      };
+    });
+  };
+
+  const handleRemoveNewImage = (indexToRemove) => {
+    setFormState(prev => {
+      const updatedNewImages = prev.newImages.filter((_, index) => index !== indexToRemove);
+      if (fileInputRef.current && updatedNewImages.length === 0) {
+        fileInputRef.current.value = ""; // Clear input if all new images are removed
+      }
+      return {
+        ...prev,
+        newImages: updatedNewImages,
+      };
+    });
+  };
 
   // --- API OPERATIONS ---
   async function handleUpdateSubmit(e) {
     e.preventDefault();
-    if (!formState.id) return;
+    if (!formState.id) {
+        toast.error("Category ID is missing for update.");
+        return;
+    }
 
     const formData = new FormData();
     formData.append("name", formState.name);
-    formState.newImages.forEach(file => formData.append("images", file));
+    // Append position, converting it to a number if it's not empty
+    if (formState.position !== "") {
+        formData.append("position", Number(formState.position));
+    }
+    
+    formState.newImages.forEach(file => {
+        formData.append("images", file);
+    });
+
     if (formState.imagesToDelete.length > 0) {
-      const idsToDelete = formState.imagesToDelete.map(img => img.id).filter(Boolean);
+      const idsToDelete = formState.imagesToDelete.map(img => img._id).filter(Boolean);
       formData.append("imagesToDelete", JSON.stringify(idsToDelete));
     }
     
     try {
-      const res = await fetch(`${baseUrl}/update/${formState.id}`, {
-        method: "PUT", body: formData,
+      const res = await fetch(`${updateBaseUrl}/update/${formState.id}`, {
+        method: "PUT", 
+        body: formData,
       });
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.message || "Update failed");
+        throw new Error(errorData.message || `Update failed with status: ${res.status}`);
       }
       
       closeModal();
-      loadCategories();
-      alert("Category updated successfully!");
+      await loadCategories(); // Await loadCategories to ensure state is updated before toast
+      toast.success("Category updated successfully!");
 
     } catch (error) {
       console.error("Failed to update category:", error);
-      alert(`Error: ${error.message}`);
+      toast.error(`Error updating category: ${error.message}`);
     }
   }
 
@@ -133,12 +184,15 @@ export default function Categories() {
     if (window.confirm("Are you sure you want to delete this category?")) {
       try {
         const res = await fetch(`${baseUrl}/delete/${id}`, { method: "DELETE" });
-        if (!res.ok) throw new Error("Deletion failed");
-        loadCategories();
-        alert("Category deleted successfully.");
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.message || "Deletion failed");
+        }
+        await loadCategories();
+        toast.success("Category deleted successfully.");
       } catch (error) {
         console.error("Failed to delete category:", error);
-        alert("Failed to delete category.");
+        toast.error(`Failed to delete category: ${error.message}`);
       }
     }
   }
@@ -146,9 +200,12 @@ export default function Categories() {
   // --- RENDER COMPONENT ---
   return (
     <div className="p-4 md:p-8 bg-gray-50 min-h-screen font-sans">
+      <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+      
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800">Categories</h1>
+          {/* Add Category button, uncomment if needed */}
           {/* <button
             className="bg-indigo-600 text-white py-2 px-4 rounded-lg shadow-md hover:bg-indigo-700 transition-colors flex items-center gap-2"
             onClick={() => navigate('/add-category')}
@@ -172,6 +229,7 @@ export default function Categories() {
             <thead className="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
               <tr>
                 <th className="py-3 px-6 text-left">Sr. No.</th>
+                <th className="py-3 px-6 text-left">Position</th> {/* New Position column */}
                 <th className="py-3 px-6 text-left">Category Name</th>
                 <th className="py-3 px-6 text-left">Images</th>
                 <th className="py-3 px-6 text-center">Actions</th>
@@ -181,13 +239,14 @@ export default function Categories() {
               {currentItems.map((cat, index) => (
                 <tr key={cat._id} className="border-b border-gray-200 hover:bg-gray-50">
                    <td className="py-3 px-6 text-left font-semibold">{indexOfFirstItem + index + 1}</td>
+                   <td className="py-3 px-6 text-left whitespace-nowrap">{cat.position || 'N/A'}</td> {/* Display position */}
                   <td className="py-3 px-6 text-left whitespace-nowrap font-medium">{cat.name}</td>
                   <td className="py-3 px-6 text-left">
                     {cat.images && cat.images.length > 0 ? (
                       <div className="flex items-center space-x-2">
                         {cat.images.slice(0, 5).map((img) => (
                           <img
-                            key={img.id || img._id}
+                            key={img._id || img.id}
                             className="w-10 h-10 rounded-full object-cover border-2 border-white shadow"
                             src={img.url}
                             alt={cat.name}
@@ -237,20 +296,45 @@ export default function Categories() {
                 <input type="text" value={formState.name} onChange={(e) => setFormState({ ...formState, name: e.target.value })} className="w-full border p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" required />
               </div>
 
+              {/* New Position Input Field */}
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2">Position</label>
+                <input 
+                  type="number" 
+                  value={formState.position} 
+                  onChange={(e) => setFormState({ ...formState, position: e.target.value })} 
+                  className="w-full border p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+                  min="0" // Assuming position should be non-negative
+                />
+              </div>
+
               <div className="mb-6">
                 <label className="block text-gray-700 text-sm font-bold mb-2">Manage Images</label>
                 <div className="border-2 border-dashed border-gray-300 rounded-md p-4">
-                  <input type="file" multiple onChange={handleFileChange} className="mb-4" accept="image/*" />
+                  <input 
+                    type="file" 
+                    multiple 
+                    onChange={handleFileChange} 
+                    className="mb-4" 
+                    accept="image/*" 
+                    ref={fileInputRef}
+                  />
                   
                   <div className="space-y-4">
                     {formState.existingImages.length > 0 && (
                         <div>
                             <h4 className="text-sm font-semibold text-gray-600 mb-2">Existing Images</h4>
                             <div className="flex flex-wrap gap-4">
-                                {formState.existingImages.map((img, idx) => (
-                                <div key={img.id || img._id} className="relative">
+                                {formState.existingImages.map((img) => (
+                                <div key={img._id} className="relative">
                                     <img src={img.url} alt="Existing" className="w-24 h-24 object-cover rounded-md shadow" />
-                                    <button type="button" onClick={() => setFormState(prev => ({...prev, existingImages: prev.existingImages.filter((_, i) => i !== idx), imagesToDelete: [...prev.imagesToDelete, img]}))} className="absolute -top-2 -right-2 text-white bg-red-600 rounded-full p-1"><FaTimes size={10} /></button>
+                                    <button 
+                                      type="button" 
+                                      onClick={() => handleRemoveExistingImage(img._id)}
+                                      className="absolute -top-2 -right-2 text-white bg-red-600 rounded-full p-1"
+                                    >
+                                      <FaTimes size={10} />
+                                    </button>
                                 </div>
                                 ))}
                             </div>
@@ -263,8 +347,14 @@ export default function Categories() {
                             <div className="flex flex-wrap gap-4">
                             {formState.newImages.map((file, idx) => (
                                 <div key={idx} className="relative">
-                                <img src={URL.createObjectURL(file)} alt="New" className="w-24 h-24 object-cover rounded-md shadow" />
-                                <button type="button" onClick={() => setFormState(prev => ({...prev, newImages: prev.newImages.filter((_, i) => i !== idx)}))} className="absolute -top-2 -right-2 text-white bg-red-600 rounded-full p-1"><FaTimes size={10} /></button>
+                                <img src={URL.createObjectURL(file)} alt={`New ${file.name}`} className="w-24 h-24 object-cover rounded-md shadow" />
+                                <button 
+                                  type="button" 
+                                  onClick={() => handleRemoveNewImage(idx)}
+                                  className="absolute -top-2 -right-2 text-white bg-red-600 rounded-full p-1"
+                                >
+                                  <FaTimes size={10} />
+                                </button>
                                 </div>
                             ))}
                             </div>

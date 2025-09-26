@@ -123,7 +123,7 @@ function AddCategoryForm() {
     });
 
     try {
-      const res = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/categories/add-category', {
+      const res = await fetch('https://threebtest.onrender.com/api/categories/add-category', {
         method: 'POST',
         body: data,
       });
