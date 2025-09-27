@@ -1,5 +1,3 @@
-// src/pages/Categories.jsx
-
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { FaPlus, FaEdit, FaTrash, FaTimes } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +8,9 @@ import 'react-toastify/dist/ReactToastify.css';
 const baseUrl = "https://threebapi-1067354145699.asia-south1.run.app/api/categories";
 // Specific base URL for updating categories
 const updateBaseUrl = "https://threebtest.onrender.com/api/categories";
+// Base URL for deleting a specific image from a category
+const deleteImageUrlBase = "https://threebapi-1067354145699.asia-south1.run.app/api/categories/delete";
+
 
 export default function Categories() {
   // --- STATE MANAGEMENT ---
@@ -21,9 +22,17 @@ export default function Categories() {
     position: "", // Added position field
     newImages: [],
     existingImages: [],
-    imagesToDelete: [],
   });
   
+  // State for Image Deletion Confirmation Modal
+  const [showDeleteImageConfirmModal, setShowDeleteImageConfirmModal] = useState(false);
+  const [imageToDelete, setImageToDelete] = useState(null); // Stores { categoryId, imageId }
+  const [categoryIdForImageDelete, setCategoryIdForImageDelete] = useState(null);
+
+  // New state for loading indicator during category update
+  const [isLoading, setIsLoading] = useState(false);
+
+
   // State for Search and Pagination
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -86,7 +95,6 @@ export default function Categories() {
       position: category.position !== undefined ? String(category.position) : "", // Convert to string for input
       newImages: [],
       existingImages: category.images || [],
-      imagesToDelete: [],
     });
     setShowModal(true);
   };
@@ -94,7 +102,7 @@ export default function Categories() {
   const closeModal = () => {
     setShowModal(false);
     setFormState({
-      id: null, name: "", position: "", newImages: [], existingImages: [], imagesToDelete: [],
+      id: null, name: "", position: "", newImages: [], existingImages: [],
     });
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -109,39 +117,65 @@ export default function Categories() {
     }));
   }
 
-  const handleRemoveExistingImage = (imageToRemoveId) => {
-    setFormState(prev => {
-      const imgObjToRemove = prev.existingImages.find(img => img._id === imageToRemoveId);
-      if (!imgObjToRemove) return prev; 
-
-      return {
-        ...prev,
-        existingImages: prev.existingImages.filter(img => img._id !== imageToRemoveId),
-        imagesToDelete: [...prev.imagesToDelete, imgObjToRemove],
-      };
-    });
+  // Opens the confirmation modal for image deletion
+  const openDeleteImageConfirm = (categoryId, imageId) => {
+    setCategoryIdForImageDelete(categoryId);
+    setImageToDelete(imageId);
+    setShowDeleteImageConfirmModal(true);
   };
 
-  const handleRemoveNewImage = (indexToRemove) => {
-    setFormState(prev => {
-      const updatedNewImages = prev.newImages.filter((_, index) => index !== indexToRemove);
-      if (fileInputRef.current && updatedNewImages.length === 0) {
-        fileInputRef.current.value = ""; // Clear input if all new images are removed
-      }
-      return {
-        ...prev,
-        newImages: updatedNewImages,
-      };
-    });
+  // Closes the confirmation modal for image deletion
+  const closeDeleteImageConfirm = () => {
+    setCategoryIdForImageDelete(null);
+    setImageToDelete(null);
+    setShowDeleteImageConfirmModal(false);
   };
 
   // --- API OPERATIONS ---
+
+  // Function to handle the actual deletion of an image from a category
+  async function confirmDeleteImage() {
+    if (!categoryIdForImageDelete || !imageToDelete) {
+      toast.error("Image or Category ID missing for deletion.");
+      return;
+    }
+
+    try {
+      // API call: DELETE /api/categories/delete/{categoryId}/images/{imageId}
+      const res = await fetch(`${deleteImageUrlBase}/${categoryIdForImageDelete}/images/${imageToDelete}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || `Failed to delete image with status: ${res.status}`);
+      }
+
+      toast.success("Image deleted successfully!");
+      closeDeleteImageConfirm();
+      // Update the formState's existingImages to reflect the deletion immediately
+      setFormState(prev => ({
+        ...prev,
+        existingImages: prev.existingImages.filter(img => img._id !== imageToDelete)
+      }));
+      // Also refresh the main category list to ensure consistency
+      await loadCategories();
+      
+    } catch (error) {
+      console.error("Failed to delete image:", error);
+      toast.error(`Error deleting image: ${error.message}`);
+    }
+  }
+
+
   async function handleUpdateSubmit(e) {
     e.preventDefault();
     if (!formState.id) {
         toast.error("Category ID is missing for update.");
         return;
     }
+
+    setIsLoading(true); // Set loading to true when submission starts
 
     const formData = new FormData();
     formData.append("name", formState.name);
@@ -153,11 +187,6 @@ export default function Categories() {
     formState.newImages.forEach(file => {
         formData.append("images", file);
     });
-
-    if (formState.imagesToDelete.length > 0) {
-      const idsToDelete = formState.imagesToDelete.map(img => img._id).filter(Boolean);
-      formData.append("imagesToDelete", JSON.stringify(idsToDelete));
-    }
     
     try {
       const res = await fetch(`${updateBaseUrl}/update/${formState.id}`, {
@@ -177,6 +206,8 @@ export default function Categories() {
     } catch (error) {
       console.error("Failed to update category:", error);
       toast.error(`Error updating category: ${error.message}`);
+    } finally {
+      setIsLoading(false); // Reset loading to false when submission finishes (success or failure)
     }
   }
 
@@ -328,10 +359,12 @@ export default function Categories() {
                                 {formState.existingImages.map((img) => (
                                 <div key={img._id} className="relative">
                                     <img src={img.url} alt="Existing" className="w-24 h-24 object-cover rounded-md shadow" />
+                                    {/* On click, open confirmation modal */}
                                     <button 
                                       type="button" 
-                                      onClick={() => handleRemoveExistingImage(img._id)}
-                                      className="absolute -top-2 -right-2 text-white bg-red-600 rounded-full p-1"
+                                      onClick={() => openDeleteImageConfirm(formState.id, img._id)}
+                                      className="absolute -top-2 -right-2 text-white bg-red-600 rounded-full p-1 z-10"
+                                      title="Delete Image"
                                     >
                                       <FaTimes size={10} />
                                     </button>
@@ -364,8 +397,48 @@ export default function Categories() {
                 </div>
               </div>
 
-              <button type="submit" className="w-full bg-indigo-600 text-white p-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors">Save Changes</button>
+              <button 
+                type="submit" 
+                className="w-full bg-indigo-600 text-white p-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                disabled={isLoading} // Disable button when loading
+              >
+                {isLoading && (
+                  // Simple SVG spinner for loading
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
+                {isLoading ? "Saving..." : "Save Changes"}
+              </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Image Deletion Confirmation Modal */}
+      {showDeleteImageConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-[100] p-4">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full relative">
+            <button type="button" className="absolute top-3 right-3 text-gray-500 hover:text-gray-800" onClick={closeDeleteImageConfirm}><FaTimes size={20} /></button>
+            <h2 className="text-xl font-bold mb-4 text-gray-800">Confirm Image Deletion</h2>
+            <p className="text-gray-700 mb-6">Are you sure you want to delete this image? This action cannot be undone.</p>
+            <div className="flex justify-end gap-3">
+              <button 
+                type="button" 
+                onClick={closeDeleteImageConfirm} 
+                className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                onClick={confirmDeleteImage} 
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
