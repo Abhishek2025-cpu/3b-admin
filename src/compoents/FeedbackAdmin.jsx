@@ -88,7 +88,7 @@ const FeedbackAdmin = () => {
   return (
     <div className="feedback-admin-container">
       <ToastContainer position="top-right" autoClose={3000} />
-      <h2 className="title">Admin Feedback Panel</h2>
+   
 
       {/* Controls */}
       <div className="controls">
