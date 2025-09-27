@@ -1,122 +1,205 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { toast } from 'react-toastify';
-import './FeedbackAdmin.css'; // We'll create this CSS file for styling
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import "./FeedbackAdmin.css";
 
-const API_BASE_URL = 'https://threebapi-1067354145699.asia-south1.run.app';
+const baseURL = "https://threebtest.onrender.com/api/feedback";
 
 const FeedbackAdmin = () => {
-  const [feedbacks, setFeedbacks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [allFeedbacks, setAllFeedbacks] = useState([]);
+  const [displayedFeedbacks, setDisplayedFeedbacks] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [ratingFilter, setRatingFilter] = useState("all");
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [loading, setLoading] = useState(false);
 
-  // Function to fetch all feedbacks
-  const fetchFeedbacks = async () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const feedbacksPerPage = 10; // ✅ 10 entries per page
+
+  // Modal state
+  const [confirmModal, setConfirmModal] = useState({ show: false, feedbackId: null });
+
+  const fetchAllFeedbacks = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/feedback/getall/admin`);
-      // The sample response doesn't include `isEnabled`, but our backend does.
-      // We assume it's coming from the API now.
-      setFeedbacks(response.data.feedbacks);
-      setError(null);
-    } catch (err) {
-      setError('Failed to fetch feedbacks. Please try again later.');
-      toast.error('Could not load feedback data.');
-      console.error('Fetch error:', err);
-    } finally {
+      const { data } = await axios.get(`${baseURL}/getall/admin`);
+      setAllFeedbacks(data.feedbacks);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching feedbacks:", error);
+      toast.error("❌ Failed to fetch feedbacks");
       setLoading(false);
     }
   };
 
-  // Fetch data when the component mounts
   useEffect(() => {
-    fetchFeedbacks();
+    fetchAllFeedbacks();
   }, []);
 
-  // Function to handle toggling the feedback status
-  const handleToggleStatus = async (feedbackId, currentStatus) => {
-    const newStatus = !currentStatus;
-    
-    // Optimistically update the UI for a better user experience
-    setFeedbacks(prevFeedbacks =>
-      prevFeedbacks.map(fb =>
-        fb._id === feedbackId ? { ...fb, isEnabled: newStatus } : fb
-      )
-    );
-
+  // Approve handler with confirm modal
+  const handleApproveConfirm = async () => {
+    const feedbackId = confirmModal.feedbackId;
     try {
-      await axios.patch(`${API_BASE_URL}/api/feedback/status/${feedbackId}`, {
-        isEnabled: newStatus,
-      });
-      toast.success('✅ Status updated successfully!');
-    } catch (err) {
-      // If the API call fails, revert the change and show an error
-      setFeedbacks(prevFeedbacks =>
-        prevFeedbacks.map(fb =>
-          fb._id === feedbackId ? { ...fb, isEnabled: currentStatus } : fb
-        )
+      await axios.patch(`${baseURL}/status/${feedbackId}`, { isEnabled: true });
+      toast.success("✅ Feedback approved successfully");
+      setAllFeedbacks(prev =>
+        prev.map(f => (f._id === feedbackId ? { ...f, isEnabled: true } : f))
       );
-      toast.error('❌ Failed to update status. Please try again.');
-      console.error('Toggle status error:', err);
+      setConfirmModal({ show: false, feedbackId: null });
+    } catch (error) {
+      console.error("Error approving feedback:", error);
+      toast.error("❌ Failed to approve feedback");
     }
   };
 
-  if (loading) {
-    return <div className="loading-message">Loading feedback...</div>;
-  }
+  // Filter, Search, Sort
+  useEffect(() => {
+    let filtered = [...allFeedbacks];
 
-  if (error) {
-    return <div className="error-message">{error}</div>;
-  }
+    if (searchTerm) {
+      filtered = filtered.filter(
+        f =>
+          (f.user?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+          f.message.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (ratingFilter !== "all") {
+      filtered = filtered.filter(f => f.rating === Number(ratingFilter));
+    }
+
+    filtered.sort((a, b) =>
+      sortOrder === "desc"
+        ? new Date(b.createdAt) - new Date(a.createdAt)
+        : new Date(a.createdAt) - new Date(b.createdAt)
+    );
+
+    setDisplayedFeedbacks(filtered);
+    setCurrentPage(1);
+  }, [allFeedbacks, searchTerm, ratingFilter, sortOrder]);
+
+  // Pagination
+  const indexOfLast = currentPage * feedbacksPerPage;
+  const indexOfFirst = indexOfLast - feedbacksPerPage;
+  const currentFeedbacks = displayedFeedbacks.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(displayedFeedbacks.length / feedbacksPerPage);
 
   return (
     <div className="feedback-admin-container">
-      <h2>All User Feedbacks</h2>
-      <table className="feedback-table">
-        <thead>
-          <tr>
-            <th>User</th>
-            <th>Message</th>
-            <th>Rating</th>
-            <th>Date</th>
-            <th>Privacy</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {feedbacks.length > 0 ? (
-            feedbacks.map((feedback) => (
-              <tr key={feedback._id}>
-                <td>{feedback.user?.name || 'Unknown User'}</td>
-                <td className="message-cell">{feedback.message}</td>
-                <td>{'⭐'.repeat(feedback.rating)}</td>
-                <td>{new Date(feedback.createdAt).toLocaleDateString()}</td>
-                <td>{feedback.isPrivate ? 'Private' : 'Public'}</td>
+      <ToastContainer position="top-right" autoClose={3000} />
+      <h2 className="title">Admin Feedback Panel</h2>
+
+      {/* Controls */}
+      <div className="controls">
+        <input
+          type="text"
+          placeholder="Search by user or message..."
+          className="search-input"
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+        />
+        <select
+          className="filter-select"
+          value={ratingFilter}
+          onChange={e => setRatingFilter(e.target.value)}
+        >
+          <option value="all">All Ratings</option>
+          <option value="5">5 Stars</option>
+          <option value="4">4 Stars</option>
+          <option value="3">3 Stars</option>
+          <option value="2">2 Stars</option>
+          <option value="1">1 Star</option>
+        </select>
+        <select
+          className="filter-select"
+          value={sortOrder}
+          onChange={e => setSortOrder(e.target.value)}
+        >
+          <option value="desc">Newest → Oldest</option>
+          <option value="asc">Oldest → Newest</option>
+        </select>
+      </div>
+
+      {/* Table */}
+      <div className="table-wrapper">
+        <table className="feedback-table">
+          <thead>
+            <tr>
+              <th>Sr. No</th>
+              <th>User</th>
+              <th>Message</th>
+              <th>Rating</th>
+              <th>Date & Time</th>
+              <th>Approved</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {currentFeedbacks.map((f, index) => (
+              <tr key={f._id}>
+                <td>{indexOfFirst + index + 1}</td> {/* ✅ Sr. No */}
+                <td>{f.user?.name || "N/A"}</td>
+                <td>{f.message}</td>
+                <td>{f.rating}</td>
+                <td>{new Date(f.createdAt).toLocaleString()}</td> {/* ✅ Date & Time */}
                 <td>
-                  <span className={`status-badge ${feedback.isEnabled ? 'status-enabled' : 'status-disabled'}`}>
-                    {feedback.isEnabled ? 'Enabled' : 'Disabled'}
-                  </span>
+                  {f.isEnabled ? (
+                    <span className="badge-approved">Yes</span>
+                  ) : (
+                    <span className="badge-pending">No</span>
+                  )}
                 </td>
                 <td>
-                 <button
-  onClick={() => handleToggleStatus(feedback._id, feedback.isEnabled)}
-  className={`toggle-button ${feedback.isEnabled ? 'toggle-disable' : 'toggle-enable'}`}
-  style={{ color: 'white' }}
->
-  {feedback.isEnabled ? 'Disable' : 'Enable'}
-</button>
-
+                  <button
+                    className="btn-approve"
+                    disabled={f.isEnabled} // ✅ Disable if approved
+                    onClick={() =>
+                      setConfirmModal({ show: true, feedbackId: f._id })
+                    }
+                  >
+                    {f.isEnabled ? "Approved" : "Approve"}
+                  </button>
                 </td>
               </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="7">No feedback found.</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination */}
+      <div className="pagination">
+        {Array.from({ length: totalPages }, (_, i) => (
+          <button
+            key={i}
+            className={`page-btn ${currentPage === i + 1 ? "active-page" : ""}`}
+            onClick={() => setCurrentPage(i + 1)}
+          >
+            {i + 1}
+          </button>
+        ))}
+      </div>
+
+      {/* Confirm Modal */}
+      {confirmModal.show && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Confirm Approval</h3>
+            <p>Are you sure you want to approve this feedback?</p>
+            <div className="modal-actions">
+              <button
+                className="btn-cancel"
+                onClick={() => setConfirmModal({ show: false, feedbackId: null })}
+              >
+                Cancel
+              </button>
+              <button className="btn-confirm" onClick={handleApproveConfirm}>
+                Yes, Approve
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
