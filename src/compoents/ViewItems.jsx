@@ -21,12 +21,16 @@ const UpdateBoxesModal = ({ isOpen, onClose, item, onUpdateSubmit }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const handleSubmit = async (e) => { e.preventDefault(); const boxCount = parseInt(numberOfNewBoxes, 10); if (!boxCount || boxCount <= 0) { toast.error("Please enter a valid, positive number of boxes."); return; } setIsSubmitting(true); await onUpdateSubmit(item._id, boxCount); setIsSubmitting(false); setNumberOfNewBoxes(''); };
     if (!isOpen) return null;
-    return <GenericModal isOpen={isOpen} onClose={onClose}><div className="p-4 border-b flex justify-between items-center"><h2 className="text-xl font-bold text-gray-800">Add More Boxes</h2><button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button></div><form onSubmit={handleSubmit}><div className="p-6 space-y-4"><div><label className="font-semibold text-gray-700 block mb-1">Item Name</label><input type="text" readOnly value={item?.itemNo?.trim() || ''} className="w-full p-2 bg-gray-100 border rounded-lg cursor-not-allowed" /></div><div><label htmlFor="new-boxes-input" className="font-semibold text-gray-700 block mb-1">Number of New Boxes to Add</label><input id="new-boxes-input" type="number" min="1" value={numberOfNewBoxes} onChange={(e) => setNumberOfNewBoxes(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., 5" required /></div></div><div className="p-4 border-t flex justify-end gap-3"><button type="button" onClick={onClose} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">Cancel</button><button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg disabled:bg-indigo-300 disabled:cursor-not-allowed">{isSubmitting ? 'Adding...' : 'Add Boxes'}</button></div></form></GenericModal>;
+    return <GenericModal isOpen={isOpen} onClose={onClose}><div className="p-4 border-b flex justify-between items-center"><h2 className="text-xl font-bold text-gray-800">Add More Boxes</h2><button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button></div><form onSubmit={handleSubmit}><div className="p-6 space-y-4"><div><label className="font-semibold text-gray-700 block mb-1">Item No</label><input type="text" readOnly value={item?.itemNo?.trim() || ''} className="w-full p-2 bg-gray-100 border rounded-lg cursor-not-allowed" /></div><div><label htmlFor="new-boxes-input" className="font-semibold text-gray-700 block mb-1">Number of New Boxes to Add</label><input id="new-boxes-input" type="number" min="1" value={numberOfNewBoxes} onChange={(e) => setNumberOfNewBoxes(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., 5" required /></div></div><div className="p-4 border-t flex justify-end gap-3"><button type="button" onClick={onClose} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">Cancel</button><button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg disabled:bg-indigo-300 disabled:cursor-not-allowed">{isSubmitting ? 'Adding...' : 'Add Boxes'}</button></div></form></GenericModal>;
 };
 const PrintablePageLayout = ({ item, box }) => {
     const profileCodes = [item.operator?.eid, item.helper?.eid].filter(Boolean).join(', ');
     const heightDisplay = item.length ? `${item.length} Feet` : "N/A";
-    return ( <div className="border-4 border-purple-800 p-6 bg-white w-full"><div className="grid grid-cols-10 gap-x-8 items-stretch"><div className="col-span-8 flex flex-col justify-between"><div><img src={logo} alt="3B Profiles Logo" className="h-74 ml-10" /><p className="text-sm font-semibold text-gray-700 mt-1">www.3bprofilespvtltd.com</p></div><div className="mt-8 space-y-4 text-xl"><div className="flex items-center"><span className="w-40 font-bold text-gray-800">Profile Code</span><span className="flex-1 border-b-2 border-gray-400 text-center font-mono">{profileCodes || 'N/A'}</span></div><div className="flex items-center"><span className="w-40 font-bold text-gray-800">Height (m)</span><span className="flex-1 border-b-2 border-gray-400 text-center font-mono">{heightDisplay}</span></div><div className="flex items-center"><span className="w-40 font-bold text-gray-800">Qty per Box</span><span className="flex-1 border-b-2 border-gray-400 text-center font-mono">{item.noOfSticks}</span></div></div></div><div className="col-span-2 flex flex-col justify-between items-center text-center"><div><img src={box.qrCodeUrl} alt="Box QR Code" className="w-40 h-40 mx-auto" /><p className="font-mono font-bold text-lg mt-1">{`${item.itemNo.trim()}/${box.boxSerialNo}`}</p></div><div className="w-full h-48 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center p-2 my-4"><img src={item.productImageUrl} alt="Product" className="max-w-full max-h-full object-contain" /></div><div className="w-full mt-auto"><StaticBarcodeIcon /></div></div></div></div> );
+    const productImageUrl = Array.isArray(item.productImageUrl) && item.productImageUrl.length > 0
+        ? item.productImageUrl[0] // Use the first image for the print layout
+        : item.productImageUrl; // Fallback for single string URL
+
+    return ( <div className="border-4 border-purple-800 p-6 bg-white w-full"><div className="grid grid-cols-10 gap-x-8 items-stretch"><div className="col-span-8 flex flex-col justify-between"><div><img src={logo} alt="3B Profiles Logo" className="h-74 ml-10" /><p className="text-sm font-semibold text-gray-700 mt-1">www.3bprofilespvtltd.com</p></div><div className="mt-8 space-y-4 text-xl"><div className="flex items-center"><span className="w-40 font-bold text-gray-800">Profile Code</span><span className="flex-1 border-b-2 border-gray-400 text-center font-mono">{profileCodes || 'N/A'}</span></div><div className="flex items-center"><span className="w-40 font-bold text-gray-800">Height (m)</span><span className="flex-1 border-b-2 border-gray-400 text-center font-mono">{heightDisplay}</span></div><div className="flex items-center"><span className="w-40 font-bold text-gray-800">Qty per Box</span><span className="flex-1 border-b-2 border-gray-400 text-center font-mono">{item.noOfSticks}</span></div></div></div><div className="col-span-2 flex flex-col justify-between items-center text-center"><div><img src={box.qrCodeUrl} alt="Box QR Code" className="w-40 h-40 mx-auto" /><p className="font-mono font-bold text-lg mt-1">{`${item.itemNo.trim()}/${box.boxSerialNo}`}</p></div><div className="w-full h-48 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center p-2 my-4"><img src={productImageUrl} alt="Product" className="max-w-full max-h-full object-contain" /></div><div className="w-full mt-auto"><StaticBarcodeIcon /></div></div></div></div> );
 };
 const PrintModal = ({ isOpen, onClose, item, box }) => {
   const handlePrint = () => window.print();
@@ -97,6 +101,67 @@ const PrintAllBoxesModal = ({ isOpen, onClose, item }) => {
   }
 `}</style>
  <GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl" zIndex="z-[60]"><div id="printable-all-boxes-area" className="p-4 overflow-y-auto"><h2 className="text-2xl font-bold text-center mb-4 no-print">Print Preview: All Boxes</h2>{item.boxes?.map(box => ( <div key={box._id} className="printable-page"><PrintablePageLayout item={item} box={box} /></div> ))}</div><div className="no-print p-4 bg-gray-50 rounded-b-lg flex justify-end gap-3 border-t"><button onClick={handlePrint} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2"><PrintIcon /> Print All</button><button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">Close</button></div></GenericModal> </> );
+};
+
+// --- ImageSliderModal (NEW COMPONENT) ---
+const ImageSliderModal = ({ isOpen, onClose, images, startIndex = 0 }) => {
+    const [currentIndex, setCurrentIndex] = useState(startIndex);
+
+    useEffect(() => {
+        setCurrentIndex(startIndex);
+    }, [startIndex, images]);
+
+    if (!isOpen || !images || images.length === 0) return null;
+
+    const goToPrevious = () => {
+        setCurrentIndex((prevIndex) => (prevIndex === 0 ? images.length - 1 : prevIndex - 1));
+    };
+
+    const goToNext = () => {
+        setCurrentIndex((prevIndex) => (prevIndex === images.length - 1 ? 0 : prevIndex + 1));
+    };
+
+    return (
+        <GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-3xl" zIndex="z-[70]">
+            <div className="p-4 border-b flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-800">Product Images</h2>
+                <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div className="relative flex-grow flex items-center justify-center p-4">
+                {images.length > 1 && (
+                    <>
+                        <button
+                            onClick={goToPrevious}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-gray-800 bg-opacity-50 text-white p-2 rounded-full z-10 hover:bg-opacity-75 focus:outline-none"
+                        >
+                            &#10094; {/* Left arrow */}
+                        </button>
+                        <button
+                            onClick={goToNext}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-800 bg-opacity-50 text-white p-2 rounded-full z-10 hover:bg-opacity-75 focus:outline-none"
+                        >
+                            &#10095; {/* Right arrow */}
+                        </button>
+                    </>
+                )}
+                <img
+                    src={images[currentIndex]}
+                    alt={`Product image ${currentIndex + 1}`}
+                    className="max-w-full max-h-[calc(80vh-120px)] object-contain rounded-lg shadow-md"
+                />
+            </div>
+            {images.length > 1 && (
+                <div className="p-2 border-t text-center text-gray-600">
+                    {currentIndex + 1} / {images.length}
+                </div>
+            )}
+            <div className="p-4 border-t flex justify-end">
+                <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">
+                    Close
+                </button>
+            </div>
+        </GenericModal>
+    );
 };
 
 // --- BoxesModal (UPDATED for responsiveness) & ItemDetails (Unchanged) ---
@@ -173,7 +238,7 @@ const ItemDetails = ({ item }) => {
     return ( <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 bg-gray-50"><div><p className="font-semibold text-gray-700">Length:</p><p>{item.length}</p></div><div><p className="font-semibold text-gray-700">Shift:</p><p>{item.shift}</p></div><div><p className="font-semibold text-gray-700">Company:</p><p>{item.company}</p></div><div><p className="font-semibold text-gray-700">Created At:</p><p>{new Date(item.createdAt).toLocaleString()}</p></div><div><p className="font-semibold text-gray-700">Operator EID:</p><p>{item.operator?.eid || 'N/A'}</p></div><div><p className="font-semibold text-gray-700">Helper EID:</p><p>{item.helper?.eid || 'N/A'}</p></div></div> );
 };
   
-// --- Main ViewItems Component (Unchanged) ---
+// --- Main ViewItems Component (Modified) ---
 function ViewItems() {
     const [items, setItems] = useState([]);
     const [fullItemsMap, setFullItemsMap] = useState(new Map());
@@ -187,21 +252,46 @@ function ViewItems() {
     const [selectedBoxForPrint, setSelectedBoxForPrint] = useState(null);
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
     const [isPrintAllModalOpen, setIsPrintAllModalOpen] = useState(false);
+    
+    // State for Image Slider Modal
+    const [isImageSliderModalOpen, setIsImageSliderModalOpen] = useState(false);
+    const [imagesForSlider, setImagesForSlider] = useState([]);
+    const [initialImageIndex, setInitialImageIndex] = useState(0);
+
 
     const fetchAllData = useCallback(async () => {
-        if (items.length === 0) setIsLoading(true);
+        setIsLoading(true); // Set loading true at the start of fetch
         try {
-            const [listRes, detailRes] = await Promise.all([ fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-Allitems'), fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-items') ]);
+            const [listRes, detailRes] = await Promise.all([ 
+                fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-Allitems'), 
+                fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-items') 
+            ]);
             if (!listRes.ok || !detailRes.ok) throw new Error('Failed to fetch data.');
             const listData = await listRes.json();
             const detailData = await detailRes.json();
             setItems(Array.isArray(listData) ? listData : []);
             const itemMap = new Map();
-            if (Array.isArray(detailData)) { detailData.forEach(item => itemMap.set(item._id, item)); }
+            if (Array.isArray(detailData)) { 
+                detailData.forEach(item => itemMap.set(item._id, {
+                    ...item,
+                    // Ensure productImageUrl is always an array for consistency
+                    productImageUrl: Array.isArray(item.productImageUrl) 
+                        ? item.productImageUrl 
+                        : (item.productImageUrl ? [item.productImageUrl] : []),
+                    // Ensure coverImageUrl is always an array (if it exists)
+                    coverImageUrl: Array.isArray(item.coverImageUrl) 
+                        ? item.coverImageUrl 
+                        : (item.coverImageUrl ? [item.coverImageUrl] : []),
+                })); 
+            }
             setFullItemsMap(itemMap);
-        } catch (err) { setError(err.message); toast.error("Could not fetch data."); } 
-        finally { setIsLoading(false); }
-    }, [items.length]);
+        } catch (err) { 
+            setError(err.message); 
+            toast.error("Could not fetch data."); 
+        } finally { 
+            setIsLoading(false); // Set loading false after fetch completes
+        }
+    }, []); // Removed items.length from dependency array to avoid unnecessary re-fetches
 
     useEffect(() => { fetchAllData(); }, [fetchAllData]);
     
@@ -245,7 +335,22 @@ function ViewItems() {
     const handleClosePrintAllModal = () => {
         setIsPrintAllModalOpen(false);
     };
+
+    // Handler for opening image slider modal
+    const handleOpenImageSlider = (images, index = 0) => {
+        setImagesForSlider(images);
+        setInitialImageIndex(index);
+        setIsImageSliderModalOpen(true);
+    };
+
+    const handleCloseImageSlider = () => {
+        setIsImageSliderModalOpen(false);
+        setImagesForSlider([]);
+        setInitialImageIndex(0);
+    };
+
     const handleUpdateSubmit = async (itemId, numberOfNewBoxes) => {
+        setIsLoading(true); // Show loader for this specific API call
         const promise = fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/items/${itemId}/add-boxes`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
@@ -257,16 +362,23 @@ function ViewItems() {
         await toast.promise(promise, {
             loading: 'Adding new boxes...',
             success: (data) => {
-                fetchAllData();
+                fetchAllData(); // Re-fetch all data to update the box counts
                 handleCloseUpdateModal();
                 return 'Boxes updated successfully!';
             },
-            error: (err) => `Error: ${err.message}`,
+              error: (err) => `Error: ${err.message}`,
+        }).finally(() => {
+            setIsLoading(false); // Hide loader regardless of success or failure
         });
     };
 
-    if (isLoading) return <div className="flex justify-center items-center h-screen"><Spinner /><p className="ml-4 text-xl text-gray-600">Loading All Items...</p></div>;
-    if (error) return <div className="text-center p-8 text-red-500">Error: {error}</div>;
+    if (isLoading) return (
+        <div className="flex justify-center items-center h-screen bg-gray-100">
+            <Spinner />
+            <p className="ml-4 text-xl text-gray-600">Loading All Items...</p>
+        </div>
+    );
+    if (error) return <div className="text-center p-8 text-red-500 bg-red-50">Error: {error}</div>;
   
     return (
       <>
@@ -275,34 +387,71 @@ function ViewItems() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-800">View All Items</h2>
             <div className="flex items-center gap-4">
-              <input type="text" placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-64 p-2 border rounded-xl"/>
+              <input type="text" placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-64 p-2 border rounded-xl focus:ring-indigo-500 focus:border-indigo-500"/>
             </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left text-gray-500">
-              <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-                <tr><th className="px-6 py-3">Item No</th><th className="px-6 py-3">Image</th><th className="px-6 py-3">Operator</th><th className="px-6 py-3">Helper</th><th className="px-6 py-3 text-center">Boxes</th><th className="px-6 py-3 text-center">Actions</th></tr>
+          <div className="overflow-x-auto rounded-lg border border-gray-200">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item No</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Images</th> {/* Changed from Image to Images */}
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Operator</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Helper</th>
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Boxes</th>
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
               </thead>
-              <tbody>
+              <tbody className="bg-white divide-y divide-gray-200">
                 {currentItems.map(item => (
                   <React.Fragment key={item._id}>
                     <tr className="bg-white border-b hover:bg-gray-50">
                       <td className="px-6 py-4 font-medium text-gray-900">{item.itemNo.trim()}</td>
-                      <td className="px-6 py-4"><img src={item.productImageUrl} alt={item.itemNo} className="w-16 h-16 object-cover rounded" /></td>
+                      <td className="px-6 py-4">
+                        {/* Display product images and handle click to open slider */}
+                        {item.productImageUrl && item.productImageUrl.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                                {item.productImageUrl.slice(0, 3).map((imgUrl, index) => ( // Show up to 3 thumbnails
+                                    <img
+                                        key={index}
+                                        src={imgUrl}
+                                        alt={`${item.itemNo} product ${index + 1}`}
+                                        className="w-16 h-16 object-cover rounded cursor-pointer border border-gray-200 hover:border-indigo-500 transition-all"
+                                        onClick={() => handleOpenImageSlider(item.productImageUrl, index)}
+                                    />
+                                ))}
+                                {item.productImageUrl.length > 3 && (
+                                    <div 
+                                        className="w-16 h-16 flex items-center justify-center bg-gray-100 rounded text-gray-600 text-xs font-semibold cursor-pointer border border-gray-200 hover:border-indigo-500 transition-all"
+                                        onClick={() => handleOpenImageSlider(item.productImageUrl, 3)}
+                                    >
+                                        +{item.productImageUrl.length - 3} more
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <span className="text-gray-400">No Image</span>
+                        )}
+                      </td>
                       <td className="px-6 py-4">{item.operator?.name || 'N/A'}</td>
                       <td className="px-6 py-4">{item.helper?.name || 'N/A'}</td>
                       <td className="px-6 py-4 text-center font-mono text-lg">{item.boxCount}</td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex items-center justify-center gap-4">
-                          <button onClick={() => handleToggleRow(item._id)} title="View Details" className="text-blue-600 hover:text-blue-800"><ViewIcon /></button>
-                          <button onClick={() => handleOpenBoxesModal(item)} title="View Boxes" className="text-green-600 hover:text-green-800"><BoxIcon /></button>
-                          <button onClick={() => alert(`Deleting item: ${item.itemNo.trim()}`)} title="Delete Item" className="text-red-600 hover:text-red-800"><DeleteIcon /></button>
+                          <button onClick={() => handleToggleRow(item._id)} title="View Details" className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100 transition-colors"><ViewIcon /></button>
+                          <button onClick={() => handleOpenBoxesModal(item)} title="View Boxes" className="text-green-600 hover:text-green-800 p-1 rounded-full hover:bg-green-100 transition-colors"><BoxIcon /></button>
+                          <button onClick={() => alert(`Deleting item: ${item.itemNo.trim()}`)} title="Delete Item" className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-100 transition-colors"><DeleteIcon /></button>
                         </div>
                       </td>
                     </tr>
                     {expandedRowId === item._id && ( <tr className="border-b"><td colSpan="6" className="p-0"><ItemDetails item={fullItemsMap.get(item._id)} /></td></tr> )}
                   </React.Fragment>
                 ))}
+                {currentItems.length === 0 && !isLoading && (
+                    <tr>
+                        <td colSpan="6" className="px-6 py-4 text-center text-gray-500">No items found matching your search.</td>
+                    </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -312,12 +461,16 @@ function ViewItems() {
         <PrintModal isOpen={isPrintModalOpen} onClose={handleClosePrintModal} item={selectedItemForBoxes} box={selectedBoxForPrint} />
         <UpdateBoxesModal isOpen={isUpdateModalOpen} onClose={handleCloseUpdateModal} item={selectedItemForBoxes} onUpdateSubmit={handleUpdateSubmit} />
         <PrintAllBoxesModal isOpen={isPrintAllModalOpen} onClose={handleClosePrintAllModal} item={selectedItemForBoxes} />
+        
+        {/* Image Slider Modal */}
+        <ImageSliderModal 
+            isOpen={isImageSliderModalOpen}
+            onClose={handleCloseImageSlider}
+            images={imagesForSlider}
+            startIndex={initialImageIndex}
+        />
       </>
     );
 }
   
 export default ViewItems;
-
-
-
-
