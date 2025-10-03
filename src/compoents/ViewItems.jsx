@@ -30,7 +30,7 @@ const PrintablePageLayout = ({ item, box }) => {
         ? item.productImageUrl[0] // Use the first image for the print layout
         : item.productImageUrl; // Fallback for single string URL
 
-    return ( <div className="border-4 border-purple-800 p-6 bg-white w-full"><div className="grid grid-cols-10 gap-x-8 items-stretch"><div className="col-span-8 flex flex-col justify-between"><div><img src={logo} alt="3B Profiles Logo" className="h-74 ml-10" /><p className="text-sm font-semibold text-gray-700 mt-1">www.3bprofilespvtltd.com</p></div><div className="mt-8 space-y-4 text-xl"><div className="flex items-center"><span className="w-40 font-bold text-gray-800">Profile Code</span><span className="flex-1 border-b-2 border-gray-400 text-center font-mono">{profileCodes || 'N/A'}</span></div><div className="flex items-center"><span className="w-40 font-bold text-gray-800">Height (m)</span><span className="flex-1 border-b-2 border-gray-400 text-center font-mono">{heightDisplay}</span></div><div className="flex items-center"><span className="w-40 font-bold text-gray-800">Qty per Box</span><span className="flex-1 border-b-2 border-gray-400 text-center font-mono">{item.noOfSticks}</span></div></div></div><div className="col-span-2 flex flex-col justify-between items-center text-center"><div><img src={box.qrCodeUrl} alt="Box QR Code" className="w-40 h-40 mx-auto" /><p className="font-mono font-bold text-lg mt-1">{`${item.itemNo.trim()}/${box.boxSerialNo}`}</p></div><div className="w-full h-48 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center p-2 my-4"><img src={productImageUrl} alt="Product" className="max-w-full max-h-full object-contain" /></div><div className="w-full mt-auto"><StaticBarcodeIcon /></div></div></div></div> );
+    return ( <div className="border-4 border-purple-800 p-6 bg-white w-full"><div className="grid grid-cols-10 gap-x-8 items-stretch"><div className="col-span-8 flex flex-col justify-between"><div><img src={logo} alt="3B Profiles Logo" className="h-24 ml-10" /><p className="text-sm font-semibold text-gray-700 mt-1">www.3bprofilespvtltd.com</p></div><div className="mt-8 space-y-4 text-xl"><div className="flex items-center"><span className="w-40 font-bold text-gray-800">Profile Code</span><span className="flex-1 border-b-2 border-gray-400 text-center font-mono">{profileCodes || 'N/A'}</span></div><div className="flex items-center"><span className="w-40 font-bold text-gray-800">Height (m)</span><span className="flex-1 border-b-2 border-gray-400 text-center font-mono">{heightDisplay}</span></div><div className="flex items-center"><span className="w-40 font-bold text-gray-800">Qty per Box</span><span className="flex-1 border-b-2 border-gray-400 text-center font-mono">{item.noOfSticks}</span></div></div></div><div className="col-span-2 flex flex-col justify-between items-center text-center"><div><img src={box.qrCodeUrl} alt="Box QR Code" className="w-40 h-40 mx-auto" /><p className="font-mono font-bold text-lg mt-1">{`${item.itemNo.trim()}/${box.boxSerialNo}`}</p></div><div className="w-full h-48 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center p-2 my-4"><img src={productImageUrl} alt="Product" className="max-w-full max-h-full object-contain" /></div><div className="w-full mt-auto"><StaticBarcodeIcon /></div></div></div></div> );
 };
 const PrintModal = ({ isOpen, onClose, item, box }) => {
   const handlePrint = () => window.print();
@@ -259,39 +259,50 @@ function ViewItems() {
     const [initialImageIndex, setInitialImageIndex] = useState(0);
 
 
-    const fetchAllData = useCallback(async () => {
-        setIsLoading(true); // Set loading true at the start of fetch
+  const fetchAllData = useCallback(async () => {
+        setIsLoading(true);
         try {
-            const [listRes, detailRes] = await Promise.all([ 
-                fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-Allitems'), 
-                fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-items') 
+            const [listRes, detailRes] = await Promise.all([
+                fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-Allitems'),
+                fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-items')
             ]);
             if (!listRes.ok || !detailRes.ok) throw new Error('Failed to fetch data.');
             const listData = await listRes.json();
             const detailData = await detailRes.json();
-            setItems(Array.isArray(listData) ? listData : []);
+
+            // Normalize productImageUrl for items from listData as well
+            const normalizedListData = Array.isArray(listData)
+                ? listData.map(item => ({
+                      ...item,
+                      productImageUrl: Array.isArray(item.productImageUrl)
+                          ? item.productImageUrl
+                          : (item.productImageUrl ? [item.productImageUrl] : []),
+                  }))
+                : [];
+            setItems(normalizedListData); // Use normalized data here
+
             const itemMap = new Map();
-            if (Array.isArray(detailData)) { 
+            if (Array.isArray(detailData)) {
                 detailData.forEach(item => itemMap.set(item._id, {
                     ...item,
                     // Ensure productImageUrl is always an array for consistency
-                    productImageUrl: Array.isArray(item.productImageUrl) 
-                        ? item.productImageUrl 
+                    productImageUrl: Array.isArray(item.productImageUrl)
+                        ? item.productImageUrl
                         : (item.productImageUrl ? [item.productImageUrl] : []),
                     // Ensure coverImageUrl is always an array (if it exists)
-                    coverImageUrl: Array.isArray(item.coverImageUrl) 
-                        ? item.coverImageUrl 
+                    coverImageUrl: Array.isArray(item.coverImageUrl)
+                        ? item.coverImageUrl
                         : (item.coverImageUrl ? [item.coverImageUrl] : []),
-                })); 
+                }));
             }
             setFullItemsMap(itemMap);
-        } catch (err) { 
-            setError(err.message); 
-            toast.error("Could not fetch data."); 
-        } finally { 
-            setIsLoading(false); // Set loading false after fetch completes
+        } catch (err) {
+            setError(err.message);
+            toast.error("Could not fetch data.");
+        } finally {
+            setIsLoading(false);
         }
-    }, []); // Removed items.length from dependency array to avoid unnecessary re-fetches
+    }, []);
 
     useEffect(() => { fetchAllData(); }, [fetchAllData]);
     
@@ -356,7 +367,7 @@ function ViewItems() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ numberOfNewBoxes }),
         }).then(res => {
-            if (!res.ok) { return res.json().then(err => { throw new Error(err.message || 'API request failed') }); }
+        if (!res.ok) { return res.json().then(err => { throw new Error(err.message || 'API request failed') }); }
             return res.json();
         });
         await toast.promise(promise, {
@@ -371,6 +382,70 @@ function ViewItems() {
             setIsLoading(false); // Hide loader regardless of success or failure
         });
     };
+
+    // New: handleDeleteItem function
+    const handleDeleteItem = async (itemId, itemNo) => {
+        // Confirmation toast
+        toast.custom((t) => (
+            <div
+                className={`${
+                    t.visible ? 'animate-enter' : 'animate-leave'
+                } max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+            >
+                <div className="flex-1 w-0 p-4">
+                    <div className="flex items-start">
+                        <div className="flex-shrink-0 pt-0.5">
+                            <DeleteIcon className="h-6 w-6 text-red-600" />
+                        </div>
+                        <div className="ml-3 flex-1">
+                            <p className="text-sm font-medium text-gray-900">
+                                Confirm Deletion
+                            </p>
+                            <p className="mt-1 text-sm text-gray-500">
+                                Are you sure you want to delete item <span className="font-semibold text-red-600">{itemNo}</span>? This action cannot be undone.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex border-l border-gray-200">
+                    <button
+                        onClick={() => {
+                            toast.dismiss(t.id); // Dismiss the confirmation toast
+                            const deletePromise = fetch(`https://threebtest.onrender.com/api/items/delete-items/${itemId}`, {
+                                method: 'DELETE',
+                            }).then(res => {
+                                if (!res.ok) {
+                                    return res.json().then(err => {
+                                        throw new Error(err.message || 'Failed to delete item');
+                                    });
+                                }
+                                return res.json();
+                            });
+
+                            toast.promise(deletePromise, {
+                                loading: `Deleting item ${itemNo}...`,
+                                success: (data) => {
+                                    fetchAllData(); // Re-fetch all data after successful deletion
+                                    return `Item ${itemNo} deleted successfully!`;
+                                },
+                                error: (err) => `Error: ${err.message}`,
+                            });
+                        }}
+                        className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-red-600 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    >
+                        Delete
+                    </button>
+                    <button
+                        onClick={() => toast.dismiss(t.id)}
+                        className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-gray-700 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        ), { duration: Infinity }); // Make the confirmation toast persistent until action is taken
+    };
+
 
     if (isLoading) return (
         <div className="flex justify-center items-center h-screen bg-gray-100">
@@ -440,7 +515,8 @@ function ViewItems() {
                         <div className="flex items-center justify-center gap-4">
                           <button onClick={() => handleToggleRow(item._id)} title="View Details" className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100 transition-colors"><ViewIcon /></button>
                           <button onClick={() => handleOpenBoxesModal(item)} title="View Boxes" className="text-green-600 hover:text-green-800 p-1 rounded-full hover:bg-green-100 transition-colors"><BoxIcon /></button>
-                          <button onClick={() => alert(`Deleting item: ${item.itemNo.trim()}`)} title="Delete Item" className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-100 transition-colors"><DeleteIcon /></button>
+                          {/* Updated Delete Button */}
+                          <button onClick={() => handleDeleteItem(item._id, item.itemNo.trim())} title="Delete Item" className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-100 transition-colors"><DeleteIcon /></button>
                         </div>
                       </td>
                     </tr>
