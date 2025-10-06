@@ -125,6 +125,8 @@ function Sidebar({ isOpen, onClose }) {
           {/* <LinkMenuItem icon={faBox} text="Add Products" to="/manager/add-product" /> */}
           <LinkMenuItem icon={faBox} text="All Products" to="/manager/view-products" />
            <LinkMenuItem icon={faList} text="Other Products" to="/manager/other-products"/>
+           <LinkMenuItem icon={faPlusSquare} text="Add Bulk Products" to="/manager/add-bulk-products" />  
+           <LinkMenuItem icon={faStickyNote} text = 'Product Dimensions' to = '/manager/product-dimensions'/>
         </ul>
 
         {/* Static Items */}

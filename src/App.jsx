@@ -26,6 +26,7 @@ import ReturnOrder from './compoents/ReturnOrder';
 import Billings from './compoents/Billings';
 import GetBills from './compoents/GetBills';
 import PushNotification from './compoents/PushNotification';
+import DimensionsTable from './compoents/DimensionsTable';
 
 function App() {
   return (
@@ -61,6 +62,7 @@ function App() {
           <Route path="billing" element={<Billings />} />
           <Route path="get-bills" element={<GetBills />} />
           <Route path="notifications" element={<PushNotification />} />
+          <Route path="product-dimensions" element={<DimensionsTable />} />
           
           {/* Add routes for 'add-staff', 'view-clients', etc. as you create them */}
         </Route>

@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faQrcode, faPenToSquare, faTrash, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faQrcode, faPenToSquare, faTrash, faPlus, faTimes, faChevronLeft, faChevronRight, faAngleDown, faFilter } from '@fortawesome/free-solid-svg-icons';
 import imageCompression from 'browser-image-compression';
-
 
 // --- Reusable Components ---
 const Modal = ({ isOpen, onClose, children, maxWidth = "max-w-lg" }) => {
@@ -23,6 +22,53 @@ const ImageThumb = ({ file, onRemove, isUrl = false }) => (
     <button type="button" onClick={onRemove} className="absolute top-1 right-1 bg-white/80 rounded-full w-6 h-6 flex items-center justify-center text-lg font-bold text-red-600 cursor-pointer hover:bg-red-100">×</button>
   </div>
 );
+
+// --- Image Slider Modal Component (NEW) ---
+const ImageSliderModal = ({ isOpen, onClose, images }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentIndex(0);
+    }
+  }, [isOpen]);
+
+  const goToPrevious = () => {
+    setCurrentIndex((prevIndex) => (prevIndex === 0 ? images.length - 1 : prevIndex - 1));
+  };
+
+  const goToNext = () => {
+    setCurrentIndex((prevIndex) => (prevIndex === images.length - 1 ? 0 : prevIndex + 1));
+  };
+
+  if (!isOpen || images.length === 0) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[100] p-4">
+      <div className="relative bg-white rounded-lg shadow-xl overflow-hidden max-w-4xl w-full max-h-[90vh] flex flex-col">
+        <button onClick={onClose} className="absolute top-3 right-3 text-white bg-gray-800 bg-opacity-75 rounded-full p-2 text-xl z-10 hover:bg-opacity-100">
+          <FontAwesomeIcon icon={faTimes} />
+        </button>
+        <div className="flex-grow flex items-center justify-center relative p-4">
+          <button onClick={goToPrevious} className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-gray-800 bg-opacity-75 rounded-full p-2 text-xl z-10 hover:bg-opacity-100">
+            <FontAwesomeIcon icon={faChevronLeft} />
+          </button>
+          <img
+            src={images[currentIndex]}
+            alt={`Product image ${currentIndex + 1}`}
+            className="max-w-full max-h-[75vh] object-contain rounded-lg"
+          />
+          <button onClick={goToNext} className="absolute right-2 top-1/2 -translate-y-1/2 text-white bg-gray-800 bg-opacity-75 rounded-full p-2 text-xl z-10 hover:bg-opacity-100">
+            <FontAwesomeIcon icon={faChevronRight} />
+          </button>
+        </div>
+        <div className="text-center p-2 text-gray-700">
+          {currentIndex + 1} / {images.length}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // --- Add Product Modal Component (MODIFIED) ---
 const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensions, handleAddNewDimension, newDimensionInput, setNewDimensionInput }) => {
@@ -49,12 +95,13 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
       setDescriptionParts(Array(10).fill(''));
       setShowAllDescriptionBoxes(false);
       setSelectedDimensions([]);
-      // setNewDimensionInput(''); // This state is now managed by ViewProducts
       setColorImages([]);
       setProductImages([]);
       setIsCompressing(false);
+      // Ensure newDimensionInput is reset or managed by parent if it's meant to be shared
+      setNewDimensionInput('');
     }
-  }, [isOpen]);
+  }, [isOpen, setNewDimensionInput]);
 
   const handleDescriptionPartChange = (e, index) => {
     const newParts = [...descriptionParts];
@@ -199,7 +246,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
 
 
 // --- Update Product Modal (MODIFIED) ---
-const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, dimensions, handleAddNewDimension, newDimensionInput, setNewDimensionInput }) => {
+const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categories, dimensions, handleAddNewDimension, newDimensionInput, setNewDimensionInput }) => {
   const [formData, setFormData] = useState({});
   const [existingImages, setExistingImages] = useState([]);
   const [newImages, setNewImages] = useState([]);
@@ -207,10 +254,10 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, dimensi
   const [isCompressing, setIsCompressing] = useState(false);
   const [selectedDimensions, setSelectedDimensions] = useState([]);
 
-
   useEffect(() => {
     if (product) {
       setFormData({
+        categoryId: product.categoryId?._id || product.categoryId || '', // Include categoryId
         name: product.name || '',
         pricePerPiece: product.pricePerPiece || '',
         totalPiecesPerBox: product.totalPiecesPerBox || '',
@@ -227,7 +274,6 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, dimensi
       setSelectedDimensions(dims);
     }
   }, [product]);
-
 
   const handleFileChange = async (e) => {
     const filesToProcess = Array.from(e.target.files);
@@ -267,7 +313,6 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, dimensi
     e.preventDefault();
 
     const data = new FormData();
-    // No need to split formData.dimensions, as selectedDimensions is now the source of truth
     data.append('dimensions', selectedDimensions.map(d => d.value).join(','));
 
     Object.entries(formData).forEach(([key, value]) => data.append(key, value));
@@ -306,7 +351,21 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, dimensi
       </div>
       <div className="overflow-y-auto px-6 py-6 min-h-0">
         <form id="update-product-form" onSubmit={handleFormSubmit} className="space-y-4">
-          <div><label className="text-sm font-semibold text-gray-700">Name / Frame</label><input type="text" name="name" value={formData.name} onChange={handleInputChange} required className={inputClass} /></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-semibold text-gray-700">Category</label>
+              <select name="categoryId" value={formData.categoryId} onChange={handleInputChange} required className={inputClass}>
+                <option value="">Select Category</option>
+                {categories.map(cat => (
+                  <option key={cat._id} value={cat._id}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-gray-700">Name / Frame</label>
+              <input type="text" name="name" value={formData.name} onChange={handleInputChange} required className={inputClass} />
+            </div>
+          </div>
           <div>
             <label className="text-sm font-semibold text-gray-700 block mb-1">Dimensions</label>
             <div className="flex items-center gap-2">
@@ -383,6 +442,8 @@ function ViewProducts() {
   const [dimensionList, setDimensionList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Modals
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isCarouselOpen, setCarouselOpen] = useState(false);
@@ -391,6 +452,12 @@ function ViewProducts() {
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newDimensionInput, setNewDimensionInput] = useState(''); // State for new dimension input
+
+  // Filtering & Pagination
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [productsPerPage] = useState(10); // Number of products per page
 
 
   const fetchData = useCallback(async () => {
@@ -459,9 +526,9 @@ function ViewProducts() {
   }, [fetchData]);
 
   // onDimensionAdded now just calls fetchData, as the actual add logic is above
-  const handleDimensionAdded = () => { fetchData(); };
+  // const handleDimensionAdded = () => { fetchData(); }; // No longer needed as handleAddNewDimension does this
   const handleProductAdded = () => { fetchData(); };
-  const showCarousel = (images) => { setCarouselImages(images.map(img => img.url)); setCarouselOpen(true); };
+const showCarousel = (images) => { setCarouselImages(images.map(img => img.url)); setCarouselOpen(true); };
   const showQrCode = (url) => { setQrCodeUrl(url); setQrOpen(true); };
   const handleEdit = (product) => { setSelectedProduct(product); setIsUpdateModalOpen(true); };
   const handleUpdateSuccess = () => { fetchData(); };
@@ -481,6 +548,35 @@ function ViewProducts() {
     });
   };
 
+  // Filtering Logic
+  const filteredProducts = products.filter(product => {
+    const matchesSearchTerm = searchTerm.toLowerCase() === ''
+      ? true
+      : product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.about.toLowerCase().includes(searchTerm.toLowerCase()); // Assuming 'about' also searchable
+
+    const matchesCategory = filterCategory === ''
+      ? true
+      : product.categoryId && product.categoryId._id === filterCategory;
+
+    return matchesSearchTerm && matchesCategory;
+  });
+
+  // Pagination Logic
+  const indexOfLastProduct = currentPage * productsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+  const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  const formatDateTime = (isoString) => {
+    if (!isoString) return 'N/A';
+    const date = new Date(isoString);
+    return date.toLocaleString(); // Formats to a human-readable date and time
+  };
+
+
   if (isLoading) return <div className="text-center p-8 text-lg">Loading...</div>;
   if (error) return <div className="text-center p-8 text-red-500">Error: {error}</div>;
 
@@ -492,47 +588,144 @@ function ViewProducts() {
           <h2 className="text-2xl font-bold text-gray-800">View All Products</h2>
           <button onClick={() => setIsAddModalOpen(true)} className="bg-[#6A3E9D] hover:bg-[#583281] text-white font-bold py-2 px-6 rounded-lg shadow-md transition-colors">+ Add Product</button>
         </div>
+
+        {/* Filter and Search Section */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-grow">
+            <input
+              type="text"
+              placeholder="Search by product name or description..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-[#6A3E9D] focus:border-[#6A3E9D] outline-none transition"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1); // Reset to first page on search
+              }}
+            />
+            <FontAwesomeIcon icon={faFilter} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          </div>
+          <div className="relative">
+            {/* <select
+              value={filterCategory}
+              onChange={(e) => {
+                setFilterCategory(e.target.value);
+                setCurrentPage(1); // Reset to first page on category filter
+              }}
+              className="appearance-none w-full sm:w-auto pr-10 pl-4 py-2 border border-gray-300 rounded-xl focus:ring-[#6A3E9D] focus:border-[#6A3E9D] outline-none bg-white"
+            >
+              <option value="">All Categories</option>
+              {categoryList.map(cat => (
+                <option key={cat._id} value={cat._id}>{cat.name}</option>
+              ))}
+            </select> */}
+            {/* <FontAwesomeIcon icon={faAngleDown} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" /> */}
+          </div>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left text-gray-600">
-            <thead className="text-xs text-gray-700 uppercase bg-gray-50"><tr>{['Image', 'Frame', 'Dimensions', 'Price/Piece', 'Piece/Box', 'Box Price', 'Discount', 'Qty', 'Actions'].map(header => (<th key={header} className="px-6 py-3">{header}</th>))}</tr></thead>
+            <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+              <tr>
+                <th className="px-6 py-3">Sr No.</th>
+                <th className="px-6 py-3">Image</th>
+                <th className="px-6 py-3">Frame</th>
+                <th className="px-6 py-3">Dimensions</th>
+                <th className="px-6 py-3">Price/Piece</th>
+                <th className="px-6 py-3">Piece/Box</th>
+                <th className="px-6 py-3">Box Price</th>
+                <th className="px-6 py-3">Discount</th>
+                <th className="px-6 py-3">Qty</th>
+                <th className="px-6 py-3">Date & Time</th>
+                <th className="px-6 py-3">Last Modify</th>
+                <th className="px-6 py-3">Actions</th>
+              </tr>
+            </thead>
             <tbody>
-              {products.map(product => (
-                <tr key={product._id} className="bg-white border-b hover:bg-gray-50 align-middle">
-                  <td className="px-6 py-4">
-                    {product.images && product.images.length > 0 ? (
-                      <img src={product.images[0]?.url} onClick={() => showCarousel(product.images)} className="w-16 h-16 object-cover rounded-md cursor-pointer" alt={product.name} />
-                    ) : (
-                      <div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-500">No Image</div>
+              {currentProducts.length > 0 ? (
+                currentProducts.map((product, index) => (
+                  <tr key={product._id} className="bg-white border-b hover:bg-gray-50 align-middle">
+                    <td className="px-6 py-4">{(indexOfFirstProduct + index) + 1}</td>
+                    <td className="px-6 py-4">
+                      {product.images && product.images.length > 0 ? (
+                        <img
+                          src={product.images[0]?.url}
+                          onClick={() => showCarousel(product.images)}
+                          className="w-16 h-16 object-cover rounded-md cursor-pointer"
+                          alt={product.name}
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-500">No Image</div>
                       )}
                     </td>
                     <td className="px-6 py-4 font-medium text-gray-900">{product.name}</td>
-                    {/* Ensure product.dimensions is an array before calling join */}
                     <td className="px-6 py-4">{Array.isArray(product.dimensions) ? product.dimensions.map(d => d.value || d).join(', ') : '—'}</td>
                     <td className="px-6 py-4">₹{product.pricePerPiece}</td>
                     <td className="px-6 py-4">{product.totalPiecesPerBox}</td>
                     <td className="px-6 py-4">₹{product.finalPricePerBox || product.mrpPerBox}</td>
                     <td className="px-6 py-4">{product.discountPercentage || 0}%</td>
                     <td className="px-6 py-4">{product.quantity}</td>
+                    <td className="px-6 py-4 text-xs text-gray-500">{formatDateTime(product.createdAt)}</td>
+                    <td className="px-6 py-4 text-xs text-gray-500">{formatDateTime(product.updatedAt)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <button onClick={() => showQrCode(product.qrCodeUrl)} title="Show QR Code" className="text-gray-500 hover:text-gray-700 p-2"><FontAwesomeIcon icon={faQrcode} /></button>
                       <button onClick={() => handleEdit(product)} title="Edit" className="text-blue-600 hover:text-blue-800 p-2"><FontAwesomeIcon icon={faPenToSquare} /></button>
                       <button onClick={() => handleDelete(product._id)} title="Delete" className="text-red-600 hover:text-red-800 p-2"><FontAwesomeIcon icon={faTrash} /></button>
                     </td>
                   </tr>
-              ))}
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="12" className="px-6 py-4 text-center text-gray-500">No products found.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        <div className="mt-6 flex justify-center items-center gap-2">
+          <button
+            onClick={() => paginate(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-3 py-1 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          {[...Array(totalPages)].map((_, i) => (
+            <button
+              key={i + 1}
+              onClick={() => paginate(i + 1)}
+              className={`px-3 py-1 border rounded-md ${currentPage === i + 1 ? 'bg-[#6A3E9D] text-white border-[#6A3E9D]' : 'border-gray-300 text-gray-600 hover:bg-gray-100'}`}
+            >
+              {i + 1}
+            </button>
+          ))}
+          <button
+            onClick={() => paginate(currentPage + 1)}
+            disabled={currentPage === totalPages || totalPages === 0}
+            className="px-3 py-1 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+        </div>
       </div>
 
-      <Modal isOpen={isCarouselOpen} onClose={() => setCarouselOpen(false)}>
-        {/* You had two carousel modals, keeping one and adding a check for images */}
-        {carouselImages.length > 0 && (
-          <img src={carouselImages[0]} alt="Product Carousel" className="max-w-full max-h-[80vh] rounded-lg" />
-        )}
-      </Modal>
+      <ImageSliderModal
+        isOpen={isCarouselOpen}
+        onClose={() => setCarouselOpen(false)}
+        images={carouselImages}
+      />
+
       <Modal isOpen={isQrOpen} onClose={() => setQrOpen(false)}>
-        {qrCodeUrl && <img src={qrCodeUrl} alt="Product QR Code" className="w-64 h-64 rounded-lg" />}
+        <div className="p-6 flex flex-col items-center">
+          <h3 className="text-xl font-bold mb-4">Product QR Code</h3>
+          {qrCodeUrl ? (
+            <img src={qrCodeUrl} alt="Product QR Code" className="w-64 h-64 rounded-lg border p-2" />
+          ) : (
+            <p className="text-gray-500">QR Code not available.</p>
+          )}
+          <button onClick={() => setQrOpen(false)} className="mt-6 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">Close</button>
+        </div>
       </Modal>
 
       {/* Pass the new dimension states and handler to AddProductModal */}
@@ -553,6 +746,7 @@ function ViewProducts() {
         onClose={() => setIsUpdateModalOpen(false)}
         onUpdateSuccess={handleUpdateSuccess}
         product={selectedProduct}
+        categories={categoryList} 
         dimensions={dimensionList}
         handleAddNewDimension={handleAddNewDimension}
         newDimensionInput={newDimensionInput}
