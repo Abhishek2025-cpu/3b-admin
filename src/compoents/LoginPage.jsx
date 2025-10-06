@@ -1,7 +1,6 @@
 // src/App.jsx
 
 import React, { useState, useEffect } from 'react';
-// 1. IMPORT useNavigate: This is the hook from React Router for navigation
 import { useNavigate } from 'react-router-dom';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -13,19 +12,18 @@ import vectorNew from '../assets/Vectornew.png';
 const styles = {
   body: { margin: 0, padding: 0, fontFamily: "'Roboto', sans-serif", background: '#f8f9fa', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', overflow: 'hidden' },
   loginContainer: { background: '#f5f5f5', borderRadius: '20px', padding: '35px 25px', boxShadow: '0px 8px 16px rgba(0, 0, 0, 0.3)', width: '100%', maxWidth: '350px', boxSizing: 'border-box', textAlign: 'center', zIndex: 1 },
-  
-  // 2. CHANGE: Logo is now rounded
+
   logo: {
     width: '120px',
     height: '120px',
     marginBottom: '15px',
-    borderRadius: '50%', // This makes it a circle
-    objectFit: 'cover', 
+    borderRadius: '50%',
+    objectFit: 'cover',
      display: 'block',
   marginLeft: 'auto',
-  marginRight: 'auto',  // This prevents the image from stretching
+  marginRight: 'auto',
   },
-  
+
   h1: { fontSize: '1.5rem', color: '#452983', fontFamily: "'Poppins', sans-serif", fontWeight:"600", margin: '0 0 20px 0' },
   inputWrapper: { position: 'relative', marginBottom: '15px', width: '100%' },
   input: { width: '100%', padding: '10px 40px', border: '1px solid #7853C2', borderRadius: '8px', boxSizing: 'border-box', fontSize: '1rem' },
@@ -53,7 +51,7 @@ const keyframes = `
   }`;
 
 function LoginPage() {
-  const navigate = useNavigate(); // Initialize the navigate function from React Router
+  const navigate = useNavigate();
 
   const [number, setNumber] = useState('');
   const [password, setPassword] = useState('');
@@ -67,60 +65,58 @@ function LoginPage() {
     document.head.appendChild(styleSheet);
   }, []);
 
-  // 3. FIX: The bug causing the green toast to turn red is fixed here.
-  // The toast now resets to a neutral state, not a default 'error' state.
   const showToast = (message, type) => {
     setToast({ show: true, message, type });
     setTimeout(() => {
-      setToast({ show: false, message: '', type: '' }); // Reset to empty type
+      setToast({ show: false, message: '', type: '' });
     }, 4000);
   };
 
- // In your LoginPage.jsx component
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (!/^\d{10}$/.test(number)) return showToast('Please enter a valid 10-digit phone number.', 'error');
+    if (!password) return showToast('Please enter your password.', 'error');
 
-const handleLogin = async (e) => {
-  e.preventDefault();
-  if (!/^\d{10}$/.test(number)) return showToast('Please enter a valid 10-digit phone number.', 'error');
-  if (!password) return showToast('Please enter your password.', 'error');
-  
-  setIsLoading(true);
+    setIsLoading(true);
 
-  try {
-    const response = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/admin/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ number, password }),
-    });
-    const result = await response.json();
+    try {
+      const response = await fetch('https://threebtest.onrender.com/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ number, password }),
+      });
+      const result = await response.json();
 
-    // CORRECTED LOGIC: We now primarily trust `response.ok`.
-    // The `response.ok` property is true for HTTP statuses 200-299.
-    if (response.ok) {
-      showToast('Login successful!', 'success'); // This will now be green
-      
-      // Use the data from the 'result' object as before
-      const { name, role, token } = result.data || {};
-      localStorage.setItem('userName', name || 'Manager');
-      localStorage.setItem('userRole', role || 'guest');
-      localStorage.setItem('authToken', token);
+      if (response.ok) {
+        showToast('Login successful!', 'success');
 
-      // Navigate after a short delay so the user sees the green toast
-      setTimeout(() => {
-        navigate('/manager');
-      }, 800);
+        // --- FIX START ---
+        // Extract 'role' directly from 'result'
+        const userRole = result.role; // This will be "admin" or "sub-admin"
+        const userName = result.user?.name || 'Manager'; // Get name from result.user, default to 'Manager'
+        const authToken = result.token; // Assuming 'token' might also be at top level or in result.user, adjust if needed
 
-    } else {
-      // This block now correctly handles actual API errors (like 401, 404, 500)
-      showToast(result.message || 'Invalid credentials or server error.', 'error');
+        localStorage.setItem('userName', userName);
+        localStorage.setItem('userRole', userRole || 'guest'); // Use the extracted userRole
+        localStorage.setItem('authToken', authToken); // Set the token
+
+        // --- FIX END ---
+
+        setTimeout(() => {
+          navigate('/manager');
+        }, 800);
+
+      } else {
+        showToast(result.message || 'Invalid credentials or server error.', 'error');
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      showToast('Network error. Please try again.', 'error');
       setIsLoading(false);
     }
-  } catch (error) {
-    console.error('Login error:', error);
-    showToast('Network error. Please try again.', 'error');
-    setIsLoading(false);
-  }
-};
-  // This combines the base toast style with the correct success or error style
+  };
+
   const toastStyle = {
     ...styles.toast,
     ...(toast.type === 'success' ? styles.toastSuccess : {}),
@@ -143,9 +139,9 @@ const handleLogin = async (e) => {
         </form>
         <p><a href="#" style={styles.forgotPasswordLink}><FontAwesomeIcon icon={faKey} style={{ marginRight: '5px' }}/>Forgot Password?</a></p>
       </div>
-      
+
       {toast.show && (<div style={styles.toastContainer}><div style={toastStyle}>{toast.message}</div></div>)}
-      
+
       <div style={styles.footer}><FontAwesomeIcon icon={faCopyright} style={{ marginRight: '5px' }}/>All Rights Reserved By 3B Profiles</div>
     </div>
   );

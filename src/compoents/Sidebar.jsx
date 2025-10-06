@@ -1,19 +1,17 @@
 // src/components/Sidebar.jsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Import useEffect
 import { Link, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileInvoiceDollar } from "@fortawesome/free-solid-svg-icons";
 
-
-
 import {
   faTachometerAlt, faStickyNote, faPlusSquare, faList, faUsers, faUserTie, faUserFriends,
   faComments, faUserPlus, faUsersCog, faThLarge, faBoxOpen, faBox,
-  faShoppingCart, faCog, faChevronDown,faGlobe,faUserShield,faUndo,faBell
+  faShoppingCart, faCog, faChevronDown, faGlobe, faUserShield, faUndo, faBell
 } from '@fortawesome/free-solid-svg-icons';
 
-import profilePic from '../assets/3b.png'; 
+import profilePic from '../assets/3b.png';
 
 const styles = {
     sideMenu: { position: 'fixed', top: 0, left: 0, width: '260px', height: '100%', backgroundColor: '#f5f5f5', boxShadow: '2px 0 5px rgba(0,0,0,0.2)', padding: '20px', zIndex: 2000, transform: 'translateX(-100%)', transition: 'transform 0.3s ease', overflowY: 'auto' },
@@ -69,14 +67,23 @@ const DropdownMenuItem = ({ icon, text, isOpen, onClick }) => (
 
 function Sidebar({ isOpen, onClose }) {
   const [openMenus, setOpenMenus] = useState({});
+  const [userRole, setUserRole] = useState(null); // State to store user role
+
+  // Use useEffect to read the role from localStorage when the component mounts
+  useEffect(() => {
+    const storedRole = localStorage.getItem('userRole');
+    if (storedRole) {
+      setUserRole(storedRole);
+    }
+  }, []); // Empty dependency array means this runs once on mount
 
   const toggleNested = (e, menuId) => {
     e.stopPropagation();
     setOpenMenus(prev => ({ ...prev, [menuId]: !prev[menuId] }));
   };
-  
+
   const userName = localStorage.getItem('userName') || 'Manager';
-  const userEmail = "manager@3bprofiles.com";
+  const userEmail = "manager@3bprofiles.com"; // Assuming a default email for the manager
 
   return (
     <div style={{ ...styles.sideMenu, ...(isOpen ? styles.sideMenuOpen : {}) }}>
@@ -111,7 +118,7 @@ function Sidebar({ isOpen, onClose }) {
           </ul>
         </ul>
 
-        {/* --- ADDED: Categories Menu --- */}
+        {/* --- Categories Menu --- */}
         <DropdownMenuItem icon={faThLarge} text="Categories" isOpen={openMenus.categories} onClick={(e) => toggleNested(e, 'categories')} />
         <ul style={{ ...styles.nested, ...(openMenus.categories ? styles.nestedOpen : {}) }}>
           <LinkMenuItem icon={faPlusSquare} text="New Category" to="/manager/add-category" />
@@ -119,31 +126,34 @@ function Sidebar({ isOpen, onClose }) {
            <LinkMenuItem icon={faList} text="Other Categories" to="/manager/other-categories" />
         </ul>
 
-        {/* --- ADDED: Products Menu --- */}
+        {/* --- Products Menu --- */}
         <DropdownMenuItem icon={faBoxOpen} text="Products" isOpen={openMenus.products} onClick={(e) => toggleNested(e, 'products')} />
         <ul style={{ ...styles.nested, ...(openMenus.products ? styles.nestedOpen : {}) }}>
           {/* <LinkMenuItem icon={faBox} text="Add Products" to="/manager/add-product" /> */}
           <LinkMenuItem icon={faBox} text="All Products" to="/manager/view-products" />
            <LinkMenuItem icon={faList} text="Other Products" to="/manager/other-products"/>
-           <LinkMenuItem icon={faPlusSquare} text="Add Bulk Products" to="/manager/add-bulk-products" />  
+
            <LinkMenuItem icon={faStickyNote} text = 'Product Dimensions' to = '/manager/product-dimensions'/>
         </ul>
 
         {/* Static Items */}
         <LinkMenuItem icon={faShoppingCart} text="Orders" to="/manager/orders" />
-    <LinkMenuItem icon={faFileInvoiceDollar} text="Billing" to="/manager/billing" />
-      <LinkMenuItem icon={faFileInvoiceDollar} text="All Bills" to="/manager/get-bills" />
+        <LinkMenuItem icon={faFileInvoiceDollar} text="Billing" to="/manager/billing" />
+        <LinkMenuItem icon={faFileInvoiceDollar} text="All Bills" to="/manager/get-bills" />
 
         <LinkMenuItem icon={faUndo} text="Order Returns" to="/manager/order-returns" />
-         <LinkMenuItem icon={faGlobe} text="Companies" to="/manager/company" />
-         <LinkMenuItem icon={faUserShield} text="Admins" to="/manager/admins" />
-  <LinkMenuItem
-  text="Push Notifications"
-  to="/manager/notifications"
-  icon={faBell} // <-- pass the icon object, NOT JSX
-/>
+        <LinkMenuItem icon={faGlobe} text="Companies" to="/manager/company" />
 
+        {/* Conditional Rendering for Admins Link */}
+        {userRole === 'admin' && (
+          <LinkMenuItem icon={faUserShield} text="Admins" to="/manager/admins" />
+        )}
 
+        <LinkMenuItem
+          text="Push Notifications"
+          to="/manager/notifications"
+          icon={faBell}
+        />
 
         <LinkMenuItem icon={faComments} text="App Feedback" to="/manager/feedback" />
         <LinkMenuItem icon={faCog} text="Settings" to="/manager/settings" />
