@@ -27,7 +27,7 @@ import Billings from './compoents/Billings';
 import GetBills from './compoents/GetBills';
 import PushNotification from './compoents/PushNotification';
 import DimensionsTable from './compoents/DimensionsTable';
-
+import MachineManager from './compoents/MachineManager';
 function App() {
   return (
     <>
@@ -39,6 +39,7 @@ function App() {
         <Route path="/manager" element={<ManagerLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="add-machine" element={<MachineManager />} />
           <Route path="add-item" element={<AddItem />} />
           <Route path="view-items" element={<ViewItems />} />
           <Route path="view-clients" element={<ViewClients />} />

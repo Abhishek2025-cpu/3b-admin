@@ -4,11 +4,27 @@ import React, { useState, useEffect, useMemo } from 'react';
 const API_BASE_URL = 'https://threebapi-1067354145699.asia-south1.run.app/api/sub-admin';
 
 // --- Helper Components & Icons (Unchanged) ---
-const Spinner = () => ( <svg className="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> );
-const ViewIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.022 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" /></svg> );
-const DeleteIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg> );
+// Assuming these are defined elsewhere or inline for brevity.
+// If you need actual icon components, please provide their definitions.
+const ViewIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" /></svg>;
+const DeleteIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>;
+const Spinner = () => <div className="animate-spin inline-block w-6 h-6 border-[3px] border-current border-t-transparent text-indigo-600 rounded-full" role="status" aria-label="loading"></div>;
 
-// --- **FIX 3: UPDATED CONFIRMATION POPUP POSITIONING** ---
+// Eye icon for showing password
+const EyeOpenIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+        <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+    </svg>
+);
+
+// Eye icon for hiding password
+const EyeClosedIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414L5.586 7H4a1 1 0 00-.894 1.447l.858 1.716C4.981 11.258 5 11.667 5 12a5 5 0 008.207 3.82L17.293 18.293a1 1 0 101.414-1.414L3.707 2.293zm9.176 9.176a3 3 0 01-4.243-4.243L12.586 7H16a1 1 0 00.894-1.447l-1.45-2.9A1 1 0 0015 2h-1a1 1 0 00-.894.553L12.707 4.293 9.793 1.38A1 1 0 008.38 0L.707 7.673a1 1 0 001.414 1.414L7 3.414 12.08 8.5a1 1 0 001.414 0 1 1 0 000-1.414L9 1.414 2.414 8.086 1.707 7.379 0 9.086 7.673 16.759a1 1 0 001.414 0 1 1 0 000-1.414L8.414 14l1.293-1.293z" clipRule="evenodd" />
+    </svg>
+);
+
 const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => {
   if (!isOpen) return null;
   return (
@@ -25,7 +41,6 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => {
   );
 };
 
-// --- **FIX 1: FULLY RESTORED ADD SUB-ADMIN MODAL** ---
 const AddSubAdminModal = ({ isOpen, onClose, onAdd }) => {
     const [formData, setFormData] = useState({ name: '', email: '', phone: '', dob: '', address: '' });
     const [file, setFile] = useState(null);
@@ -45,9 +60,9 @@ const AddSubAdminModal = ({ isOpen, onClose, onAdd }) => {
             Object.keys(formData).forEach(key => data.append(key, formData[key]));
             data.append('verificationDocument', file);
             await onAdd(data);
-            onClose();
+            // onClose(); // Close only after successful password display
         } catch (err) {
-            setError(err.message || 'Failed to add sub-admin. Please try again.');
+            setError(err.message || 'Registration failed.');
         } finally {
             setIsSubmitting(false);
         }
@@ -60,7 +75,6 @@ const AddSubAdminModal = ({ isOpen, onClose, onAdd }) => {
                     <h2 className="text-xl font-bold text-gray-800  ">Add New Sub-Admin</h2>
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
                 </div>
-                {/* THE FORM CONTENT IS NOW HERE */}
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input type="text" name="name" placeholder="Full Name" onChange={handleChange} required className="p-2 border rounded-md" />
@@ -86,9 +100,51 @@ const AddSubAdminModal = ({ isOpen, onClose, onAdd }) => {
     );
 };
 
-// --- **FIX 2: UPDATED VIEW DETAILS MODAL POSITIONING** ---
+// New Password Display Modal
+const PasswordDisplayModal = ({ isOpen, onClose, password }) => {
+    if (!isOpen) return null;
+
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(password);
+        alert('Password copied to clipboard!');
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex justify-center items-center p-4">
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-md p-6 relative">
+                <button onClick={onClose} className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
+                <h2 className="text-xl font-bold text-gray-800 mb-4">Sub-Admin Created Successfully!</h2>
+                <p className="text-gray-700 mb-2">The auto-generated password for the new sub-admin is:</p>
+                <div className="flex items-center bg-gray-100 p-3 rounded-md border border-gray-300">
+                    <span className="flex-grow font-mono text-lg text-gray-900 break-all select-all">{password}</span>
+                    <button
+                        onClick={copyToClipboard}
+                        className="ml-4 p-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center"
+                        title="Copy to clipboard"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                            <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                        </svg>
+                        <span className="ml-1 hidden sm:inline">Copy</span>
+                    </button>
+                </div>
+                <p className="text-sm text-gray-500 mt-2">Please save this password securely. It will be required for the sub-admin's first login.</p>
+                <div className="mt-6 text-right">
+                    <button onClick={onClose} className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Done</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 const DetailsModal = ({ isOpen, onClose, admin }) => {
+    // New state to toggle password visibility - DEFAULT TO TRUE (PASSWORD IS SHOWN)
+    const [showPassword, setShowPassword] = useState(true);
+
     if (!isOpen || !admin) return null;
+
     return (
         <div className="fixed inset-0 z-40 flex justify-center items-start pt-20 p-4 pointer-events-none">
             <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg p-6 pointer-events-auto">
@@ -105,6 +161,29 @@ const DetailsModal = ({ isOpen, onClose, admin }) => {
                     <div><strong className="text-gray-900">Date of Birth:</strong><br/>{new Date(admin.dob).toLocaleDateString()}</div>
                     <div><strong className="text-gray-900">Status:</strong><br/><span className={`capitalize font-semibold ${admin.status === 'active' ? 'text-green-600' : 'text-red-600'}`}>{admin.status}</span></div>
                     <div className="md:col-span-2"><strong className="text-gray-900">Address:</strong><br/>{admin.address}</div>
+                    {/* Updated Password Field with Show/Hide Toggle */}
+                    <div className="md:col-span-2">
+                        {/* <strong className="text-gray-900">Password (Auto-generated):</strong><br/>
+                        <div className="relative flex items-center">
+                            <input
+                                type={showPassword ? 'text' : 'password'}
+                                value={admin.autoGeneratedPassword}
+                                readOnly
+                                className="w-full p-2 pr-10 border rounded-md bg-gray-100 text-gray-700 font-mono"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-2 p-1 text-gray-500 hover:text-gray-800"
+                                title={showPassword ? 'Hide password' : 'Show password'}
+                            >
+                                {showPassword ? <EyeClosedIcon /> : <EyeOpenIcon />}
+                            </button>
+                        </div> */}
+                        {/* <p className="text-xs text-gray-500 mt-1">
+                            Note: This is the initial auto-generated password.
+                        </p> */}
+                    </div>
                     <div className="md:col-span-2"><strong className="text-gray-900">Permissions:</strong><br/>{admin.permissions.join(', ')}</div>
                     <div><strong className="text-gray-900">Created At:</strong><br/>{new Date(admin.createdAt).toLocaleString()}</div>
                     <div><strong className="text-gray-900">Last Updated:</strong><br/>{new Date(admin.updatedAt).toLocaleString()}</div>
@@ -134,6 +213,9 @@ function SubAdmins() {
     const [selectedAdmin, setSelectedAdmin] = useState(null);
     const [confirmAction, setConfirmAction] = useState(null);
     const [confirmMessage, setConfirmMessage] = useState('');
+    // New state for password display modal
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [newAdminPassword, setNewAdminPassword] = useState('');
 
     const fetchSubAdmins = async () => {
         setIsLoading(true);
@@ -157,7 +239,16 @@ function SubAdmins() {
             const errData = await response.json();
             throw new Error(errData.message || 'Registration failed.');
         }
-        await fetchSubAdmins();
+        const responseData = await response.json(); // Get the response data
+        
+        // Handle password display
+        if (responseData.autoGeneratedPassword) {
+            setNewAdminPassword(responseData.autoGeneratedPassword);
+            setIsPasswordModalOpen(true);
+        }
+
+        await fetchSubAdmins(); // Refresh the list of sub-admins
+        setIsAddModalOpen(false); // Close the add modal after successful submission
     };
 
     const handleStatusToggle = async (admin) => {
@@ -185,7 +276,10 @@ function SubAdmins() {
     };
 
     const openDetailsModal = (admin) => {
-        setSelectedAdmin(admin);
+        // When opening details, ensure the autoGeneratedPassword is part of the selectedAdmin
+        // This is a simplification; in a real app, you wouldn't keep plain passwords in state
+        // and would retrieve it securely or not display it at all.
+        setSelectedAdmin({ ...admin, autoGeneratedPassword: newAdminPassword || admin.autoGeneratedPassword });
         setIsDetailsModalOpen(true);
     };
 
@@ -277,6 +371,12 @@ function SubAdmins() {
             <AddSubAdminModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAdd={handleAdd} />
             <DetailsModal isOpen={isDetailsModalOpen} onClose={() => setIsDetailsModalOpen(false)} admin={selectedAdmin} />
             <ConfirmModal isOpen={isConfirmModalOpen} onClose={() => setIsConfirmModalOpen(false)} onConfirm={onConfirm} title="Confirm Action" message={confirmMessage} />
+            {/* Password Display Modal */}
+            <PasswordDisplayModal
+                isOpen={isPasswordModalOpen}
+                onClose={() => setIsPasswordModalOpen(false)}
+                password={newAdminPassword}
+            />
         </>
     );
 }

@@ -8,7 +8,7 @@ import { faFileInvoiceDollar } from "@fortawesome/free-solid-svg-icons";
 import {
   faTachometerAlt, faStickyNote, faPlusSquare, faList, faUsers, faUserTie, faUserFriends,
   faComments, faUserPlus, faUsersCog, faThLarge, faBoxOpen, faBox,
-  faShoppingCart, faCog, faChevronDown, faGlobe, faUserShield, faUndo, faBell
+  faShoppingCart, faCog, faChevronDown, faGlobe, faUserShield, faUndo, faBell,faCogs, faTasks, faChartBar
 } from '@fortawesome/free-solid-svg-icons';
 
 import profilePic from '../assets/3b.png';
@@ -95,6 +95,7 @@ function Sidebar({ isOpen, onClose }) {
       </div>
       <ul style={styles.menuList}>
         <LinkMenuItem icon={faTachometerAlt} text="Dashboard" to="/manager/dashboard" />
+      
 
         {/* Sticker Menu */}
         <DropdownMenuItem icon={faStickyNote} text="Sticker" isOpen={openMenus.sticker} onClick={(e) => toggleNested(e, 'sticker')} />
@@ -102,6 +103,19 @@ function Sidebar({ isOpen, onClose }) {
           <LinkMenuItem icon={faPlusSquare} text="Add" to="/manager/add-item" />
           <LinkMenuItem icon={faList} text="View" to="/manager/view-items" />
         </ul>
+
+        {/* Machines Menu */}
+{/* <DropdownMenuItem 
+  icon={faCogs}   // you can replace with a better icon like faIndustry or faTools if you prefer
+  text="Machines" 
+  isOpen={openMenus.machines} 
+  onClick={(e) => toggleNested(e, 'machines')} 
+/> */}
+{/* <ul style={{ ...styles.nested, ...(openMenus.machines ? styles.nestedOpen : {}) }}>
+  <LinkMenuItem icon={faPlusSquare} text="Add New Machine" to="/manager/add-machine" />
+  <LinkMenuItem icon={faTasks} text="Assign Machines" to="/manager/assign-machines" />
+  <LinkMenuItem icon={faChartBar} text="Reports" to="/manager/machine-reports" />
+</ul> */}
 
         {/* Users Menu */}
         <DropdownMenuItem icon={faUsers} text="Users" isOpen={openMenus.users} onClick={(e) => toggleNested(e, 'users')} />
