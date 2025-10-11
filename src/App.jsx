@@ -28,6 +28,7 @@ import GetBills from './compoents/GetBills';
 import PushNotification from './compoents/PushNotification';
 import DimensionsTable from './compoents/DimensionsTable';
 import MachineManager from './compoents/MachineManager';
+import AssignMachines from './compoents/AssignMachines';
 function App() {
   return (
     <>
@@ -40,6 +41,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="add-machine" element={<MachineManager />} />
+          <Route path="assign-machines" element={<AssignMachines />} />
           <Route path="add-item" element={<AddItem />} />
           <Route path="view-items" element={<ViewItems />} />
           <Route path="view-clients" element={<ViewClients />} />

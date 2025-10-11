@@ -13,7 +13,8 @@ import {
   CircularProgress,
   useTheme,
 } from '@mui/material';
-import toast, { Toaster } from "react-hot-toast";
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const style = {
   position: 'absolute',
@@ -40,8 +41,8 @@ const AssignMachines = () => {
   const [loading, setLoading] = useState(false);
 
   const colors = {
-    primary: '#6f42c1',
-    secondary: '#e0d8f0',
+    primary: '#6f42c1', // Based on profileName, profileEmail, menuItem
+    secondary: '#e0d8f0', // Based on activeMenuItem
   };
 
   const menuItemStyle = {
@@ -59,42 +60,12 @@ const AssignMachines = () => {
     },
   };
 
-  // ✅ Fixed fetchItems (handles both array and { data: [] } responses)
-  const fetchItems = async () => {
-    try {
-      const response = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-items');
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-
-      // Handle different possible API response formats
-      if (Array.isArray(data)) {
-        setItems(data);
-      } else if (data.success && Array.isArray(data.data)) {
-        setItems(data.data);
-      } else {
-        console.error('Unexpected items API response:', data);
-        toast.error('Failed to fetch items: Invalid format.');
-      }
-    } catch (error) {
-      console.error('Error fetching items:', error);
-      toast.error('Failed to fetch items.');
-    }
-  };
-
   const fetchMachines = async () => {
     try {
       const response = await fetch('https://threebtest.onrender.com/api/machines/get');
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
       const data = await response.json();
-      if (data.success && Array.isArray(data.data)) {
+      if (data.success) {
         setMachines(data.data);
-      } else {
-        console.error('Unexpected machines API response:', data);
-        toast.error('Failed to fetch machines: Invalid format.');
       }
     } catch (error) {
       console.error('Error fetching machines:', error);
@@ -105,21 +76,29 @@ const AssignMachines = () => {
   const fetchEmployees = async () => {
     try {
       const response = await fetch('https://threebtest.onrender.com/api/staff/get-employees');
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
       const data = await response.json();
-      if (Array.isArray(data)) {
+      if (Array.isArray(data)) { // Assuming the API returns an array directly
         setEmployees(data);
-      } else if (data.success && Array.isArray(data.data)) {
+      } else if (data.success && Array.isArray(data.data)) { // If it's wrapped in a data object
         setEmployees(data.data);
-      } else {
-        console.error('Unexpected employees API response:', data);
-        toast.error('Failed to fetch employees: Invalid format.');
       }
     } catch (error) {
       console.error('Error fetching employees:', error);
       toast.error('Failed to fetch employees.');
+    }
+  };
+
+  const fetchItems = async () => {
+    // Assuming a similar API structure for items, replace with actual API endpoint if different
+    try {
+      const response = await fetch('https://threebtest.onrender.com/api/items/get'); // Placeholder API, adjust as needed
+      const data = await response.json();
+      if (data.success) {
+        setItems(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching items:', error);
+      toast.error('Failed to fetch items.');
     }
   };
 
@@ -143,7 +122,9 @@ const AssignMachines = () => {
     const {
       target: { value },
     } = event;
-    setSelectedEmployees(typeof value === 'string' ? value.split(',') : value);
+    setSelectedEmployees(
+      typeof value === 'string' ? value.split(',') : value,
+    );
   };
 
   const handleSubmit = async () => {
@@ -168,15 +149,15 @@ const AssignMachines = () => {
 
       const result = await response.json();
 
-      if (response.ok && result.success) {
-        toast.success(result.message || 'Machine assigned successfully!');
+      if (result.success) {
+        toast.success(result.message);
         handleClose();
       } else {
         toast.error(result.message || 'Failed to assign machine.');
       }
     } catch (error) {
       console.error('Error assigning machine:', error);
-      toast.error(error.message || 'An error occurred while assigning the machine.');
+      toast.error('An error occurred while assigning the machine.');
     } finally {
       setLoading(false);
     }
@@ -192,28 +173,47 @@ const AssignMachines = () => {
           top: 16,
           right: 16,
           bgcolor: colors.primary,
-          '&:hover': { bgcolor: '#5a379e' },
+          '&:hover': {
+            bgcolor: '#5a379e', // A darker shade of primary for hover
+          },
         }}
       >
         Assign Machine
       </Button>
-
-      <Modal open={open} onClose={handleClose}>
+      
+      <Modal
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="assign-machine-modal-title"
+        aria-describedby="assign-machine-modal-description"
+      >
         <Box sx={style}>
-          <Typography variant="h6" sx={{ color: colors.primary, mb: 2 }}>
+          <Typography id="assign-machine-modal-title" variant="h6" component="h2" sx={{ color: colors.primary, marginBottom: 2 }}>
             Assign Machine
           </Typography>
 
-          {/* Machines */}
           <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel sx={{ color: colors.primary }}>Machine Name</InputLabel>
+            <InputLabel id="machine-select-label" sx={{ color: colors.primary }}>Machine Name</InputLabel>
             <Select
+              labelId="machine-select-label"
+              id="machine-select"
               value={selectedMachine}
               label="Machine Name"
               onChange={(e) => setSelectedMachine(e.target.value)}
+              inputProps={{ sx: { color: colors.primary } }}
               sx={{
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.primary },
-                '& .MuiSvgIcon-root': { color: colors.primary },
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: colors.primary,
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: colors.primary,
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: colors.primary,
+                },
+                '& .MuiSvgIcon-root': {
+                  color: colors.primary,
+                },
               }}
             >
               {machines.map((machine) => (
@@ -224,58 +224,97 @@ const AssignMachines = () => {
             </Select>
           </FormControl>
 
-          {/* Employees */}
           <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel sx={{ color: colors.primary }}>Assign Employees</InputLabel>
+            <InputLabel id="employee-select-label" sx={{ color: colors.primary }}>Assign Employees</InputLabel>
             <Select
+              labelId="employee-select-label"
+              id="employee-select"
               multiple
               value={selectedEmployees}
               onChange={handleEmployeeChange}
-              input={<OutlinedInput label="Assign Employees" />}
+              input={<OutlinedInput id="select-multiple-chip" label="Assign Employees" sx={{ color: colors.primary }} />}
               renderValue={(selected) => (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                   {selected.map((value) => {
-                    const emp = employees.find((e) => e._id === value);
+                    const employee = employees.find((emp) => emp._id === value);
                     return (
                       <Chip
                         key={value}
-                        label={emp ? emp.name : value}
+                        label={employee ? employee.name : value}
                         sx={{ bgcolor: colors.secondary, color: colors.primary }}
                       />
                     );
                   })}
                 </Box>
               )}
+              MenuProps={{
+                PaperProps: {
+                  sx: {
+                    maxHeight: 224,
+                    bgcolor: 'background.paper',
+                    border: `1px solid ${colors.primary}`,
+                  },
+                },
+              }}
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: colors.primary,
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: colors.primary,
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: colors.primary,
+                },
+                '& .MuiSvgIcon-root': {
+                  color: colors.primary,
+                },
+              }}
             >
-              {employees.map((emp) => (
-                <MenuItem key={emp._id} value={emp._id} sx={menuItemStyle}>
-                  {emp.name}
+              {employees.map((employee) => (
+                <MenuItem
+                  key={employee._id}
+                  value={employee._id}
+                  sx={menuItemStyle}
+                >
+                  {employee.name}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
 
-          {/* ✅ Items */}
           <FormControl fullWidth sx={{ mb: 3 }}>
-            <InputLabel sx={{ color: colors.primary }}>Item Name</InputLabel>
+            <InputLabel id="item-select-label" sx={{ color: colors.primary }}>Select Main Item</InputLabel>
             <Select
+              labelId="item-select-label"
+              id="item-select"
               value={selectedItem}
-              label="Item Name"
+              label="Select Main Item"
               onChange={(e) => setSelectedItem(e.target.value)}
+              inputProps={{ sx: { color: colors.primary } }}
               sx={{
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.primary },
-                '& .MuiSvgIcon-root': { color: colors.primary },
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: colors.primary,
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: colors.primary,
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: colors.primary,
+                },
+                '& .MuiSvgIcon-root': {
+                  color: colors.primary,
+                },
               }}
             >
               {items.map((item) => (
                 <MenuItem key={item._id} value={item._id} sx={menuItemStyle}>
-                  {item.itemNo}
+                  {item.itemNo} {/* Assuming itemNo is the display name */}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
 
-          {/* Buttons */}
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
             <Button
               variant="outlined"
@@ -283,7 +322,10 @@ const AssignMachines = () => {
               sx={{
                 color: colors.primary,
                 borderColor: colors.primary,
-                '&:hover': { bgcolor: colors.secondary },
+                '&:hover': {
+                  borderColor: colors.primary,
+                  bgcolor: colors.secondary,
+                },
               }}
             >
               Cancel
@@ -292,15 +334,18 @@ const AssignMachines = () => {
               variant="contained"
               onClick={handleSubmit}
               disabled={loading}
-              sx={{ bgcolor: colors.primary, '&:hover': { bgcolor: '#5a379e' } }}
+              sx={{
+                bgcolor: colors.primary,
+                '&:hover': {
+                  bgcolor: '#5a379e',
+                },
+              }}
             >
               {loading ? <CircularProgress size={24} color="inherit" /> : 'Assign Machine'}
             </Button>
           </Box>
         </Box>
       </Modal>
-
-      <Toaster />
     </Box>
   );
 };
