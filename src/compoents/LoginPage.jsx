@@ -80,7 +80,7 @@ function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('https://threebtest.onrender.com/api/admin/login', {
+      const response = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ number, password }),

@@ -61,7 +61,7 @@ const AddProductForm = () => {
       setIsLoading(true);
       try {
         // Fetch categories
-        const catRes = await fetch('https://threebappbackend.onrender.com/api/categories/get-categories');
+        const catRes = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/categories/get-categories');
         if (!catRes.ok) throw new Error('Failed to fetch categories');
         const catData = await catRes.json();
         setCategories(catData);
@@ -166,7 +166,7 @@ const AddProductForm = () => {
     productImages.forEach(file => submissionData.append('images', file));
 
     try {
-      const res = await fetch('https://threebtest.onrender.com/api/products/add', {
+      const res = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/products/add', {
         method: 'POST',
         body: submissionData,
       });

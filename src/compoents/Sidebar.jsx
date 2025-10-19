@@ -5,10 +5,14 @@ import { Link, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileInvoiceDollar } from "@fortawesome/free-solid-svg-icons";
 
+
+
+
+
 import {
   faTachometerAlt, faStickyNote, faPlusSquare, faList, faUsers, faUserTie, faUserFriends,
   faComments, faUserPlus, faUsersCog, faThLarge, faBoxOpen, faBox,
-  faShoppingCart, faCog, faChevronDown, faGlobe, faUserShield, faUndo, faBell,faCogs, faTasks, faChartBar
+  faShoppingCart, faCog, faChevronDown, faGlobe, faUserShield, faUndo, faBell,faCogs, faTasks, faChartBar,faArchive 
 } from '@fortawesome/free-solid-svg-icons';
 
 import profilePic from '../assets/3b.png';
@@ -112,8 +116,8 @@ function Sidebar({ isOpen, onClose }) {
   onClick={(e) => toggleNested(e, 'machines')} 
 /> 
  <ul style={{ ...styles.nested, ...(openMenus.machines ? styles.nestedOpen : {}) }}>
-  <LinkMenuItem icon={faPlusSquare} text="Add New Machine" to="/manager/add-machine" />
-  <LinkMenuItem icon={faTasks} text="Assign Machines" to="/manager/assign-machines" />
+  <LinkMenuItem icon={faPlusSquare} text="Assign Machines" to="/manager/assign-machines" />
+  <LinkMenuItem icon={faTasks} text="Add New Machine" to="/manager/add-machine" />
   <LinkMenuItem icon={faChartBar} text="Reports" to="/manager/machine-reports" />
 </ul>
 
@@ -170,6 +174,7 @@ function Sidebar({ isOpen, onClose }) {
         />
 
         <LinkMenuItem icon={faComments} text="App Feedback" to="/manager/feedback" />
+          <LinkMenuItem icon={faArchive} text="Archive Clients" to="/manager/archive-clients" />
         <LinkMenuItem icon={faCog} text="Settings" to="/manager/settings" />
       </ul>
     </div>

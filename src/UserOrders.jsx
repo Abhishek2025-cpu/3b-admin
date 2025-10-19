@@ -430,7 +430,7 @@ const OrderCard = ({ order, onUpdate }) => {
     setIsUpdating(true);
     setMessage({ text: '', type: '' });
     try {
-      const response = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/orders/status/${order._id}`, {
+      const response = await fetch(`https://threeb-1067354145699.asia-south1.run.app/api/orders/status/${order._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ newStatus: currentStatus }),

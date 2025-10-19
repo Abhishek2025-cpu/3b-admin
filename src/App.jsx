@@ -29,6 +29,7 @@ import PushNotification from './compoents/PushNotification';
 import DimensionsTable from './compoents/DimensionsTable';
 import MachineManager from './compoents/MachineManager';
 import AssignMachines from './compoents/AssignMachines';
+import ArchivedClients from './compoents/ArchivedClients';
 function App() {
   return (
     <>
@@ -66,6 +67,7 @@ function App() {
           <Route path="get-bills" element={<GetBills />} />
           <Route path="notifications" element={<PushNotification />} />
           <Route path="product-dimensions" element={<DimensionsTable />} />
+          <Route path="archive-clients" element={<ArchivedClients />} />
           
           {/* Add routes for 'add-staff', 'view-clients', etc. as you create them */}
         </Route>
