@@ -2,7 +2,8 @@ import logo from '../assets/3b.png';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 
-// --- SVG Icons (Unchanged) ---
+
+// --- SVG Icons (Unchanged, adding new ProgressIcon) ---
 const ViewIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.022 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" /></svg> );
 const BoxIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 4a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V4zm2-1a1 1 0 00-1 1v2h14V4a1 1 0 00-1-1H4zM3 9v9a1 1 0 001 1h12a1 1 0 001-1V9H3z" /></svg> );
 const DeleteIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg> );
@@ -10,6 +11,12 @@ const PrintIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" className="h-5
 const TrackIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" /></svg>);
 const Spinner = () => ( <svg className="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> );
 const StaticBarcodeIcon = () => ( <svg className="h-12 w-full max-w-xs" viewBox="0 0 200 50" preserveAspectRatio="none"><rect x="0" y="0" width="200" height="50" fill="white"/><g fill="black"><rect x="10" y="5" width="2" height="40" /><rect x="14" y="5" width="2" height="40" /><rect x="18" y="5" width="4" height="40" /><rect x="24" y="5" width="2" height="40" /><rect x="28" y="5" width="4" height="40" /><rect x="34" y="5" width="2" height="40" /><rect x="38" y="5" width="2" height="40" /><rect x="42" y="5" width="6" height="40" /><rect x="50" y="5" width="2" height="40" /><rect x="54" y="5" width="4" height="40" /><rect x="60" y="5" width="2" height="40" /><rect x="64" y="5" width="2" height="40" /><rect x="68" y="5" width="4" height="40" /><rect x="74" y="5" width="4" height="40" /><rect x="80" y="5" width="2" height="40" /><rect x="84" y="5" width="6" height="40" /><rect x="92" y="5" width="2" height="40" /><rect x="96" y="5" width="2" height="40" /><rect x="100" y="5" width="4" height="40" /><rect x="106" y="5" width="2" height="40" /><rect x="110" y="5" width="6" height="40" /><rect x="118" y="5" width="2" height="40" /><rect x="122" y="5" width="4" height="40" /><rect x="128" y="5" width="2" height="40" /><rect x="132" y="5" width="4" height="40" /><rect x="138" y="5" width="2" height="40" /><rect x="142" y="5" width="6" height="40" /><rect x="150" y="5" width="2" height="40" /><rect x="154" y="5" width="2" height="40" /><rect x="158" y="5" width="4" height="40" /><rect x="164" y="5" width="4" height="40" /><rect x="170" y="5" width="2" height="40" /><rect x="174" y="5" width="6" height="40" /><rect x="182" y="5" width="2" height="40" /><rect x="186" y="5" width="4" height="40" /></g></svg> );
+const ProgressIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="h-5 w-5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125L21 13.125M3 13.125v4.875L21 18V13.125M3 13.125L7.5 4.125M21 13.125L16.5 4.125M7.5 4.125C7.5 3.076 8.336 2.25 9.38 2.25h5.24C15.664 2.25 16.5 3.076 16.5 4.125V13.125L7.5 13.125M7.5 4.125h9V13.125h-9V4.125Z" />
+    </svg>
+);
+
 
 // --- Reusable Components (Unchanged) ---
 const GenericModal = ({ isOpen, onClose, children, maxWidth = "max-w-lg", zIndex = "z-50" }) => {
@@ -233,12 +240,211 @@ const BoxesModal = ({ isOpen, onClose, item, onOpenPrintModal, onOpenUpdateModal
         </GenericModal>
     );
 };
-const ItemDetails = ({ item }) => {
+
+const ItemDetails = ({ item, onOpenProgressModal }) => { // Added onOpenProgressModal prop
     if (!item) return null;
-    return ( <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 bg-gray-50"><div><p className="font-semibold text-gray-700">Length:</p><p>{item.length}</p></div><div><p className="font-semibold text-gray-700">Shift:</p><p>{item.shift}</p></div><div><p className="font-semibold text-gray-700">Company:</p><p>{item.company}</p></div><div><p className="font-semibold text-gray-700">Created At:</p><p>{new Date(item.createdAt).toLocaleString()}</p></div><div><p className="font-semibold text-gray-700">Operator EID:</p><p>{item.operator?.eid || 'N/A'}</p></div><div><p className="font-semibold text-gray-700">Helper EID:</p><p>{item.helper?.eid || 'N/A'}</p></div></div> );
+    return ( 
+        <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 bg-gray-50">
+            <div><p className="font-semibold text-gray-700">Length:</p><p>{item.length}</p></div>
+            <div><p className="font-semibold text-gray-700">Shift:</p><p>{item.shift}</p></div>
+            <div><p className="font-semibold text-gray-700">Company:</p><p>{item.company}</p></div>
+            <div><p className="font-semibold text-gray-700">Created At:</p><p>{new Date(item.createdAt).toLocaleString()}</p></div>
+            <div><p className="font-semibold text-gray-700">Operator EID:</p><p>{item.operator?.eid || 'N/A'}</p></div>
+            <div><p className="font-semibold text-gray-700">Helper EID:</p><p>{item.helper?.eid || 'N/A'}</p></div>
+            <div className="col-span-full mt-4">
+                <button 
+                    onClick={() => onOpenProgressModal(item.machine?._id)} // Use machine._id from the item
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
+                >
+                    <ProgressIcon /> View Progress
+                </button>
+            </div>
+        </div> 
+    );
+};
+
+// --- ProgressModal Component (NEW) ---
+const ProgressModal = ({ isOpen, onClose, machineId }) => {
+    const [progressData, setProgressData] = useState(null);
+    const [isLoadingProgress, setIsLoadingProgress] = useState(false);
+    const [progressError, setProgressError] = useState(null);
+    const [isImageSliderOpen, setIsImageSliderOpen] = useState(false);
+    const [currentImages, setCurrentImages] = useState([]);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+    const fetchMachineProgress = useCallback(async (id) => {
+        if (!id) {
+            setProgressData(null);
+            return;
+        }
+        setIsLoadingProgress(true);
+        setProgressError(null);
+        try {
+            const response = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/machines/all');
+            if (!response.ok) {
+                throw new Error('Failed to fetch machine progress data.');
+            }
+            const data = await response.json();
+            const machineAssignment = data.data.find(assignment => assignment.machine._id === id);
+            
+            if (machineAssignment) {
+                setProgressData(machineAssignment);
+            } else {
+                setProgressData(null);
+                setProgressError('No progress data found for this machine.');
+            }
+        } catch (err) {
+            setProgressError(err.message);
+            toast.error("Error fetching machine progress.");
+        } finally {
+            setIsLoadingProgress(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isOpen) {
+            fetchMachineProgress(machineId);
+        } else {
+            setProgressData(null); // Clear data when modal closes
+            setProgressError(null);
+        }
+    }, [isOpen, machineId, fetchMachineProgress]);
+
+    const handleOpenImageSlider = (images) => {
+        setCurrentImages(images);
+        setCurrentImageIndex(0); // Always start from the first image
+        setIsImageSliderOpen(true);
+    };
+
+    const handleCloseImageSlider = () => {
+        setIsImageSliderOpen(false);
+        setCurrentImages([]);
+        setCurrentImageIndex(0);
+    };
+
+
+    if (!isOpen) return null;
+
+    return (
+        <GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl" zIndex="z-[60]">
+            <div className="p-4 border-b flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-800">Machine Progress Details</h2>
+                <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            
+            <div className="flex-grow p-4 overflow-y-auto">
+                {isLoadingProgress ? (
+                    <div className="flex justify-center items-center h-full">
+                        <Spinner />
+                        <p className="ml-4 text-lg text-gray-600">Loading progress data...</p>
+                    </div>
+                ) : progressError ? (
+                    <div className="text-center text-red-500 py-8">Error: {progressError}</div>
+                ) : progressData ? (
+                    <div className="space-y-6">
+                        <h3 className="text-lg font-semibold text-gray-800">
+                            Machine: <span className="text-indigo-600">{progressData.machine?.name}</span> (Type: {progressData.machine?.type})
+                        </h3>
+                        
+                        {progressData.employees && progressData.employees.length > 0 && (
+                            <div>
+                                <h4 className="font-medium text-gray-700 mb-2">Assigned Employees:</h4>
+                                <ul className="list-disc list-inside ml-4">
+                                    {progressData.employees.map(emp => (
+<li key={emp._id} className="text-gray-600">
+    {emp.name} ({emp.role} - EID: {emp.eid})
+</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {progressData.mainItem && (
+                            <div>
+                                <h4 className="font-medium text-gray-700 mb-2">Main Item Details:</h4>
+                                <ul className="list-disc list-inside ml-4">
+                                    <li className="text-gray-600">Operator: {progressData.mainItem.operator?.name} (EID: {progressData.mainItem.operator?.eid})</li>
+                                    <li className="text-gray-600">Helper: {progressData.mainItem.helper?.name} (EID: {progressData.mainItem.helper?.eid})</li>
+                                </ul>
+                            </div>
+                        )}
+
+                        <h4 className="font-medium text-gray-700 mb-2">Operator Table Data:</h4>
+                        {progressData.operatorTable && progressData.operatorTable.length > 0 ? (
+                            <div className="overflow-x-auto border rounded-lg">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shift</th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Frame Lengths</th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No. of Boxes</th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Box Weight</th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Frame Weight</th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {progressData.operatorTable.map((row, index) => (
+                                            <tr key={index}>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{row.shift}</td>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{row.time}</td>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                                                    {row.frameLength && row.frameLength.length > 0 ? row.frameLength.join(', ') : 'N/A'}
+                                                </td>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{row.numberOfBox}</td>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{row.boxWeight}</td>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{row.frameWeight}</td>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{row.description}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <p className="text-gray-500">No operator table data available.</p>
+                        )}
+
+                        <h4 className="font-medium text-gray-700 mb-2">Operator Images:</h4>
+                        {progressData.operatorImages && progressData.operatorImages.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                                {progressData.operatorImages.map((imgUrl, index) => (
+                                    <img
+                                        key={index}
+                                        src={imgUrl}
+                                        alt={`Operator ${index + 1}`}
+                                        className="w-24 h-24 object-cover rounded-lg shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                                        onClick={() => handleOpenImageSlider(progressData.operatorImages)}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-gray-500">No operator images available.</p>
+                        )}
+                    </div>
+                ) : (
+                    <p className="text-center text-gray-500 py-8">Select an item to view its progress.</p>
+                )}
+            </div>
+            
+            <div className="p-4 border-t flex justify-end">
+                <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">
+                    Close
+                </button>
+            </div>
+
+            {/* Image Slider for operator images */}
+            <ImageSliderModal
+                isOpen={isImageSliderOpen}
+                onClose={handleCloseImageSlider}
+                images={currentImages}
+                startIndex={currentImageIndex}
+            />
+        </GenericModal>
+    );
 };
   
-// --- Main ViewItems Component (Modified) ---
+
 function ViewItems() {
     const [items, setItems] = useState([]);
     const [fullItemsMap, setFullItemsMap] = useState(new Map());
@@ -252,157 +458,169 @@ function ViewItems() {
     const [selectedBoxForPrint, setSelectedBoxForPrint] = useState(null);
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
     const [isPrintAllModalOpen, setIsPrintAllModalOpen] = useState(false);
-    
-    // State for Image Slider Modal
     const [isImageSliderModalOpen, setIsImageSliderModalOpen] = useState(false);
     const [imagesForSlider, setImagesForSlider] = useState([]);
     const [initialImageIndex, setInitialImageIndex] = useState(0);
+    const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
+    const [selectedMachineIdForProgress, setSelectedMachineIdForProgress] = useState(null);
 
+    // ✅ Smart normalization that supports both old and new API structures
+    const normalizeItem = (item) => {
+        const base = item.mainItem || item;
+        return {
+            ...item,
+            _id: base._id || item._id,
+            itemNo: base.itemNo || item.itemNo || '',
+            helper: base.helper || item.helper || {},
+            operator: base.operator || item.operator || {},
+            boxCount: base.boxCount || item.boxCount || 0,
+            productImageUrl: Array.isArray(base.productImageUrl)
+                ? base.productImageUrl
+                : (base.productImageUrl ? [base.productImageUrl] : []),
+            coverImageUrl: Array.isArray(base.coverImageUrl)
+                ? base.coverImageUrl
+                : (base.coverImageUrl ? [base.coverImageUrl] : []),
+        };
+    };
 
-  const fetchAllData = useCallback(async () => {
+    const fetchAllData = useCallback(async () => {
         setIsLoading(true);
         try {
             const [listRes, detailRes] = await Promise.all([
                 fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-Allitems'),
-                fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-items')
+                fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-items'),
             ]);
             if (!listRes.ok || !detailRes.ok) throw new Error('Failed to fetch data.');
             const listData = await listRes.json();
             const detailData = await detailRes.json();
 
-            // Normalize productImageUrl for items from listData as well
-            const normalizedListData = Array.isArray(listData)
-                ? listData.map(item => ({
-                      ...item,
-                      productImageUrl: Array.isArray(item.productImageUrl)
-                          ? item.productImageUrl
-                          : (item.productImageUrl ? [item.productImageUrl] : []),
-                  }))
-                : [];
-            setItems(normalizedListData); // Use normalized data here
+            // ✅ Normalize both arrays using same logic
+            const normalizedListData = Array.isArray(listData) ? listData.map(normalizeItem) : [];
+            const normalizedDetailData = Array.isArray(detailData) ? detailData.map(normalizeItem) : [];
+
+            setItems(normalizedListData);
 
             const itemMap = new Map();
-            if (Array.isArray(detailData)) {
-                detailData.forEach(item => itemMap.set(item._id, {
-                    ...item,
-                    // Ensure productImageUrl is always an array for consistency
-                    productImageUrl: Array.isArray(item.productImageUrl)
-                        ? item.productImageUrl
-                        : (item.productImageUrl ? [item.productImageUrl] : []),
-                    // Ensure coverImageUrl is always an array (if it exists)
-                    coverImageUrl: Array.isArray(item.coverImageUrl)
-                        ? item.coverImageUrl
-                        : (item.coverImageUrl ? [item.coverImageUrl] : []),
-                }));
-            }
+            normalizedDetailData.forEach((item) => itemMap.set(item._id, item));
             setFullItemsMap(itemMap);
         } catch (err) {
             setError(err.message);
-            toast.error("Could not fetch data.");
+            toast.error('Could not fetch data.');
         } finally {
             setIsLoading(false);
         }
     }, []);
 
     useEffect(() => { fetchAllData(); }, [fetchAllData]);
-    
+
     const filteredItems = useMemo(() => {
         if (!Array.isArray(items)) return [];
-        return items.filter(item => 
+        return items.filter(item =>
             item.itemNo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             item.helper?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             item.operator?.name?.toLowerCase().includes(searchQuery.toLowerCase())
         );
     }, [items, searchQuery]);
-  
+
     const currentItems = filteredItems;
-    
+
     const handleToggleRow = (itemId) => setExpandedRowId(expandedRowId === itemId ? null : itemId);
+
     const handleOpenBoxesModal = (itemFromList) => {
         const fullItemData = fullItemsMap.get(itemFromList._id);
-        if (fullItemData) { setSelectedItemForBoxes(fullItemData); setIsBoxesModalOpen(true); } 
-        else { toast.error('Could not find detailed box info.'); }
+        if (fullItemData) {
+            setSelectedItemForBoxes(fullItemData);
+            setIsBoxesModalOpen(true);
+        } else {
+            toast.error('Could not find detailed box info.');
+        }
     };
     const handleCloseBoxesModal = () => setIsBoxesModalOpen(false);
-    const handleOpenPrintModal = (box) => {
-        setSelectedBoxForPrint(box);
-        setIsPrintModalOpen(true);
-    };
-    const handleClosePrintModal = () => {
-        setIsPrintModalOpen(false);
-        setSelectedBoxForPrint(null);
-    };
-    const handleOpenUpdateModal = () => {
-        setIsBoxesModalOpen(false);
-        setIsUpdateModalOpen(true);
-    };
-    const handleCloseUpdateModal = () => {
-        setIsUpdateModalOpen(false);
-    };
-    const handleOpenPrintAllModal = () => {
-        setIsBoxesModalOpen(false);
-        setIsPrintAllModalOpen(true);
-    };
-    const handleClosePrintAllModal = () => {
-        setIsPrintAllModalOpen(false);
-    };
+    const handleOpenPrintModal = (box) => { setSelectedBoxForPrint(box); setIsPrintModalOpen(true); };
+    const handleClosePrintModal = () => { setIsPrintModalOpen(false); setSelectedBoxForPrint(null); };
+    const handleOpenUpdateModal = () => { setIsBoxesModalOpen(false); setIsUpdateModalOpen(true); };
+    const handleCloseUpdateModal = () => setIsUpdateModalOpen(false);
+    const handleOpenPrintAllModal = () => { setIsBoxesModalOpen(false); setIsPrintAllModalOpen(true); };
+    const handleClosePrintAllModal = () => setIsPrintAllModalOpen(false);
 
-    // Handler for opening image slider modal
     const handleOpenImageSlider = (images, index = 0) => {
         setImagesForSlider(images);
         setInitialImageIndex(index);
         setIsImageSliderModalOpen(true);
     };
+    const handleCloseImageSlider = () => { setIsImageSliderModalOpen(false); setImagesForSlider([]); setInitialImageIndex(0); };
 
-    const handleCloseImageSlider = () => {
-        setIsImageSliderModalOpen(false);
-        setImagesForSlider([]);
-        setInitialImageIndex(0);
+const handleOpenProgressModal = async (itemId) => {
+  console.log("🟢 Opening progress for item:", itemId);
+  setIsProgressModalOpen(true);
+  setIsLoading(true);
+
+  try {
+    const res = await fetch(
+      "https://threebapi-1067354145699.asia-south1.run.app/api/machines/all"
+    );
+    if (!res.ok) throw new Error("Failed to fetch machine progress");
+    const { data } = await res.json();
+
+    // ✅ Match machines linked to this item (by mainItem._id)
+    const filtered = Array.isArray(data)
+      ? data.filter(machine => machine.mainItem?._id === itemId)
+      : [];
+
+    console.log("🧠 Filtered machines:", filtered);
+
+    if (!filtered.length) {
+      toast.error("No progress data found for this item.");
+    }
+
+    // Store the filtered list (not itemId) directly
+    setSelectedMachineIdForProgress(filtered);
+  } catch (err) {
+    console.error("Progress fetch error:", err);
+    toast.error("Failed to fetch progress data.");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
+
+
+
+    const handleCloseProgressModal = () => {
+        setIsProgressModalOpen(false);
+        setSelectedMachineIdForProgress(null);
     };
 
     const handleUpdateSubmit = async (itemId, numberOfNewBoxes) => {
-        setIsLoading(true); // Show loader for this specific API call
+        setIsLoading(true);
         const promise = fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/items/${itemId}/add-boxes`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ numberOfNewBoxes }),
         }).then(res => {
-        if (!res.ok) { return res.json().then(err => { throw new Error(err.message || 'API request failed') }); }
+            if (!res.ok) {
+                return res.json().then(err => { throw new Error(err.message || 'API request failed') });
+            }
             return res.json();
         });
         await toast.promise(promise, {
             loading: 'Adding new boxes...',
-            success: (data) => {
-                fetchAllData(); // Re-fetch all data to update the box counts
-                handleCloseUpdateModal();
-                return 'Boxes updated successfully!';
-            },
-              error: (err) => `Error: ${err.message}`,
-        }).finally(() => {
-            setIsLoading(false); // Hide loader regardless of success or failure
-        });
+            success: () => { fetchAllData(); handleCloseUpdateModal(); return 'Boxes updated successfully!'; },
+            error: (err) => `Error: ${err.message}`,
+        }).finally(() => setIsLoading(false));
     };
 
-    // New: handleDeleteItem function
     const handleDeleteItem = async (itemId, itemNo) => {
-        // Confirmation toast
         toast.custom((t) => (
-            <div
-                className={`${
-                    t.visible ? 'animate-enter' : 'animate-leave'
-                } max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
-            >
+            <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}>
                 <div className="flex-1 w-0 p-4">
                     <div className="flex items-start">
-                        <div className="flex-shrink-0 pt-0.5">
-                            <DeleteIcon className="h-6 w-6 text-red-600" />
-                        </div>
+                        <div className="flex-shrink-0 pt-0.5"><DeleteIcon className="h-6 w-6 text-red-600" /></div>
                         <div className="ml-3 flex-1">
-                            <p className="text-sm font-medium text-gray-900">
-                                Confirm Deletion
-                            </p>
+                            <p className="text-sm font-medium text-gray-900">Confirm Deletion</p>
                             <p className="mt-1 text-sm text-gray-500">
-                                Are you sure you want to delete item <span className="font-semibold text-red-600">{itemNo}</span>? This action cannot be undone.
+                                Are you sure you want to delete item <span className="font-semibold text-red-600">{itemNo}</span>?
                             </p>
                         </div>
                     </div>
@@ -410,50 +628,38 @@ function ViewItems() {
                 <div className="flex border-l border-gray-200">
                     <button
                         onClick={() => {
-                            toast.dismiss(t.id); // Dismiss the confirmation toast
-                            const deletePromise = fetch(`https://threebtest.onrender.com/api/items/delete-items/${itemId}`, {
-                                method: 'DELETE',
-                            }).then(res => {
-                                if (!res.ok) {
-                                    return res.json().then(err => {
-                                        throw new Error(err.message || 'Failed to delete item');
-                                    });
-                                }
-                                return res.json();
-                            });
-
+                            toast.dismiss(t.id);
+                            const deletePromise = fetch(`https://threebtest.onrender.com/api/items/delete-items/${itemId}`, { method: 'DELETE' })
+                                .then(res => {
+                                    if (!res.ok) {
+                                        return res.json().then(err => { throw new Error(err.message || 'Failed to delete item'); });
+                                    }
+                                    return res.json();
+                                });
                             toast.promise(deletePromise, {
                                 loading: `Deleting item ${itemNo}...`,
-                                success: (data) => {
-                                    fetchAllData(); // Re-fetch all data after successful deletion
-                                    return `Item ${itemNo} deleted successfully!`;
-                                },
+                                success: () => { fetchAllData(); return `Item ${itemNo} deleted successfully!`; },
                                 error: (err) => `Error: ${err.message}`,
                             });
                         }}
-                        className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-red-600 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500"
-                    >
-                        Delete
-                    </button>
-                    <button
-                        onClick={() => toast.dismiss(t.id)}
-                        className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-gray-700 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                    >
-                        Cancel
-                    </button>
+                        className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-red-600 hover:text-red-500"
+                    >Delete</button>
+                    <button onClick={() => toast.dismiss(t.id)} className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-gray-700 hover:text-gray-500">Cancel</button>
                 </div>
             </div>
-        ), { duration: Infinity }); // Make the confirmation toast persistent until action is taken
+        ), { duration: Infinity });
     };
 
+    if (isLoading)
+        return (
+            <div className="flex justify-center items-center h-screen bg-gray-100">
+                <Spinner />
+                <p className="ml-4 text-xl text-gray-600">Loading All Items...</p>
+            </div>
+        );
 
-    if (isLoading) return (
-        <div className="flex justify-center items-center h-screen bg-gray-100">
-            <Spinner />
-            <p className="ml-4 text-xl text-gray-600">Loading All Items...</p>
-        </div>
-    );
-    if (error) return <div className="text-center p-8 text-red-500 bg-red-50">Error: {error}</div>;
+    if (error)
+        return <div className="text-center p-8 text-red-500 bg-red-50">Error: {error}</div>;
   
     return (
       <>
@@ -470,7 +676,7 @@ function ViewItems() {
               <thead className="bg-gray-50">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item No</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Images</th> {/* Changed from Image to Images */}
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Images</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Operator</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Helper</th>
                   <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Boxes</th>
@@ -520,7 +726,16 @@ function ViewItems() {
                         </div>
                       </td>
                     </tr>
-                    {expandedRowId === item._id && ( <tr className="border-b"><td colSpan="6" className="p-0"><ItemDetails item={fullItemsMap.get(item._id)} /></td></tr> )}
+                    {expandedRowId === item._id && ( 
+                        <tr className="border-b">
+                            <td colSpan="6" className="p-0">
+                                <ItemDetails 
+                                    item={fullItemsMap.get(item._id)} 
+                                    onOpenProgressModal={handleOpenProgressModal} // Pass the new handler
+                                />
+                            </td>
+                        </tr> 
+                    )}
                   </React.Fragment>
                 ))}
                 {currentItems.length === 0 && !isLoading && (
@@ -538,14 +753,22 @@ function ViewItems() {
         <UpdateBoxesModal isOpen={isUpdateModalOpen} onClose={handleCloseUpdateModal} item={selectedItemForBoxes} onUpdateSubmit={handleUpdateSubmit} />
         <PrintAllBoxesModal isOpen={isPrintAllModalOpen} onClose={handleClosePrintAllModal} item={selectedItemForBoxes} />
         
-        {/* Image Slider Modal */}
+        {/* Product Image Slider Modal */}
         <ImageSliderModal 
             isOpen={isImageSliderModalOpen}
             onClose={handleCloseImageSlider}
             images={imagesForSlider}
             startIndex={initialImageIndex}
         />
-      </>
+
+        {/* New Progress Modal */}
+<ProgressModal
+  isOpen={isProgressModalOpen}
+  onClose={handleCloseProgressModal}
+  machineId={selectedMachineIdForProgress?.[0]?.machine?._id || null}
+/>
+
+        </>
     );
 }
   

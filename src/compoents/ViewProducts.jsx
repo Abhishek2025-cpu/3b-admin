@@ -45,10 +45,10 @@ const ImageSliderModal = ({ isOpen, onClose, images }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[100] p-4">
+      <button onClick={onClose} className="absolute top-3 right-3 text-white bg-gray-800 bg-opacity-75 rounded-full p-2 text-xl z-10 hover:bg-opacity-100">
+        <FontAwesomeIcon icon={faTimes} />
+      </button>
       <div className="relative bg-white rounded-lg shadow-xl overflow-hidden max-w-4xl w-full max-h-[90vh] flex flex-col">
-        <button onClick={onClose} className="absolute top-3 right-3 text-white bg-gray-800 bg-opacity-75 rounded-full p-2 text-xl z-10 hover:bg-opacity-100">
-          <FontAwesomeIcon icon={faTimes} />
-        </button>
         <div className="flex-grow flex items-center justify-center relative p-4">
           <button onClick={goToPrevious} className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-gray-800 bg-opacity-75 rounded-full p-2 text-xl z-10 hover:bg-opacity-100">
             <FontAwesomeIcon icon={faChevronLeft} />
@@ -98,7 +98,6 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
       setColorImages([]);
       setProductImages([]);
       setIsCompressing(false);
-      // Ensure newDimensionInput is reset or managed by parent if it's meant to be shared
       setNewDimensionInput('');
     }
   }, [isOpen, setNewDimensionInput]);
@@ -254,11 +253,17 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
   const [isCompressing, setIsCompressing] = useState(false);
   const [selectedDimensions, setSelectedDimensions] = useState([]);
 
+  // New state for description
+  const [descriptionParts, setDescriptionParts] = useState(Array(10).fill(''));
+  const [showAllDescriptionBoxes, setShowAllDescriptionBoxes] = useState(false);
+
+
   useEffect(() => {
     if (product) {
       setFormData({
-        categoryId: product.categoryId?._id || product.categoryId || '', // Include categoryId
+        categoryId: product.categoryId?._id || product.categoryId || '',
         name: product.name || '',
+        about: product.about || '', // Include 'about' here
         pricePerPiece: product.pricePerPiece || '',
         totalPiecesPerBox: product.totalPiecesPerBox || '',
         discountPercentage: product.discountPercentage || 0,
@@ -268,12 +273,39 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
       setNewImages([]);
       setImagesToDelete([]);
 
+      // Initialize description parts
+      const desc = product.description || '';
+      const initialDescriptionParts = Array(10).fill('');
+      desc.split(' ').filter(p => p.trim()).forEach((part, index) => {
+        if (index < 10) initialDescriptionParts[index] = part;
+      });
+      setDescriptionParts(initialDescriptionParts);
+      setShowAllDescriptionBoxes(initialDescriptionParts.some(p => p.trim() !== '') && initialDescriptionParts.slice(0,4).every(p => p.trim() !== ''));
+
+
       const dims = Array.isArray(product.dimensions)
         ? product.dimensions.map(d => ({ _id: d._id || d, value: d.value || d }))
         : [];
       setSelectedDimensions(dims);
+    } else if (!isOpen) {
+        // Reset states when modal is closed and no product is selected
+        setFormData({});
+        setExistingImages([]);
+        setNewImages([]);
+        setImagesToDelete([]);
+        setIsCompressing(false);
+        setSelectedDimensions([]);
+        setDescriptionParts(Array(10).fill(''));
+        setShowAllDescriptionBoxes(false);
+        setNewDimensionInput(''); // Ensure newDimensionInput is reset
     }
-  }, [product]);
+  }, [product, isOpen, setNewDimensionInput]);
+
+  const handleDescriptionPartChange = (e, index) => {
+    const newParts = [...descriptionParts];
+    newParts[index] = e.target.value.substring(0, 20);
+    setDescriptionParts(newParts);
+  };
 
   const handleFileChange = async (e) => {
     const filesToProcess = Array.from(e.target.files);
@@ -315,6 +347,10 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
     const data = new FormData();
     data.append('dimensions', selectedDimensions.map(d => d.value).join(','));
 
+    // Combine description parts
+    const combinedDescription = descriptionParts.filter(p => p.trim()).join(' ').trim();
+    data.append('description', combinedDescription);
+
     Object.entries(formData).forEach(([key, value]) => data.append(key, value));
 
     newImages.forEach(file => data.append('images', file, file.name));
@@ -340,6 +376,7 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
 
   const inputClass = "w-full p-2 mt-1 border border-gray-300 rounded-xl focus:border-[#6A3E9D] focus:ring-1 focus:ring-[#6A3E9D] focus:outline-none transition";
   const fileInputClass = "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-[#6A3E9D] hover:file:bg-violet-100";
+  const visibleDescriptionBoxes = showAllDescriptionBoxes ? 10 : 4;
 
   if (!isOpen) return null;
 
@@ -366,6 +403,37 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
               <input type="text" name="name" value={formData.name} onChange={handleInputChange} required className={inputClass} />
             </div>
           </div>
+
+          {/* Description Section */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700">Description</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
+              {descriptionParts.slice(0, visibleDescriptionBoxes).map((part, index) => (
+                <input
+                  key={index}
+                  type="text"
+                  value={part}
+                  onChange={(e) => handleDescriptionPartChange(e, index)}
+                  className="w-full h-10 text-center border border-gray-300 rounded-lg focus:border-[#6A3E9D] focus:ring-1 focus:ring-[#6A3E9D] focus:outline-none transition"
+                  maxLength="20"
+                />
+              ))}
+            </div>
+            {!showAllDescriptionBoxes && (
+              <div className="text-right mt-2">
+                <button type="button" onClick={() => setShowAllDescriptionBoxes(true)} className="text-sm text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 justify-end">
+                  <FontAwesomeIcon icon={faPlus} size="xs" /> Add More Boxes
+                </button>
+              </div>
+            )}
+          </div>
+          {/* About Section */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700">About</label>
+            <textarea name="about" value={formData.about} onChange={handleInputChange} rows="3" placeholder="More details about the product" className={inputClass}></textarea>
+          </div>
+
+
           <div>
             <label className="text-sm font-semibold text-gray-700 block mb-1">Dimensions</label>
             <div className="flex items-center gap-2">
@@ -466,7 +534,7 @@ function ViewProducts() {
       const [productsRes, categoriesRes, dimensionsRes] = await Promise.all([
         fetch('https://threebapi-1067354145699.asia-south1.run.app/api/products/all'),
         fetch('https://threebapi-1067354145699.asia-south1.run.app/api/categories/all-category'),
-        fetch('https://threebappbackend.onrender.com/api/dimensions/get-dimensions')
+       fetch('https://threebappbackend.onrender.com/api/dimensions/get-dimensions')
       ]);
 
       if (!productsRes.ok || !categoriesRes.ok || !dimensionsRes.ok) {
@@ -746,7 +814,7 @@ const showCarousel = (images) => { setCarouselImages(images.map(img => img.url))
         onClose={() => setIsUpdateModalOpen(false)}
         onUpdateSuccess={handleUpdateSuccess}
         product={selectedProduct}
-        categories={categoryList} 
+        categories={categoryList}
         dimensions={dimensionList}
         handleAddNewDimension={handleAddNewDimension}
         newDimensionInput={newDimensionInput}
