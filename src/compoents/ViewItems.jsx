@@ -465,23 +465,24 @@ function ViewItems() {
     const [selectedMachineIdForProgress, setSelectedMachineIdForProgress] = useState(null);
 
     // ✅ Smart normalization that supports both old and new API structures
-    const normalizeItem = (item) => {
-        const base = item.mainItem || item;
-        return {
-            ...item,
-            _id: base._id || item._id,
-            itemNo: base.itemNo || item.itemNo || '',
-            helper: base.helper || item.helper || {},
-            operator: base.operator || item.operator || {},
-            boxCount: base.boxCount || item.boxCount || 0,
-            productImageUrl: Array.isArray(base.productImageUrl)
-                ? base.productImageUrl
-                : (base.productImageUrl ? [base.productImageUrl] : []),
-            coverImageUrl: Array.isArray(base.coverImageUrl)
-                ? base.coverImageUrl
-                : (base.coverImageUrl ? [base.coverImageUrl] : []),
-        };
+const normalizeItem = (item) => {
+    const base = item.mainItem || item;
+    return {
+        ...item,
+        _id: base._id || item._id,
+        itemNo: base.itemNo || item.itemNo || '',
+        helpers: Array.isArray(base.helpers) ? base.helpers : [],
+        operators: Array.isArray(base.operators) ? base.operators : [],
+        boxCount: base.boxCount || item.boxCount || 0,
+        productImageUrl: Array.isArray(base.productImageUrl)
+            ? base.productImageUrl
+            : (base.productImageUrl ? [base.productImageUrl] : []),
+        coverImageUrl: Array.isArray(base.coverImageUrl)
+            ? base.coverImageUrl
+            : (base.coverImageUrl ? [base.coverImageUrl] : []),
     };
+};
+
 
     const fetchAllData = useCallback(async () => {
         setIsLoading(true);
@@ -714,8 +715,17 @@ const handleOpenProgressModal = async (itemId) => {
                             <span className="text-gray-400">No Image</span>
                         )}
                       </td>
-                      <td className="px-6 py-4">{item.operator?.name || 'N/A'}</td>
-                      <td className="px-6 py-4">{item.helper?.name || 'N/A'}</td>
+                   <td className="px-6 py-4">
+  {item.operators.length > 0
+    ? item.operators.map(op => op.name).join(', ')
+    : 'N/A'}
+</td>
+<td className="px-6 py-4">
+  {item.helpers.length > 0
+    ? item.helpers.map(h => h.name).join(', ')
+    : 'N/A'}
+</td>
+
                       <td className="px-6 py-4 text-center font-mono text-lg">{item.boxCount}</td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex items-center justify-center gap-4">

@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-// MODIFICATION: Import the toast library
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-// A reusable input component for cleaner code
 const SelectInput = ({ name, value, onChange, options, placeholder }) => (
   <select name={name} value={value} onChange={onChange} required className="p-2 border rounded-xl w-full bg-white">
     <option value="">{placeholder}</option>
@@ -13,7 +11,6 @@ const SelectInput = ({ name, value, onChange, options, placeholder }) => (
   </select>
 );
 
-// MODIFICATION: A simple SVG spinner component for the loader
 const Spinner = () => (
   <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -21,18 +18,17 @@ const Spinner = () => (
   </svg>
 );
 
-
 function AddItem() {
   const [formData, setFormData] = useState({
     itemNo: '',
     length: '9.5 Feet',
     noOfSticks: '',
-    // MODIFICATION: Added noOfBoxes to the form state
     noOfBoxes: '', 
-    helperEid: '',
-    operatorEid: '',
+    helperId: '',
+    operatorId: '',
     shift: '',
     company: '',
+    machineNumber: '',
     productImage: null,
   });
 
@@ -42,17 +38,16 @@ function AddItem() {
   const [productMap, setProductMap] = useState(new Map());
   const [imagePreview, setImagePreview] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  // MODIFICATION: The 'status' state is no longer needed, as toasts will handle messages.
-  // const [status, setStatus] = useState({ message: '', type: '' });
 
-  // Fetch staff and products on component mount
   useEffect(() => {
     async function fetchStaff() {
       try {
         const res = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/staff/get-employees');
         const data = await res.json();
-        setHelpers(data.filter(e => e.role === 'Helper').map(e => ({ value: e.eid, label: `${e.name} (${e.eid})` })));
-        setOperators(data.filter(e => e.role === 'Operator').map(e => ({ value: e.eid, label: `${e.name} (${e.eid})` })));
+
+        // Now store _id for server, show name + eid for users
+        setHelpers(data.filter(e => e.role === 'Helper').map(e => ({ value: e._id, label: `${e.name} (${e.eid})` })));
+        setOperators(data.filter(e => e.role === 'Operator').map(e => ({ value: e._id, label: `${e.name} (${e.eid})` })));
       } catch (error) {
         toast.error('Failed to load staff list.');
         console.error('Error loading staff:', error);
@@ -72,6 +67,7 @@ function AddItem() {
         console.error('Failed to load products:', err);
       }
     }
+
     fetchStaff();
     fetchProducts();
   }, []);
@@ -118,7 +114,6 @@ function AddItem() {
     }
 
     try {
-      // MODIFICATION: Using the correct new endpoint URL
       const response = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/add-items', {
         method: 'POST',
         body: submissionData,
@@ -126,34 +121,18 @@ function AddItem() {
 
       const responseData = await response.json();
 
-   if (response.ok) {
-  toast.success(`Successfully created item with ${responseData.boxes.length} boxes!`);
-
-  // 🔥 Add Recent Activity
-  const activity = {
-    text: `New item "${formData.itemNo}" added with ${formData.noOfBoxes} boxes`,
-    time: "Just now"
-  };
-
-  // Update sessionStorage
-  const existingActivities = JSON.parse(sessionStorage.getItem("activities") || "[]");
-  sessionStorage.setItem("activities", JSON.stringify([activity, ...existingActivities]));
-
-  // Dispatch event for Dashboard to update immediately if open
-  window.dispatchEvent(new CustomEvent("recent-activity", { detail: activity }));
-
-  e.target.reset(); // Reset form
-  setFormData({
-    itemNo: '', length: '9.5 Feet', noOfSticks: '', noOfBoxes: '', helperEid: '',
-    operatorEid: '', shift: '', company: '', productImage: null,
-  });
-  removeImage();
-} else {
-  toast.error(responseData.error || 'An unknown error occurred.');
-}
-
+      if (response.ok) {
+        toast.success(`Successfully created item with ${responseData.boxes.length} boxes!`);
+        e.target.reset();
+        setFormData({
+          itemNo: '', length: '9.5 Feet', noOfSticks: '', noOfBoxes: '', helperId: '',
+          operatorId: '', shift: '', company: '', machineNumber: '', productImage: null,
+        });
+        removeImage();
+      } else {
+        toast.error(responseData.error || 'An unknown error occurred.');
+      }
     } catch (err) {
-      // MODIFICATION: Using toast for network/submission error
       toast.error('Submission failed. Please check your connection.');
       console.error('Submission error:', err);
     } finally {
@@ -163,18 +142,7 @@ function AddItem() {
 
   return (
     <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-3xl mx-auto mt-5">
-      {/* MODIFICATION: Add the ToastContainer to render the notifications */}
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
+      <ToastContainer position="top-right" autoClose={5000} />
 
       <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Add New Item</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -182,15 +150,14 @@ function AddItem() {
           <SelectInput name="itemNo" value={formData.itemNo} onChange={handleItemChange} options={products} placeholder="Select Item" />
           <input type="text" name="length" value={formData.length} readOnly className="p-2 border rounded-xl w-full bg-gray-100" />
           <input type="text" name="noOfSticks" value={formData.noOfSticks} readOnly placeholder="No of Pieces" className="p-2 border rounded-xl w-full bg-gray-100" />
-          <SelectInput name="helperEid" value={formData.helperEid} onChange={handleChange} options={helpers} placeholder="Select Helper" />
-          <SelectInput name="operatorEid" value={formData.operatorEid} onChange={handleChange} options={operators} placeholder="Select Operator" />
+          <SelectInput name="helperId" value={formData.helperId} onChange={handleChange} options={helpers} placeholder="Select Helper" />
+          <SelectInput name="operatorId" value={formData.operatorId} onChange={handleChange} options={operators} placeholder="Select Operator" />
           <select name="shift" value={formData.shift} onChange={handleChange} required className="p-2 border rounded-xl w-full bg-white">
             <option value="">Select Shift</option>
             <option value="Day">Day</option>
             <option value="Night">Night</option>
           </select>
 
-          {/* MODIFICATION: Added No of Boxes input field */}
           <input
             type="number"
             name="noOfBoxes"
@@ -201,20 +168,27 @@ function AddItem() {
             min="1"
             className="p-2 border rounded-xl w-full"
           />
-          
-          {/* MODIFICATION: Reduced height of company select box with py-1 */}
+
+          {/* Machine Number Dropdown */}
+          <select name="machineNumber" value={formData.machineNumber} onChange={handleChange} required className="p-2 border rounded-xl w-full bg-white">
+            <option value="">Select Machine Number</option>
+            {[...Array(9)].map((_, i) => (
+              <option key={i+1} value={i+1}>{i+1}</option>
+            ))}
+          </select>
+
           <select name="company" value={formData.company} onChange={handleChange} required className="py-1 px-2 border rounded-xl w-full bg-white">
             <option value="">Select Company</option>
             <option value="B">B</option>
             <option value="BI">BI</option>
           </select>
-          
+
           <div>
             <label className="block text-sm font-medium mb-1">Product Image</label>
             <input type="file" id="productImageInput" name="productImage" onChange={handleImageChange} accept="image/*" required className="p-2 border rounded-xl w-full" />
           </div>
         </div>
-        
+
         {imagePreview && (
           <div className="mt-2 flex items-center gap-2">
             <img src={imagePreview} alt="Preview" className="w-24 h-24 object-cover rounded-xl border" />
@@ -222,7 +196,6 @@ function AddItem() {
           </div>
         )}
 
-        {/* MODIFICATION: Changed button color and added loader */}
         <button 
           type="submit" 
           disabled={isLoading} 
@@ -236,8 +209,6 @@ function AddItem() {
           ) : 'Submit'}
         </button>
       </form>
-
-      {/* MODIFICATION: Removed the old status message div, as toasts now handle this */}
     </div>
   );
 }
