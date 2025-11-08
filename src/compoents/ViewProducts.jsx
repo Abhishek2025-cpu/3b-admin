@@ -81,7 +81,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
     totalPiecesPerBox: '',
     discountPercentage: 0
   });
-  const [descriptionParts, setDescriptionParts] = useState(Array(10).fill(''));
+  const [descriptionParts, setDescriptionParts] = useState(Array(20).fill(''));
   const [showAllDescriptionBoxes, setShowAllDescriptionBoxes] = useState(false);
 
   const [selectedDimensions, setSelectedDimensions] = useState([]);
@@ -92,7 +92,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
   useEffect(() => {
     if (!isOpen) {
       setFormData({ categoryId: '', name: '', about: '', quantity: 500, pricePerPiece: '', totalPiecesPerBox: '', discountPercentage: 0 });
-      setDescriptionParts(Array(10).fill(''));
+      setDescriptionParts(Array(20).fill(''));
       setShowAllDescriptionBoxes(false);
       setSelectedDimensions([]);
       setColorImages([]);
@@ -182,7 +182,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
 
   const inputClass = "w-full p-2 mt-1 border border-gray-300 rounded-xl focus:border-[#6A3E9D] focus:ring-1 focus:ring-[#6A3E9D] focus:outline-none transition";
   const fileInputClass = "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-[#6A3E9D] hover:file:bg-violet-100";
-  const visibleDescriptionBoxes = showAllDescriptionBoxes ? 10 : 4;
+  const visibleDescriptionBoxes = showAllDescriptionBoxes ? 20 : 4;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-3xl">
@@ -254,7 +254,7 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
   const [selectedDimensions, setSelectedDimensions] = useState([]);
 
   // New state for description
-  const [descriptionParts, setDescriptionParts] = useState(Array(10).fill(''));
+  const [descriptionParts, setDescriptionParts] = useState(Array(20).fill(''));
   const [showAllDescriptionBoxes, setShowAllDescriptionBoxes] = useState(false);
 
 
@@ -275,7 +275,7 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
 
       // Initialize description parts
       const desc = product.description || '';
-      const initialDescriptionParts = Array(10).fill('');
+      const initialDescriptionParts = Array(20).fill('');
       desc.split(' ').filter(p => p.trim()).forEach((part, index) => {
         if (index < 10) initialDescriptionParts[index] = part;
       });
@@ -376,7 +376,7 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
 
   const inputClass = "w-full p-2 mt-1 border border-gray-300 rounded-xl focus:border-[#6A3E9D] focus:ring-1 focus:ring-[#6A3E9D] focus:outline-none transition";
   const fileInputClass = "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-[#6A3E9D] hover:file:bg-violet-100";
-  const visibleDescriptionBoxes = showAllDescriptionBoxes ? 10 : 4;
+  const visibleDescriptionBoxes = showAllDescriptionBoxes ? 20 : 4;
 
   if (!isOpen) return null;
 
