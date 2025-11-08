@@ -703,7 +703,7 @@ const showCarousel = (images) => { setCarouselImages(images.map(img => img.url))
                 <th className="px-6 py-3">Box Price</th>
                 <th className="px-6 py-3">Discount</th>
                 <th className="px-6 py-3">Qty</th>
-                <th className="px-6 py-3">Date & Time</th>
+                <th className="px-6 py-3">Description</th>
                 <th className="px-6 py-3">Last Modify</th>
                 <th className="px-6 py-3">Actions</th>
               </tr>
@@ -732,7 +732,7 @@ const showCarousel = (images) => { setCarouselImages(images.map(img => img.url))
                     <td className="px-6 py-4">₹{product.finalPricePerBox || product.mrpPerBox}</td>
                     <td className="px-6 py-4">{product.discountPercentage || 0}%</td>
                     <td className="px-6 py-4">{product.quantity}</td>
-                    <td className="px-6 py-4 text-xs text-gray-500">{formatDateTime(product.createdAt)}</td>
+                    <td className="px-6 py-4 text-xs text-gray-500">{product.description}</td>
                     <td className="px-6 py-4 text-xs text-gray-500">{formatDateTime(product.updatedAt)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <button onClick={() => showQrCode(product.qrCodeUrl)} title="Show QR Code" className="text-gray-500 hover:text-gray-700 p-2"><FontAwesomeIcon icon={faQrcode} /></button>
