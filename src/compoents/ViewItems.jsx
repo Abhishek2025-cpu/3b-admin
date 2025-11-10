@@ -172,7 +172,10 @@ const ImageSliderModal = ({ isOpen, onClose, images, startIndex = 0 }) => {
 };
 
 // --- BoxesModal (UPDATED for responsiveness) & ItemDetails (Unchanged) ---
-const BoxesModal = ({ isOpen, onClose, item, onOpenPrintModal, onOpenUpdateModal, onOpenPrintAllModal }) => {
+const BoxesModal = ({ isOpen, onClose, item, onOpenPrintModal, onOpenUpdateModal, onOpenPrintAllModal  }) => {
+        console.log('BoxesModal isOpen:', isOpen);
+    console.log('BoxesModal item:', item);
+    console.log('Boxes array:', item?.boxes);
     if (!isOpen) return null;
     return (
         <GenericModal isOpen={isOpen} onClose={onClose}>
@@ -532,16 +535,19 @@ const normalizeItem = (item) => {
 
     const handleToggleRow = (itemId) => setExpandedRowId(expandedRowId === itemId ? null : itemId);
 
- const handleOpenBoxesModal = (itemFromList) => {
-    console.log('Opening Boxes Modal for item:', itemFromList);
-    const fullItemData = fullItemsMap.get(itemFromList._id);
-    if (fullItemData) {
-        setSelectedItemForBoxes(fullItemData);
-        setIsBoxesModalOpen(true);
-    } else {
-        toast.error('Could not find detailed box info.');
-    }
+const handleOpenBoxesModal = (itemFromList) => {
+  const fullItemData = fullItemsMap.get(itemFromList._id);
+
+  if (fullItemData) {
+    setSelectedItemForBoxes(fullItemData);
+  } else {
+    console.warn('⚠️ Fallback: using list item since fullItemData not found.');
+    setSelectedItemForBoxes(itemFromList); // fallback so modal opens
+  }
+
+  setIsBoxesModalOpen(true);
 };
+
 
 
 
@@ -767,7 +773,9 @@ const handleOpenProgressModal = async (itemId) => {
           </div>
         </div>
         
-        <BoxesModal isOpen={isBoxesModalOpen} onClose={handleCloseBoxesModal} item={selectedItemForBoxes} onOpenPrintModal={handleOpenPrintModal} onOpenUpdateModal={handleOpenUpdateModal} onOpenPrintAllModal={handleOpenPrintAllModal} />
+        <BoxesModal isOpen={isBoxesModalOpen} onClose={handleCloseBoxesModal} item={selectedItemForBoxes} onOpenPrintModal={handleOpenPrintModal} onOpenUpdateModal={handleOpenUpdateModal} onOpenPrintAllModal={handleOpenPrintAllModal}  zIndex="z-[9999]" />
+        
+
         <PrintModal isOpen={isPrintModalOpen} onClose={handleClosePrintModal} item={selectedItemForBoxes} box={selectedBoxForPrint} />
         <UpdateBoxesModal isOpen={isUpdateModalOpen} onClose={handleCloseUpdateModal} item={selectedItemForBoxes} onUpdateSubmit={handleUpdateSubmit} />
         <PrintAllBoxesModal isOpen={isPrintAllModalOpen} onClose={handleClosePrintAllModal} item={selectedItemForBoxes} />

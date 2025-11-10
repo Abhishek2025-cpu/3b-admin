@@ -295,14 +295,36 @@ const AddProductForm = () => {
         </div>
 
         {/* Product Images */}
-        <label htmlFor="images" className="block mt-4 text-sm font-semibold text-gray-700">Product Images (max 10)</label>
-        <input type="file" id="images" multiple accept="image/*" onChange={(e) => handleFileChange(e, setProductImages, 10)}
-          className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
-        <div className="flex flex-wrap mt-2 gap-4">
-          {productImages.map((file, index) => (
-            <ImageThumb key={index} file={file} onRemove={() => setProductImages(prev => prev.filter((_, i) => i !== index))} />
-          ))}
-        </div>
+     <label htmlFor="images" className="block mt-4 text-sm font-semibold text-gray-700">
+  Product Images (max 10) <span className="text-red-500">*</span>
+</label>
+<input
+  type="file"
+  id="images"
+  multiple
+  accept="image/*"
+  required
+  onChange={(e) => handleFileChange(e, setProductImages, 10)}
+  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+/>
+
+{/* Validation message */}
+{productImages.length === 0 && (
+  <p className="text-red-500 text-xs mt-1">At least one product image is required.</p>
+)}
+
+<div className="flex flex-wrap mt-2 gap-4">
+  {productImages.map((file, index) => (
+    <ImageThumb
+      key={index}
+      file={file}
+      onRemove={() =>
+        setProductImages((prev) => prev.filter((_, i) => i !== index))
+      }
+    />
+  ))}
+</div>
+
         
         {/* --- Submission --- */}
         <button type="submit"

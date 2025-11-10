@@ -214,17 +214,110 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
             <textarea name="about" value={formData.about} onChange={handleInputChange} rows="3" placeholder="More details about the product" className={inputClass}></textarea>
           </div>
 
-          <div><label className="text-sm font-semibold text-gray-700">Upload Color Images</label><input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, setColorImages, colorImages)} className={`${fileInputClass} mt-1`} disabled={isCompressing} /><div className="flex flex-wrap mt-2 gap-4">{colorImages.map((file, index) => <ImageThumb key={index} file={file} onRemove={() => setColorImages(prev => prev.filter((_, i) => i !== index))} />)}</div></div>
+        <div>
+  <label className="text-sm font-semibold text-gray-700">
+    Upload Color Images <span className="text-red-500">*</span>
+  </label>
 
-          <div>
-            <label className="text-sm font-semibold text-gray-700 block mb-1">Dimensions</label>
-            <div className="flex items-center gap-2">
-              <select onChange={handleDimensionSelect} className={inputClass + ' mt-0 flex-grow'}><option value="">-- Select to add --</option>{dimensions.map(dim => <option key={dim._id} value={dim._id}>{dim.value}</option>)}</select>
-              <input type="text" placeholder="Add new dimension" value={newDimensionInput} onChange={e => setNewDimensionInput(e.target.value)} className={inputClass + ' mt-0'} />
-              <button type="button" onClick={handleAddNewDimension} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg flex-shrink-0">Add</button>
-            </div>
-            <div className="mt-2 min-h-[2rem] p-2 bg-gray-50 rounded-lg">{selectedDimensions.length > 0 ? selectedDimensions.map(dim => (<span key={dim._id} className="inline-flex items-center bg-[#6A3E9D] text-white text-xs font-medium mr-2 mb-2 px-3 py-1 rounded-full">{dim.value}<button type="button" onClick={() => setSelectedDimensions(prev => prev.filter(d => d._id !== dim._id))} className="ml-2 font-bold hover:text-gray-200">×</button></span>)) : <span className="text-gray-400 text-sm">No dimensions selected.</span>}</div>
-          </div>
+  <input
+    type="file"
+    multiple
+    accept="image/*"
+    required
+    onChange={(e) => handleFileChange(e, setColorImages, colorImages)}
+    className={`${fileInputClass} mt-1`}
+    disabled={isCompressing}
+  />
+
+  {/* Validation message */}
+  {colorImages.length === 0 && (
+    <p className="text-red-500 text-xs mt-1">
+    color image is required.
+    </p>
+  )}
+
+  <div className="flex flex-wrap mt-2 gap-4">
+    {colorImages.map((file, index) => (
+      <ImageThumb
+        key={index}
+        file={file}
+        onRemove={() =>
+          setColorImages((prev) => prev.filter((_, i) => i !== index))
+        }
+      />
+    ))}
+  </div>
+</div>
+
+
+        <div>
+  <label className="text-sm font-semibold text-gray-700 block mb-1">
+    Dimensions <span className="text-red-500">*</span>
+  </label>
+
+  <div className="flex items-center gap-2">
+    <select
+      onChange={handleDimensionSelect}
+      className={inputClass + ' mt-0 flex-grow'}
+    >
+      <option value="">-- Select to add --</option>
+      {dimensions.map((dim) => (
+        <option key={dim._id} value={dim._id}>
+          {dim.value}
+        </option>
+      ))}
+    </select>
+
+    <input
+      type="text"
+      placeholder="Add new dimension"
+      value={newDimensionInput}
+      onChange={(e) => setNewDimensionInput(e.target.value)}
+      className={inputClass + ' mt-0'}
+    />
+
+    <button
+      type="button"
+      onClick={handleAddNewDimension}
+      className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg flex-shrink-0"
+    >
+      Add
+    </button>
+  </div>
+
+  <div className="mt-2 min-h-[2rem] p-2 bg-gray-50 rounded-lg">
+    {selectedDimensions.length > 0 ? (
+      selectedDimensions.map((dim) => (
+        <span
+          key={dim._id}
+          className="inline-flex items-center bg-[#6A3E9D] text-white text-xs font-medium mr-2 mb-2 px-3 py-1 rounded-full"
+        >
+          {dim.value}
+          <button
+            type="button"
+            onClick={() =>
+              setSelectedDimensions((prev) =>
+                prev.filter((d) => d._id !== dim._id)
+              )
+            }
+            className="ml-2 font-bold hover:text-gray-200"
+          >
+            ×
+          </button>
+        </span>
+      ))
+    ) : (
+      <span className="text-gray-400 text-sm">No dimensions selected.</span>
+    )}
+  </div>
+
+  {/* Validation message */}
+  {selectedDimensions.length === 0 && (
+    <p className="text-red-500 text-xs mt-1">
+      Please select or add at least one dimension.
+    </p>
+  )}
+</div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div><label className="text-sm font-semibold text-gray-700">Quantity</label><input type="number" name="quantity" value={formData.quantity} onChange={handleInputChange} required className={inputClass} /></div>
@@ -232,7 +325,41 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
             <div><label className="text-sm font-semibold text-gray-700">Pieces/Box</label><input type="number" name="totalPiecesPerBox" value={formData.totalPiecesPerBox} onChange={handleInputChange} min="1" required className={inputClass} /></div>
             <div><label className="text-sm font-semibold text-gray-700">Discount %</label><input type="number" name="discountPercentage" value={formData.discountPercentage} onChange={handleInputChange} min="0" step="0.01" className={inputClass} /></div>
           </div>
-          <div><label className="text-sm font-semibold text-gray-700">Product Images (max 10)</label><input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, setProductImages, productImages, 10)} className={`${fileInputClass} mt-1`} disabled={isCompressing} /><div className="flex flex-wrap mt-2 gap-4">{productImages.map((file, index) => <ImageThumb key={index} file={file} onRemove={() => setProductImages(prev => prev.filter((_, i) => i !== index))} />)}</div></div>
+        <div>
+  <label className="text-sm font-semibold text-gray-700">
+    Product Images (max 10) <span className="text-red-500">*</span>
+  </label>
+  
+  <input
+    type="file"
+    multiple
+    accept="image/*"
+    required
+    onChange={(e) => handleFileChange(e, setProductImages, productImages, 10)}
+    className={`${fileInputClass} mt-1`}
+    disabled={isCompressing}
+  />
+
+  {/* Validation message */}
+  {productImages.length === 0 && (
+    <p className="text-red-500 text-xs mt-1">
+       product image is required.
+    </p>
+  )}
+
+  <div className="flex flex-wrap mt-2 gap-4">
+    {productImages.map((file, index) => (
+      <ImageThumb
+        key={index}
+        file={file}
+        onRemove={() =>
+          setProductImages((prev) => prev.filter((_, i) => i !== index))
+        }
+      />
+    ))}
+  </div>
+</div>
+
         </form>
       </div>
       <div className="flex justify-end gap-3 p-4 bg-gray-50 border-t flex-shrink-0 rounded-b-2xl">
