@@ -484,33 +484,38 @@ const normalizeItem = (item) => {
 };
 
 
-    const fetchAllData = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const [listRes, detailRes] = await Promise.all([
-                fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-Allitems'),
-                fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-items'),
-            ]);
-            if (!listRes.ok || !detailRes.ok) throw new Error('Failed to fetch data.');
-            const listData = await listRes.json();
-            const detailData = await detailRes.json();
+   const fetchAllData = useCallback(async () => {
+  setIsLoading(true);
+  try {
+    const [listRes, detailRes] = await Promise.all([
+      fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-Allitems'),
+      fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-items'),
+    ]);
+    if (!listRes.ok || !detailRes.ok) throw new Error('Failed to fetch data.');
 
-            // ✅ Normalize both arrays using same logic
-            const normalizedListData = Array.isArray(listData) ? listData.map(normalizeItem) : [];
-            const normalizedDetailData = Array.isArray(detailData) ? detailData.map(normalizeItem) : [];
+    const listData = await listRes.json();
+    const detailData = await detailRes.json();
 
-            setItems(normalizedListData);
+    const normalizedListData = Array.isArray(listData.data)
+      ? listData.data.map(normalizeItem)
+      : [];
+    const normalizedDetailData = Array.isArray(detailData.data)
+      ? detailData.data.map(normalizeItem)
+      : [];
 
-            const itemMap = new Map();
-            normalizedDetailData.forEach((item) => itemMap.set(item._id, item));
-            setFullItemsMap(itemMap);
-        } catch (err) {
-            setError(err.message);
-            toast.error('Could not fetch data.');
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
+    setItems(normalizedListData);
+
+    const itemMap = new Map();
+    normalizedDetailData.forEach((item) => itemMap.set(item._id, item));
+    setFullItemsMap(itemMap);
+  } catch (err) {
+    setError(err.message);
+    toast.error('Could not fetch data.');
+  } finally {
+    setIsLoading(false);
+  }
+}, []);
+
 
     useEffect(() => { fetchAllData(); }, [fetchAllData]);
 
@@ -527,15 +532,19 @@ const normalizeItem = (item) => {
 
     const handleToggleRow = (itemId) => setExpandedRowId(expandedRowId === itemId ? null : itemId);
 
-    const handleOpenBoxesModal = (itemFromList) => {
-        const fullItemData = fullItemsMap.get(itemFromList._id);
-        if (fullItemData) {
-            setSelectedItemForBoxes(fullItemData);
-            setIsBoxesModalOpen(true);
-        } else {
-            toast.error('Could not find detailed box info.');
-        }
-    };
+ const handleOpenBoxesModal = (itemFromList) => {
+    console.log('Opening Boxes Modal for item:', itemFromList);
+    const fullItemData = fullItemsMap.get(itemFromList._id);
+    if (fullItemData) {
+        setSelectedItemForBoxes(fullItemData);
+        setIsBoxesModalOpen(true);
+    } else {
+        toast.error('Could not find detailed box info.');
+    }
+};
+
+
+
     const handleCloseBoxesModal = () => setIsBoxesModalOpen(false);
     const handleOpenPrintModal = (box) => { setSelectedBoxForPrint(box); setIsPrintModalOpen(true); };
     const handleClosePrintModal = () => { setIsPrintModalOpen(false); setSelectedBoxForPrint(null); };
