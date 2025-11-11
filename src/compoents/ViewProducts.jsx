@@ -142,43 +142,91 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
     e.target.value = '';
   };
 
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.name.trim()) return toast.error('Model Number is required.');
-    if (!formData.categoryId) return toast.error('Please select a category.');
-    if (isCompressing) return toast.error('Please wait for images to finish processing.');
+ const handleFormSubmit = async (e) => {
+  e.preventDefault();
 
-    const submissionData = new FormData();
-    Object.entries(formData).forEach(([key, value]) => submissionData.append(key, value));
+  // 🧩 1. Basic validation checks
+  if (!formData.name.trim()) {
+    toast.error('Model Number is required.');
+    console.error('❌ Missing field: name');
+    return;
+  }
 
-    const combinedDescription = descriptionParts.filter(p => p.trim()).join(' ').trim();
-    submissionData.append('description', combinedDescription);
+  if (isCompressing) {
+    toast.error('Please wait for images to finish processing.');
+    console.warn('⚠️ Attempted to submit while images are still compressing.');
+    return;
+  }
 
-    submissionData.append('dimensions', selectedDimensions.map(d => d.value).join(','));
-    colorImages.forEach(file => submissionData.append('colorImages', file, file.name));
-    productImages.forEach(file => submissionData.append('images', file, file.name));
+  // 🧩 2. Prepare form data
+  const submissionData = new FormData();
+  Object.entries(formData).forEach(([key, value]) => submissionData.append(key, value));
 
-    const promise = fetch('https://threebapi-1067354145699.asia-south1.run.app/api/products/add', {
-      method: 'POST', body: submissionData,
-    }).then(async (res) => {
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Failed to add product');
-      }
-      return res.json();
-    });
+  const combinedDescription = descriptionParts.filter(p => p.trim()).join(' ').trim();
+  submissionData.append('description', combinedDescription);
 
-    toast.promise(promise, {
-      loading: 'Adding product...',
-      success: () => {
-        onProductAdded();
-        onClose();
-        console.log("Product added successfully!");
-        return 'Product added successfully!';
-      },
-      error: (err) => `Error: ${err.message}`,
-    });
-  };
+  submissionData.append('dimensions', selectedDimensions.map(d => d.value).join(','));
+
+  colorImages.forEach(file => submissionData.append('colorImages', file, file.name));
+  productImages.forEach(file => submissionData.append('images', file, file.name));
+
+  // 🧩 3. Console validation checks before sending
+  console.group('🧾 Product Submission Debug Log');
+  console.log('➡️ name:', formData.name);
+  console.log('➡️ categoryId:', formData.categoryId || '⚪ None (Optional)');
+  console.log('➡️ description:', combinedDescription || '❌ Missing');
+  console.log('➡️ dimensions:', selectedDimensions.map(d => d.value).join(',') || '❌ Missing');
+  console.log('➡️ pricePerPiece:', formData.pricePerPiece || '❌ Missing or invalid');
+  console.log('➡️ totalPiecesPerBox:', formData.totalPiecesPerBox || '❌ Missing or invalid');
+  console.log('➡️ quantity:', formData.quantity || 0);
+  console.log('➡️ discountPercentage:', formData.discountPercentage || 0);
+  console.log('➡️ colorImages count:', colorImages.length);
+  console.log('➡️ productImages count:', productImages.length);
+  console.groupEnd();
+
+  // 🧩 4. Validate critical backend-required fields
+  if (!combinedDescription) return toast.error('Description is required.');
+  if (selectedDimensions.length === 0) return toast.error('Please select at least one dimension.');
+  if (productImages.length === 0) return toast.error('Please upload at least one product image.');
+  if (!formData.pricePerPiece || isNaN(formData.pricePerPiece)) return toast.error('Price per piece is required and must be a number.');
+  if (!formData.totalPiecesPerBox || isNaN(formData.totalPiecesPerBox)) return toast.error('Total pieces per box is required and must be a number.');
+
+  // 🧩 5. Log all FormData entries to confirm
+  console.group('📦 FormData Content');
+  for (const [key, value] of submissionData.entries()) {
+    console.log(key, value);
+  }
+  console.groupEnd();
+
+  // 🧩 6. Submit product
+  const promise = fetch('https://threebapi-1067354145699.asia-south1.run.app/api/products/add', {
+    method: 'POST',
+    body: submissionData,
+  }).then(async (res) => {
+    if (!res.ok) {
+      const err = await res.json();
+      console.error('❌ Server responded with an error:', err);
+      throw new Error(err.message || 'Failed to add product');
+    }
+    return res.json();
+  });
+
+  // 🧩 7. Show toast feedback
+  toast.promise(promise, {
+    loading: 'Adding product...',
+    success: () => {
+      onProductAdded();
+      onClose();
+      console.log('✅ Product added successfully!');
+      return 'Product added successfully!';
+    },
+    error: (err) => {
+      console.error('❌ Error while adding product:', err);
+      return `Error: ${err.message}`;
+    },
+  });
+};
+
 
   const inputClass = "w-full p-2 mt-1 border border-gray-300 rounded-xl focus:border-[#6A3E9D] focus:ring-1 focus:ring-[#6A3E9D] focus:outline-none transition";
   const fileInputClass = "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-[#6A3E9D] hover:file:bg-violet-100";
@@ -193,10 +241,23 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
       <div className="overflow-y-auto px-6 py-6 flex-grow min-h-0">
         <form id="add-product-form" onSubmit={handleFormSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-semibold text-gray-700">Category</label>
-              <select name="categoryId" value={formData.categoryId} onChange={handleInputChange} required className={inputClass}><option value="">Select Category</option>{categories.map(cat => <option key={cat._id} value={cat._id}>{cat.name}</option>)}</select>
-            </div>
+           <div>
+  <label className="text-sm font-semibold text-gray-700">Category (Optional)</label>
+  <select
+    name="categoryId"
+    value={formData.categoryId}
+    onChange={handleInputChange}
+    className={inputClass}
+  >
+    <option value="">Select Category</option>
+    {categories.map(cat => (
+      <option key={cat._id} value={cat._id}>
+        {cat.name}
+      </option>
+    ))}
+  </select>
+</div>
+
             <div>
               <label className="text-sm font-semibold text-gray-700">Model Number</label>
               <input type="text" name="name" value={formData.name} onChange={handleInputChange} required placeholder="Enter the product model number" className={inputClass} />
@@ -214,7 +275,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
             <textarea name="about" value={formData.about} onChange={handleInputChange} rows="3" placeholder="More details about the product" className={inputClass}></textarea>
           </div>
 
-        <div>
+<div>
   <label className="text-sm font-semibold text-gray-700">
     Upload Color Images <span className="text-red-500">*</span>
   </label>
@@ -223,7 +284,6 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
     type="file"
     multiple
     accept="image/*"
-    required
     onChange={(e) => handleFileChange(e, setColorImages, colorImages)}
     className={`${fileInputClass} mt-1`}
     disabled={isCompressing}
@@ -231,9 +291,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
 
   {/* Validation message */}
   {colorImages.length === 0 && (
-    <p className="text-red-500 text-xs mt-1">
-    color image is required.
-    </p>
+    <p className="text-red-500 text-xs mt-1">At least one color image is required.</p>
   )}
 
   <div className="flex flex-wrap mt-2 gap-4">
@@ -248,6 +306,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
     ))}
   </div>
 </div>
+
 
 
         <div>
@@ -325,17 +384,18 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
             <div><label className="text-sm font-semibold text-gray-700">Pieces/Box</label><input type="number" name="totalPiecesPerBox" value={formData.totalPiecesPerBox} onChange={handleInputChange} min="1" required className={inputClass} /></div>
             <div><label className="text-sm font-semibold text-gray-700">Discount %</label><input type="number" name="discountPercentage" value={formData.discountPercentage} onChange={handleInputChange} min="0" step="0.01" className={inputClass} /></div>
           </div>
-        <div>
+
+
+<div>
   <label className="text-sm font-semibold text-gray-700">
-    Product Images (max 10) <span className="text-red-500">*</span>
+    Product Images <span className="text-red-500">*</span>
   </label>
-  
+
   <input
     type="file"
     multiple
     accept="image/*"
-    required
-    onChange={(e) => handleFileChange(e, setProductImages, productImages, 10)}
+    onChange={(e) => handleFileChange(e, setProductImages, productImages)}
     className={`${fileInputClass} mt-1`}
     disabled={isCompressing}
   />
@@ -343,7 +403,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
   {/* Validation message */}
   {productImages.length === 0 && (
     <p className="text-red-500 text-xs mt-1">
-       product image is required.
+      At least one product image is required.
     </p>
   )}
 
@@ -360,6 +420,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
   </div>
 </div>
 
+
         </form>
       </div>
       <div className="flex justify-end gap-3 p-4 bg-gray-50 border-t flex-shrink-0 rounded-b-2xl">
@@ -372,59 +433,73 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, categories, dimensio
 
 
 // --- Update Product Modal (MODIFIED) ---
-const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categories, dimensions, handleAddNewDimension, newDimensionInput, setNewDimensionInput }) => {
+const UpdateProductModal = ({
+  isOpen,
+  onClose,
+  onUpdateSuccess,
+  product,
+  categories,
+  dimensions,
+  handleAddNewDimension,
+  newDimensionInput,
+  setNewDimensionInput,
+}) => {
   const [formData, setFormData] = useState({});
   const [existingImages, setExistingImages] = useState([]);
   const [newImages, setNewImages] = useState([]);
   const [imagesToDelete, setImagesToDelete] = useState([]);
   const [isCompressing, setIsCompressing] = useState(false);
   const [selectedDimensions, setSelectedDimensions] = useState([]);
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [imagePendingDelete, setImagePendingDelete] = useState(null);
 
   // New state for description
-  const [descriptionParts, setDescriptionParts] = useState(Array(20).fill(''));
+  const [descriptionParts, setDescriptionParts] = useState(Array(20).fill(""));
   const [showAllDescriptionBoxes, setShowAllDescriptionBoxes] = useState(false);
-
 
   useEffect(() => {
     if (product) {
       setFormData({
-        categoryId: product.categoryId?._id || product.categoryId || '',
-        name: product.name || '',
-        about: product.about || '', // Include 'about' here
-        pricePerPiece: product.pricePerPiece || '',
-        totalPiecesPerBox: product.totalPiecesPerBox || '',
+        categoryId: product.categoryId?._id || product.categoryId || "",
+        name: product.name || "",
+        about: product.about || "",
+        pricePerPiece: product.pricePerPiece || "",
+        totalPiecesPerBox: product.totalPiecesPerBox || "",
         discountPercentage: product.discountPercentage || 0,
-        quantity: product.quantity || '',
+        quantity: product.quantity || "",
       });
       setExistingImages(product.images || []);
       setNewImages([]);
       setImagesToDelete([]);
 
-      // Initialize description parts
-      const desc = product.description || '';
-      const initialDescriptionParts = Array(20).fill('');
-      desc.split(' ').filter(p => p.trim()).forEach((part, index) => {
-        if (index < 10) initialDescriptionParts[index] = part;
-      });
+      const desc = product.description || "";
+      const initialDescriptionParts = Array(20).fill("");
+      desc
+        .split(" ")
+        .filter((p) => p.trim())
+        .forEach((part, index) => {
+          if (index < 10) initialDescriptionParts[index] = part;
+        });
       setDescriptionParts(initialDescriptionParts);
-      setShowAllDescriptionBoxes(initialDescriptionParts.some(p => p.trim() !== '') && initialDescriptionParts.slice(0,4).every(p => p.trim() !== ''));
-
+      setShowAllDescriptionBoxes(
+        initialDescriptionParts.some((p) => p.trim() !== "") &&
+          initialDescriptionParts.slice(0, 4).every((p) => p.trim() !== "")
+      );
 
       const dims = Array.isArray(product.dimensions)
-        ? product.dimensions.map(d => ({ _id: d._id || d, value: d.value || d }))
+        ? product.dimensions.map((d) => ({ _id: d._id || d, value: d.value || d }))
         : [];
       setSelectedDimensions(dims);
     } else if (!isOpen) {
-        // Reset states when modal is closed and no product is selected
-        setFormData({});
-        setExistingImages([]);
-        setNewImages([]);
-        setImagesToDelete([]);
-        setIsCompressing(false);
-        setSelectedDimensions([]);
-        setDescriptionParts(Array(10).fill(''));
-        setShowAllDescriptionBoxes(false);
-        setNewDimensionInput(''); // Ensure newDimensionInput is reset
+      setFormData({});
+      setExistingImages([]);
+      setNewImages([]);
+      setImagesToDelete([]);
+      setIsCompressing(false);
+      setSelectedDimensions([]);
+      setDescriptionParts(Array(10).fill(""));
+      setShowAllDescriptionBoxes(false);
+      setNewDimensionInput("");
     }
   }, [product, isOpen, setNewDimensionInput]);
 
@@ -446,63 +521,121 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
     const toastId = toast.loading(`Compressing ${filesToProcess.length} image(s)...`);
     const compressionOptions = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
     try {
-      const compressedFiles = await Promise.all(filesToProcess.map(file => imageCompression(file, compressionOptions)));
-      compressedFiles.forEach((file, index) => { file.name = filesToProcess[index].name; });
-      setNewImages(prev => [...prev, ...compressedFiles]);
-      toast.success('Compression complete!', { id: toastId });
+      const compressedFiles = await Promise.all(
+        filesToProcess.map((file) => imageCompression(file, compressionOptions))
+      );
+      compressedFiles.forEach((file, index) => {
+        file.name = filesToProcess[index].name;
+      });
+      setNewImages((prev) => [...prev, ...compressedFiles]);
+      toast.success("Compression complete!", { id: toastId });
     } catch (error) {
-      toast.error('Failed to process images.', { id: toastId });
+      toast.error("Failed to process images.", { id: toastId });
     } finally {
       setIsCompressing(false);
     }
   };
 
-  const handleRemoveExistingImage = (imageToRemove) => {
-    setExistingImages(prev => prev.filter(img => img.id !== imageToRemove.id));
-    setImagesToDelete(prev => [...prev, imageToRemove.id]);
-  };
+  // 🟣 When user clicks delete icon — just open popup
+const handleRemoveExistingImage = (image) => {
+  setImagePendingDelete(image);
+  setShowDeletePopup(true);
+};
+
+const confirmDeleteImage = async () => {
+  if (!imagePendingDelete) return;
+
+  // 🧠 Clean ID: if it’s a path like "product-images/xyz.png", extract the filename
+  const cleanId = imagePendingDelete.id.includes("product-images/")
+    ? imagePendingDelete.id.split("product-images/")[1]
+    : imagePendingDelete.id;
+
+  const deleteUrl = `https://threebapi-1067354145699.asia-south1.run.app/api/products/products/${product._id}/images/${cleanId}`;
+  console.log("🧹 Deleting image with clean ID:", cleanId);
+
+  try {
+    const response = await fetch(deleteUrl, { method: "DELETE" });
+
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      console.error("Response not JSON, probably 404 HTML");
+      toast.error("Failed to delete image (404). Check image ID.");
+      return;
+    }
+
+    if (!response.ok) {
+      toast.error(data.message || "Failed to delete image.");
+      return;
+    }
+
+    toast.success("✅ Image deleted successfully!");
+    setExistingImages(data.remainingImages || []);
+  } catch (err) {
+    console.error("❌ Error deleting image:", err);
+    toast.error("An error occurred while deleting the image.");
+  } finally {
+    setShowDeletePopup(false);
+    setImagePendingDelete(null);
+  }
+};
+
+
+
+
+
+
 
   const handleRemoveNewImage = (indexToRemove) => {
-    setNewImages(prev => prev.filter((_, index) => index !== indexToRemove));
+    setNewImages((prev) => prev.filter((_, index) => index !== indexToRemove));
   };
 
-  const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleInputChange = (e) =>
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
 
     const data = new FormData();
-    data.append('dimensions', selectedDimensions.map(d => d.value).join(','));
+    data.append("dimensions", selectedDimensions.map((d) => d.value).join(","));
+    const combinedDescription = descriptionParts.filter((p) => p.trim()).join(" ").trim();
+    data.append("description", combinedDescription);
 
-    // Combine description parts
-    const combinedDescription = descriptionParts.filter(p => p.trim()).join(' ').trim();
-    data.append('description', combinedDescription);
+    Object.entries(formData).forEach(([key, value]) => {
+      if (key === "categoryId" && !value) return;
+      data.append(key, value);
+    });
 
-    Object.entries(formData).forEach(([key, value]) => data.append(key, value));
-
-    newImages.forEach(file => data.append('images', file, file.name));
-
+    newImages.forEach((file) => data.append("images", file, file.name));
     if (imagesToDelete.length > 0) {
-      data.append('imagesToDelete', JSON.stringify(imagesToDelete));
+      data.append("imagesToDelete", JSON.stringify(imagesToDelete));
     }
 
-    const promise = fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/products/update/${product._id}`, {
-      method: 'PUT',
-      body: data,
-    }).then(res => {
-      if (!res.ok) return res.json().then(err => { throw new Error(err.message || 'Update failed') });
-      return res.json();
+    const promise = fetch(
+      `https://threebapi-1067354145699.asia-south1.run.app/api/products/update/${product._id}`,
+      { method: "PUT", body: data }
+    ).then(async (res) => {
+      const responseData = await res.json();
+      if (!res.ok) throw new Error(responseData.message || "Update failed");
+      return responseData;
     });
 
     toast.promise(promise, {
-      loading: 'Updating product...',
-      success: () => { onUpdateSuccess(); onClose(); return 'Product updated successfully!'; },
+      loading: "Updating product...",
+      success: () => {
+        onUpdateSuccess();
+        onClose();
+        return "Product updated successfully!";
+      },
       error: (err) => `Error: ${err.message}`,
     });
   };
 
-  const inputClass = "w-full p-2 mt-1 border border-gray-300 rounded-xl focus:border-[#6A3E9D] focus:ring-1 focus:ring-[#6A3E9D] focus:outline-none transition";
-  const fileInputClass = "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-[#6A3E9D] hover:file:bg-violet-100";
+  const inputClass =
+    "w-full p-2 mt-1 border border-gray-300 rounded-xl focus:border-[#6A3E9D] focus:ring-1 focus:ring-[#6A3E9D] focus:outline-none transition";
+  const fileInputClass =
+    "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-[#6A3E9D] hover:file:bg-violet-100";
   const visibleDescriptionBoxes = showAllDescriptionBoxes ? 20 : 4;
 
   if (!isOpen) return null;
@@ -511,27 +644,45 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-3xl">
       <div className="p-6 border-b flex justify-between items-center">
         <h3 className="text-2xl font-bold text-gray-800">Update Product</h3>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl font-bold">×</button>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl font-bold">
+          ×
+        </button>
       </div>
+
       <div className="overflow-y-auto px-6 py-6 min-h-0">
         <form id="update-product-form" onSubmit={handleFormSubmit} className="space-y-4">
+          {/* CATEGORY + NAME */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-semibold text-gray-700">Category</label>
-              <select name="categoryId" value={formData.categoryId} onChange={handleInputChange} required className={inputClass}>
+              <label className="text-sm font-semibold text-gray-700">Category (Optional)</label>
+              <select
+                name="categoryId"
+                value={formData.categoryId}
+                onChange={handleInputChange}
+                className={inputClass}
+              >
                 <option value="">Select Category</option>
-                {categories.map(cat => (
-                  <option key={cat._id} value={cat._id}>{cat.name}</option>
+                {categories.map((cat) => (
+                  <option key={cat._id} value={cat._id}>
+                    {cat.name}
+                  </option>
                 ))}
               </select>
             </div>
             <div>
               <label className="text-sm font-semibold text-gray-700">Name / Frame</label>
-              <input type="text" name="name" value={formData.name} onChange={handleInputChange} required className={inputClass} />
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+                className={inputClass}
+              />
             </div>
           </div>
 
-          {/* Description Section */}
+          {/* DESCRIPTION */}
           <div>
             <label className="text-sm font-semibold text-gray-700">Description</label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
@@ -548,72 +699,190 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
             </div>
             {!showAllDescriptionBoxes && (
               <div className="text-right mt-2">
-                <button type="button" onClick={() => setShowAllDescriptionBoxes(true)} className="text-sm text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowAllDescriptionBoxes(true)}
+                  className="text-sm text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 justify-end"
+                >
                   <FontAwesomeIcon icon={faPlus} size="xs" /> Add More Boxes
                 </button>
               </div>
             )}
           </div>
-          {/* About Section */}
+
+          {/* ABOUT */}
           <div>
             <label className="text-sm font-semibold text-gray-700">About</label>
-            <textarea name="about" value={formData.about} onChange={handleInputChange} rows="3" placeholder="More details about the product" className={inputClass}></textarea>
+            <textarea
+              name="about"
+              value={formData.about}
+              onChange={handleInputChange}
+              rows="3"
+              placeholder="More details about the product"
+              className={inputClass}
+            ></textarea>
           </div>
 
-
+          {/* DIMENSIONS */}
           <div>
             <label className="text-sm font-semibold text-gray-700 block mb-1">Dimensions</label>
             <div className="flex items-center gap-2">
-              <select onChange={(e) => {
-                const dim = dimensions.find(d => d._id === e.target.value);
-                if (dim && !selectedDimensions.some(d => d._id === dim._id)) {
-                  setSelectedDimensions(prev => [...prev, dim]);
-                }
-                e.target.value = '';
-              }} className={inputClass + ' mt-0 flex-grow'}>
+              <select
+                onChange={(e) => {
+                  const dim = dimensions.find((d) => d._id === e.target.value);
+                  if (dim && !selectedDimensions.some((d) => d._id === dim._id)) {
+                    setSelectedDimensions((prev) => [...prev, dim]);
+                  }
+                  e.target.value = "";
+                }}
+                className={inputClass + " mt-0 flex-grow"}
+              >
                 <option value="">-- Select to add --</option>
-                {dimensions.map(d => <option key={d._id} value={d._id}>{d.value}</option>)}
+                {dimensions.map((d) => (
+                  <option key={d._id} value={d._id}>
+                    {d.value}
+                  </option>
+                ))}
               </select>
-              <input type="text" placeholder="Add new dimension" value={newDimensionInput} onChange={e => setNewDimensionInput(e.target.value)} className={inputClass + ' mt-0'} />
-              <button type="button" onClick={handleAddNewDimension} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg flex-shrink-0">Add</button>
+              <input
+                type="text"
+                placeholder="Add new dimension"
+                value={newDimensionInput}
+                onChange={(e) => setNewDimensionInput(e.target.value)}
+                className={inputClass + " mt-0"}
+              />
+              <button
+                type="button"
+                onClick={handleAddNewDimension}
+                className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg flex-shrink-0"
+              >
+                Add
+              </button>
             </div>
 
             <div className="mt-2 min-h-[2rem] p-2 bg-gray-50 rounded-lg">
               {selectedDimensions.length > 0
-                ? selectedDimensions.map(dim => (
-                  <span key={dim._id} className="inline-flex items-center bg-[#6A3E9D] text-white text-xs font-medium mr-2 mb-2 px-3 py-1 rounded-full">
-                    {dim.value}
-                    <button type="button" onClick={() => setSelectedDimensions(prev => prev.filter(d => d._id !== dim._id))} className="ml-2 font-bold hover:text-gray-200">×</button>
-                  </span>
-                ))
-                : <span className="text-gray-400 text-sm">No dimensions selected.</span>
-              }
+                ? selectedDimensions.map((dim) => (
+                    <span
+                      key={dim._id}
+                      className="inline-flex items-center bg-[#6A3E9D] text-white text-xs font-medium mr-2 mb-2 px-3 py-1 rounded-full"
+                    >
+                      {dim.value}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedDimensions((prev) =>
+                            prev.filter((d) => d._id !== dim._id)
+                          )
+                        }
+                        className="ml-2 font-bold hover:text-gray-200"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))
+                : (
+                  <span className="text-gray-400 text-sm">No dimensions selected.</span>
+                )}
             </div>
           </div>
 
+          {/* PRICE, PIECES, DISCOUNT, QTY */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div><label className="text-sm font-semibold">Price/Piece</label><input type="number" name="pricePerPiece" value={formData.pricePerPiece} onChange={handleInputChange} required className={inputClass} /></div>
-            <div><label className="text-sm font-semibold">Pieces/Box</label><input type="number" name="totalPiecesPerBox" value={formData.totalPiecesPerBox} onChange={handleInputChange} required className={inputClass} /></div>
-            <div><label className="text-sm font-semibold">Discount %</label><input type="number" name="discountPercentage" value={formData.discountPercentage} onChange={handleInputChange} className={inputClass} /></div>
-            <div><label className="text-sm font-semibold">Quantity</label><input type="number" name="quantity" value={formData.quantity} onChange={handleInputChange} required className={inputClass} /></div>
+            <div>
+              <label className="text-sm font-semibold">Price/Piece</label>
+              <input
+                type="number"
+                name="pricePerPiece"
+                value={formData.pricePerPiece}
+                onChange={handleInputChange}
+                required
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-semibold">Pieces/Box</label>
+              <input
+                type="number"
+                name="totalPiecesPerBox"
+                value={formData.totalPiecesPerBox}
+                onChange={handleInputChange}
+                required
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-semibold">Discount %</label>
+              <input
+                type="number"
+                name="discountPercentage"
+                value={formData.discountPercentage}
+                onChange={handleInputChange}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-semibold">Quantity</label>
+              <input
+                type="number"
+                name="quantity"
+                value={formData.quantity}
+                onChange={handleInputChange}
+                required
+                className={inputClass}
+              />
+            </div>
           </div>
+
+          {/* IMAGES */}
           <div>
-            <label className="text-sm font-semibold text-gray-700">Manage Product Images</label>
+            <label className="text-sm font-semibold text-gray-700">
+              Manage Product Images
+            </label>
             <div className="mt-2 p-3 border rounded-lg bg-gray-50 space-y-3">
               <div>
-                <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Existing Images</h4>
+                <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
+                  Existing Images
+                </h4>
                 {existingImages.length > 0 ? (
                   <div className="flex flex-wrap gap-4">
-                    {existingImages.map((img) => <ImageThumb key={img.id} file={img.url} onRemove={() => handleRemoveExistingImage(img)} isUrl={true} />)}
+                    {existingImages.map((img) => (
+<ImageThumb
+  key={img.id}
+  file={img.url}
+  onRemove={() => handleRemoveExistingImage(img)}
+  isUrl={true}
+/>
+
+))}
+
                   </div>
-                ) : <p className="text-sm text-gray-400">No existing images.</p>}
+                ) : (
+                  <p className="text-sm text-gray-400">No existing images.</p>
+                )}
               </div>
+
               <div>
-                <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Add New Images</h4>
-                <input type="file" multiple accept="image/*" onChange={handleFileChange} className={fileInputClass} disabled={isCompressing} />
+                <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
+                  Add New Images
+                </h4>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className={fileInputClass}
+                  disabled={isCompressing}
+                />
                 {newImages.length > 0 && (
                   <div className="flex flex-wrap gap-4 mt-4">
-                    {newImages.map((file, index) => <ImageThumb key={index} file={file} onRemove={() => handleRemoveNewImage(index)} />)}
+                    {newImages.map((file, index) => (
+                      <ImageThumb
+                        key={index}
+                        file={file}
+                        onRemove={() => handleRemoveNewImage(index)}
+                      />
+                    ))}
                   </div>
                 )}
               </div>
@@ -621,14 +890,60 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
           </div>
         </form>
       </div>
+
       <div className="flex justify-end gap-3 p-4 bg-gray-50 border-t rounded-b-2xl">
-        <button type="button" onClick={onClose} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">Cancel</button>
-        <button type="submit" form="update-product-form" className="bg-[#6A3E9D] hover:bg-[#583281] text-white font-bold py-2 px-6 rounded-lg" disabled={isCompressing}>{isCompressing ? 'Processing...' : 'Update Product'}</button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          form="update-product-form"
+          className="bg-[#6A3E9D] hover:bg-[#583281] text-white font-bold py-2 px-6 rounded-lg"
+          disabled={isCompressing}
+        >
+          {isCompressing ? "Processing..." : "Update Product"}
+        </button>
       </div>
+
+      {/* DELETE CONFIRMATION POPUP */}
+      {showDeletePopup && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white rounded-xl shadow-lg p-6 w-80 text-center">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">Delete Image?</h3>
+            <p className="text-gray-600 text-sm mb-6">
+              Are you sure you want to remove this image? This action cannot be undone.
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => {
+                  setShowDeletePopup(false);
+                  setImagePendingDelete(null);
+                }}
+                className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteImage}
+                className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Modal>
   );
 };
 
+
+
+  
 
 // --- Main Component (MODIFIED) ---
 function ViewProducts() {

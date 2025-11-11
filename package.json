@@ -35,7 +35,9 @@
     "react-scripts": "^5.0.1",
     "react-to-print": "^3.1.1",
     "react-toastify": "^11.0.5",
-    "tailwindcss": "^4.1.11"
+    "sweetalert2": "^11.26.3",
+    "tailwindcss": "^4.1.11",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
