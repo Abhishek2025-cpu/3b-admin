@@ -90,15 +90,29 @@ function AddProductModal({
     pricePerPiece: "",
     totalPiecesPerBox: "",
     discountPercentage: 0,
+     position: 1, 
   });
 
   const [descriptionParts, setDescriptionParts] = useState(Array(20).fill(""));
   const [showAllDescriptionBoxes, setShowAllDescriptionBoxes] = useState(false);
+  const [visibleDescriptionBoxes, setVisibleDescriptionBoxes] = useState(4);
+
 
   const [selectedDimensions, setSelectedDimensions] = useState([]);
   const [colorImages, setColorImages] = useState([]);
   const [productImages, setProductImages] = useState([]);
   const [isCompressing, setIsCompressing] = useState(false);
+  
+  
+const handleAddMoreBox = () => {
+  setVisibleDescriptionBoxes((prev) => Math.min(prev + 1, 20)); // max 20 boxes
+  
+  // Ensure array always has data
+  setDescriptionParts((prev) =>
+    prev.length < 20 ? [...prev, ""] : [...prev]
+  );
+};
+
 
   // Reset when modal is closed
   useEffect(() => {
@@ -233,7 +247,7 @@ function AddProductModal({
     // Append simple fields
     Object.entries(formData).forEach(([key, value]) => {
       // convert numeric-looking fields to numbers where appropriate
-      if (key === "pricePerPiece" || key === "totalPiecesPerBox" || key === "quantity" || key === "discountPercentage") {
+      if (key === "pricePerPiece" || key === "totalPiecesPerBox" || key === "quantity" || key === "discountPercentage" || key === "position") {
         submissionData.append(key, value === "" ? "0" : String(Number(value)));
       } else {
         submissionData.append(key, value);
@@ -242,6 +256,8 @@ function AddProductModal({
 
     // Description from validateForm()
     submissionData.append("description", check.combinedDescription);
+    submissionData.append("position", formData.position);
+
 
     // IMPORTANT: send **dimension IDs** (option B) as comma-separated string
     submissionData.append("dimensions", selectedDimensions.map((d) => d._id).join(","));
@@ -292,7 +308,6 @@ function AddProductModal({
     "w-full p-2 mt-1 border border-gray-300 rounded-xl focus:border-[#6A3E9D] focus:ring-1 focus:ring-[#6A3E9D] focus:outline-none transition";
   const fileInputClass =
     "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-[#6A3E9D] hover:file:bg-violet-100";
-  const visibleDescriptionBoxes = showAllDescriptionBoxes ? 20 : 4;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-3xl">
@@ -330,31 +345,59 @@ function AddProductModal({
                 className={inputClass}
               />
             </div>
+
+              <div>
+    <label className="text-sm font-semibold text-gray-700">
+      Position <span className="text-blue-600 text-xs">(Auto-sort)</span>
+    </label>
+    <input
+      type="number"
+      name="position"
+      min={1}
+      value={formData.position}
+      onChange={handleInputChange}
+      placeholder="1"
+      className={inputClass}
+    />
+  </div>
           </div>
 
-          <div>
-            <label className="text-sm font-semibold text-gray-700">Description</label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
-              {descriptionParts.slice(0, visibleDescriptionBoxes).map((part, index) => (
-                <input
-                  key={index}
-                  type="text"
-                  value={part}
-                  onChange={(e) => handleDescriptionPartChange(e, index)}
-                  className="w-full h-10 text-center border border-gray-300 rounded-lg focus:border-[#6A3E9D] focus:ring-1 focus:ring-[#6A3E9D] focus:outline-none transition"
-                  maxLength={20}
-                />
-              ))}
-            </div>
+         <div>
+  <label className="text-sm font-semibold text-gray-700">Description</label>
 
-            {!showAllDescriptionBoxes && (
-              <div className="text-right mt-2">
-                <button type="button" onClick={() => setShowAllDescriptionBoxes(true)} className="text-sm text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 justify-end">
-                  <FontAwesomeIcon icon={faPlus} size="xs" /> Add More Boxes
-                </button>
-              </div>
-            )}
-          </div>
+  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
+    {descriptionParts.slice(0, visibleDescriptionBoxes).map((part, index) => (
+      <input
+        key={index}
+        type="text"
+        value={part}
+        onChange={(e) => handleDescriptionPartChange(e, index)}
+        className="w-full h-10 text-center border border-gray-300 rounded-lg 
+        focus:border-[#6A3E9D] focus:ring-1 focus:ring-[#6A3E9D] 
+        focus:outline-none transition"
+        maxLength={20}
+      />
+    ))}
+  </div>
+
+  {visibleDescriptionBoxes < 20 && (
+    <div className="text-right mt-2">
+      <button
+        type="button"
+        onClick={handleAddMoreBox}
+        className="text-sm text-blue-600 hover:text-blue-800 font-semibold 
+          flex items-center gap-1 justify-end"
+      >
+        <FontAwesomeIcon icon={faPlus} size="xs" />
+
+        {visibleDescriptionBoxes <= 10
+          ? "Add More Boxes"
+          : `+${visibleDescriptionBoxes - 10}`}
+      </button>
+    </div>
+  )}
+</div>
+
 
           <div>
             <label className="text-sm font-semibold text-gray-700">About</label>
@@ -524,6 +567,7 @@ const UpdateProductModal = ({
         totalPiecesPerBox: product.totalPiecesPerBox || "",
         discountPercentage: product.discountPercentage || 0,
         quantity: product.quantity || "",
+         position: product.position || 0, 
       });
       setExistingImages(product.images || []);
       setNewImages([]);
@@ -651,6 +695,19 @@ const confirmDeleteImage = async () => {
   const handleInputChange = (e) =>
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
+  const validateForm = ({ combinedDescription, selectedDimensions, formData }) => {
+  if (!formData.name?.trim()) return "Product name is required.";
+  if (!combinedDescription.trim()) return "Description cannot be empty.";
+  if (selectedDimensions.length === 0) return "Please select at least one dimension.";
+  if (!formData.pricePerPiece) return "Price per piece is required.";
+  if (!formData.totalPiecesPerBox) return "Total pieces per box is required.";
+  if (!formData.quantity) return "Quantity is required.";
+  if (!formData.position && formData.position !== 0) return "Position is required.";
+
+  return null;
+};
+
+
   const handleFormSubmit = async (e) => {
     e.preventDefault();
 
@@ -661,13 +718,12 @@ const combinedDescription = descriptionParts
   .join(" ")
   .trim();
 
-  const error = validateForm({
+ const error = validateForm({
   combinedDescription,
   selectedDimensions,
-  colorImages,
-  productImages,
   formData
 });
+
 
 if (error) return toast.error(error);
     data.append("description", combinedDescription);
@@ -751,6 +807,19 @@ if (error) return toast.error(error);
               />
             </div>
           </div>
+
+          <div>
+  <label className="text-sm font-semibold">Position</label>
+  <input
+    type="number"
+    name="position"
+    value={formData.position}
+    onChange={handleInputChange}
+    required
+    className={inputClass}
+  />
+</div>
+
 
           {/* DESCRIPTION */}
           <div>
@@ -1129,18 +1198,26 @@ const showCarousel = (images) => { setCarouselImages(images.map(img => img.url))
   };
 
   // Filtering Logic
-  const filteredProducts = products.filter(product => {
+const filteredProducts = products
+  .filter(product => {
     const matchesSearchTerm = searchTerm.toLowerCase() === ''
       ? true
       : product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.about.toLowerCase().includes(searchTerm.toLowerCase()); // Assuming 'about' also searchable
+        product.about.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesCategory = filterCategory === ''
       ? true
       : product.categoryId && product.categoryId._id === filterCategory;
 
     return matchesSearchTerm && matchesCategory;
+  })
+  .sort((a, b) => {
+    // If position missing, push them to bottom
+    const posA = a.position ?? Infinity;
+    const posB = b.position ?? Infinity;
+    return posA - posB;
   });
+
 
   // Pagination Logic
   const indexOfLastProduct = currentPage * productsPerPage;
@@ -1209,6 +1286,8 @@ const showCarousel = (images) => { setCarouselImages(images.map(img => img.url))
                 <th className="px-6 py-3">Sr No.</th>
                 <th className="px-6 py-3">Image</th>
                 <th className="px-6 py-3">Frame</th>
+                <th className="px-6 py-3">Position</th>
+
                 <th className="px-6 py-3">Dimensions</th>
                 <th className="px-6 py-3">Price/Piece</th>
                 <th className="px-6 py-3">Piece/Box</th>
@@ -1238,6 +1317,13 @@ const showCarousel = (images) => { setCarouselImages(images.map(img => img.url))
                       )}
                     </td>
                     <td className="px-6 py-4 font-medium text-gray-900">{product.name}</td>
+
+
+                          {/* ⭐ Position */}
+                     <td className="px-6 py-4 font-semibold text-purple-600">
+                          {product.position ?? "—"}
+                     </td>
+
                     <td className="px-6 py-4">{Array.isArray(product.dimensions) ? product.dimensions.map(d => d.value || d).join(', ') : '—'}</td>
                     <td className="px-6 py-4">₹{product.pricePerPiece}</td>
                     <td className="px-6 py-4">{product.totalPiecesPerBox}</td>

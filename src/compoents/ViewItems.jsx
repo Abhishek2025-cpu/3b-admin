@@ -693,6 +693,7 @@ const handleOpenProgressModal = async (itemId) => {
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item No</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Images</th>
+                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mixture</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Operator</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Helper</th>
                   <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Boxes</th>
@@ -730,6 +731,12 @@ const handleOpenProgressModal = async (itemId) => {
                             <span className="text-gray-400">No Image</span>
                         )}
                       </td>
+                      <td className="px-6 py-4">
+  {item.mixtures && item.mixtures.length > 0
+    ? item.mixtures.map(mix => mix.name).join(", ")
+    : "N/A"}
+</td>
+
                    <td className="px-6 py-4">
   {item.operators.length > 0
     ? item.operators.map(op => op.name).join(', ')

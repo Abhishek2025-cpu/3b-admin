@@ -27,13 +27,17 @@ function AddItem() {
     helperId: '',
     operatorId: '',
     shift: '',
+    mixtureId: '',
     company: '',
     machineNumber: '',
+     mixtureMachine: '',
     productImage: null,
   });
 
   const [helpers, setHelpers] = useState([]);
   const [operators, setOperators] = useState([]);
+  const [mixtures, setMixtures] = useState([]);
+
   const [products, setProducts] = useState([]);
   const [productMap, setProductMap] = useState(new Map());
   const [imagePreview, setImagePreview] = useState('');
@@ -48,6 +52,8 @@ function AddItem() {
         // Now store _id for server, show name + eid for users
         setHelpers(data.filter(e => e.role === 'Helper').map(e => ({ value: e._id, label: `${e.name} (${e.eid})` })));
         setOperators(data.filter(e => e.role === 'Operator').map(e => ({ value: e._id, label: `${e.name} (${e.eid})` })));
+        setMixtures(data.filter(e => e.role === "Mixture").map(e => ({ value: e._id, label: `${e.name} (${e.eid})` })));
+
       } catch (error) {
         toast.error('Failed to load staff list.');
         console.error('Error loading staff:', error);
@@ -150,6 +156,8 @@ function AddItem() {
           <SelectInput name="itemNo" value={formData.itemNo} onChange={handleItemChange} options={products} placeholder="Select Item" />
           <input type="text" name="length" value={formData.length} readOnly className="p-2 border rounded-xl w-full bg-gray-100" />
           <input type="text" name="noOfSticks" value={formData.noOfSticks} readOnly placeholder="No of Pieces" className="p-2 border rounded-xl w-full bg-gray-100" />
+          <SelectInput  name="mixtureId" value={formData.mixtureId} onChange={handleChange} options={mixtures} placeholder="Select Mixture" />
+
           <SelectInput name="helperId" value={formData.helperId} onChange={handleChange} options={helpers} placeholder="Select Helper" />
           <SelectInput name="operatorId" value={formData.operatorId} onChange={handleChange} options={operators} placeholder="Select Operator" />
           <select name="shift" value={formData.shift} onChange={handleChange} required className="p-2 border rounded-xl w-full bg-white">
@@ -171,11 +179,19 @@ function AddItem() {
 
           {/* Machine Number Dropdown */}
           <select name="machineNumber" value={formData.machineNumber} onChange={handleChange} required className="p-2 border rounded-xl w-full bg-white">
-            <option value="">Select Machine Number</option>
+            <option value="">Select Opreator Machine</option>
             {[...Array(9)].map((_, i) => (
               <option key={i+1} value={i+1}>{i+1}</option>
             ))}
           </select>
+
+     <select name="mixtureMachine" value={formData.mixtureMachine} onChange={handleChange} className="p-2 border rounded-xl w-full bg-white">
+  <option value="">Select Mixture Machine</option>
+  {[...Array(3)].map((_, i) => (
+    <option key={i+1} value={i+1}>{i+1}</option>
+  ))}
+</select>
+
 
           <select name="company" value={formData.company} onChange={handleChange} required className="py-1 px-2 border rounded-xl w-full bg-white">
             <option value="">Select Company</option>
