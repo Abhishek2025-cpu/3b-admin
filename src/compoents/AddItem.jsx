@@ -185,12 +185,12 @@ function AddItem() {
             ))}
           </select>
 
-     <select name="mixtureMachine" value={formData.mixtureMachine} onChange={handleChange} className="p-2 border rounded-xl w-full bg-white">
+     {/* <select name="mixtureMachine" value={formData.mixtureMachine} onChange={handleChange} className="p-2 border rounded-xl w-full bg-white">
   <option value="">Select Mixture Machine</option>
   {[...Array(3)].map((_, i) => (
     <option key={i+1} value={i+1}>{i+1}</option>
   ))}
-</select>
+</select> */}
 
 
           <select name="company" value={formData.company} onChange={handleChange} required className="py-1 px-2 border rounded-xl w-full bg-white">

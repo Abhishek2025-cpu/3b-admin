@@ -304,7 +304,8 @@ function ManageStaff() {
     <div className="bg-gray-100 min-h-screen p-4 md:p-8 font-sans">
       <Toaster position="top-right" />
       <div className="container mx-auto">
-        <div className="flex justify-between items-center mb-6 flex-wrap gap-4"><h2 className="text-3xl font-bold text-[#6f42c1] flex items-center gap-3"><FaUsers /> Manage Staff</h2><button onClick={() => alert("Navigate to Add Staff page")} className="bg-[#6f42c1] hover:bg-[#59359a] text-white font-bold py-2 px-5 rounded-lg shadow-md flex items-center gap-2 transition-colors"><FaPlus /> Add Staff</button></div>
+        <div className="flex justify-between items-center mb-6 flex-wrap gap-4"><h2 className="text-3xl font-bold text-[#6f42c1] flex items-center gap-3"><FaUsers /> Manage Staff</h2>
+        <button onClick={() => alert("Navigate to Add Staff page")} className="bg-[#6f42c1] hover:bg-[#59359a] text-white font-bold py-2 px-5 rounded-lg shadow-md flex items-center gap-2 transition-colors"><FaPlus /> Add Staff</button></div>
         <input type="text" placeholder="Search by any field..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full max-w-lg mb-6 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#6f42c1]" />
         
         {loading ? <Loader /> : error ? <div className="text-center text-red-500 bg-red-100 p-4 rounded-md">{error}</div> : (

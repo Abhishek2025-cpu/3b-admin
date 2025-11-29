@@ -30,6 +30,8 @@ import DimensionsTable from './compoents/DimensionsTable';
 import MachineManager from './compoents/MachineManager';
 import AssignMachines from './compoents/AssignMachines';
 import ArchivedClients from './compoents/ArchivedClients';
+import OperatorTable from './compoents/OpreatorTable';
+import InventoryStock from './compoents/InventoryStock';
 function App() {
   return (
     <>
@@ -68,6 +70,8 @@ function App() {
           <Route path="notifications" element={<PushNotification />} />
           <Route path="product-dimensions" element={<DimensionsTable />} />
           <Route path="archive-clients" element={<ArchivedClients />} />
+          <Route path="operators" element={<OperatorTable />} />
+          <Route path="inventory-stock" element={<InventoryStock />} />
           
           {/* Add routes for 'add-staff', 'view-clients', etc. as you create them */}
         </Route>

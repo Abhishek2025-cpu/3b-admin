@@ -116,10 +116,24 @@ function Sidebar({ isOpen, onClose }) {
   onClick={(e) => toggleNested(e, 'machines')} 
 /> 
  <ul style={{ ...styles.nested, ...(openMenus.machines ? styles.nestedOpen : {}) }}>
-  <LinkMenuItem icon={faPlusSquare} text="Assign Machines" to="/manager/assign-machines" />
-  <LinkMenuItem icon={faTasks} text="Add New Machine" to="/manager/add-machine" />
-  <LinkMenuItem icon={faChartBar} text="Reports" to="/manager/machine-reports" />
-</ul>
+  <LinkMenuItem icon={faPlusSquare} text="Opreator Table" to="/manager/operators" />
+  <LinkMenuItem icon={faTasks} text="Mixture Table" to="/manager/add-machine" />
+  {/* <LinkMenuItem icon={faChartBar} text="Reports" to="/manager/machine-reports" /> */}
+</ul>    
+
+
+ {/* New Inventory Management Nested Menu */}
+  <DropdownMenuItem 
+    icon={faBoxOpen} 
+    text="Inventory Management" 
+    isOpen={openMenus.inventory} 
+    onClick={(e) => toggleNested(e, 'inventory')} 
+  />
+  <ul style={{ ...styles.nested, ...(openMenus.inventory ? styles.nestedOpen : {}) }}>
+    <LinkMenuItem icon={faBox} text="Inventory Stock" to="/manager/inventory-stock" />
+  </ul>
+
+
 
         {/* Users Menu */}
         <DropdownMenuItem icon={faUsers} text="Users" isOpen={openMenus.users} onClick={(e) => toggleNested(e, 'users')} />
