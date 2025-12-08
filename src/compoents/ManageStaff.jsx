@@ -314,7 +314,7 @@ function ManageStaff() {
               <table className="w-full text-sm text-left text-gray-700">
                 <thead className="text-xs uppercase bg-[#f3f0fa] text-[#6f42c1]">
                   <tr>
-                    {['Sr.', 'Name', 'Role', 'EID', 'Joined', 'Actions'].map(h => <th key={h} className="p-3">{h}</th>)}
+                    {['Sr.', 'Name', 'Role', 'EID', 'Password', 'Joined', 'Actions'].map(h => <th key={h} className="p-3">{h}</th>)}
                   </tr>
                 </thead>
                 <tbody>
@@ -325,6 +325,7 @@ function ManageStaff() {
                           <td className="p-3 font-semibold text-gray-800">{staff.name || '-'}</td>
                           <td className="p-3">{staff.role || '-'}</td>
                           <td className="p-3 font-mono">{staff.eid || '-'}</td>
+                          <td className = 'p-3 font-mono'>{staff.password || '-'}</td>
                           <td className="p-3">{staff.createdAt ? new Date(staff.createdAt).toLocaleDateString() : '-'}</td>
                           <td className="p-3">
                             <div className="flex items-center gap-4">
