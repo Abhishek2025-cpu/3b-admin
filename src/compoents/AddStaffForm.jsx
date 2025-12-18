@@ -55,8 +55,16 @@ function AddStaffForm() {
   const [role, setRole] = useState('');
   const [dob, setDob] = useState('');
   const [adharNumber, setAdharNumber] = useState('');
+  
+  // Adhar Image State
   const [adharImage, setAdharImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const adharImageRef = useRef(null);
+
+  // *** NEW: Profile Image State (Same to Same as Adhar) ***
+  const [profilePic, setProfilePic] = useState(null);
+  const [profilePreview, setProfilePreview] = useState(null);
+  const profilePicRef = useRef(null);
   
   // State for "Other" role and password popup
   const [otherRole, setOtherRole] = useState(''); 
@@ -70,8 +78,6 @@ function AddStaffForm() {
   // State for alert notifications
   const [alertInfo, setAlertInfo] = useState({ show: false, message: '', type: 'success' });
   
-  // Ref for the file input to allow programmatic clearing
-  const adharImageRef = useRef(null);
   
   // Hides the alert automatically
   useEffect(() => {
@@ -83,7 +89,25 @@ function AddStaffForm() {
     }
   }, [alertInfo]);
 
-  // Handler for image file selection
+  // 🔹 Profile Picture (DP) handlers
+  const handleProfilePicChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfilePic(file);
+      setProfilePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const removeProfilePic = () => {
+    setProfilePic(null);
+    setProfilePreview(null);
+    if (profilePicRef.current) {
+      profilePicRef.current.value = "";
+    }
+  };
+
+
+  // Handler for image file selection (Adhar)
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -92,7 +116,7 @@ function AddStaffForm() {
     }
   };
 
-  // Handler for removing the selected image preview
+  // Handler for removing the selected image preview (Adhar)
   const handleRemovePreview = () => {
     setAdharImage(null);
     setPreviewUrl(null);
@@ -109,7 +133,8 @@ function AddStaffForm() {
     setDob('');
     setAdharNumber('');
     setOtherRole('');
-    handleRemovePreview();
+    handleRemovePreview(); // Reset Adhar
+    removeProfilePic();    // Reset Profile Pic
   };
 
   // Handler for form submission
@@ -133,6 +158,9 @@ function AddStaffForm() {
     if (dob) formData.append('dob', dob);
     if (adharNumber) formData.append('adharNumber', adharNumber);
     if (adharImage) formData.append('adharImage', adharImage);
+    
+    // Append Profile Image if selected
+    if (profilePic) formData.append('profilePic', profilePic);
 
     try {
       const res = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/staff/add-employees', {
@@ -156,29 +184,26 @@ function AddStaffForm() {
     }
   };
 
-const handleClosePasswordPopup = () => {
-  setShowPasswordPopup(false);
-  setGeneratedPassword('');
-  setAlertInfo({ show: true, message: '✅ Staff added successfully!', type: 'success' });
+  const handleClosePasswordPopup = () => {
+    setShowPasswordPopup(false);
+    setGeneratedPassword('');
+    setAlertInfo({ show: true, message: '✅ Staff added successfully!', type: 'success' });
 
-  // Prepare activity object
-  const activity = {
-    text: `Staff member "${name}" added as ${role === 'Other' ? otherRole : role}`,
-    time: "Just now"
+    // Prepare activity object
+    const activity = {
+      text: `Staff member "${name}" added as ${role === 'Other' ? otherRole : role}`,
+      time: "Just now"
+    };
+
+    // 🔥 Dispatch event for Dashboard to update immediately
+    window.dispatchEvent(new CustomEvent("recent-activity", { detail: activity }));
+
+    // 💾 Save to sessionStorage
+    const existingActivities = JSON.parse(sessionStorage.getItem("activities") || "[]");
+    sessionStorage.setItem("activities", JSON.stringify([activity, ...existingActivities]));
+
+    resetForm();
   };
-
-  // 🔥 Dispatch event for Dashboard to update immediately
-  window.dispatchEvent(new CustomEvent("recent-activity", { detail: activity }));
-
-  // 💾 Save to sessionStorage
-  const existingActivities = JSON.parse(sessionStorage.getItem("activities") || "[]");
-  sessionStorage.setItem("activities", JSON.stringify([activity, ...existingActivities]));
-
-  resetForm();
-};
-
-
-
 
   const roleOptions = ['Operator', 'Helper', 'Mixture', 'Other'];
 
@@ -205,7 +230,33 @@ const handleClosePasswordPopup = () => {
         </h4>
         
         <form onSubmit={handleSubmit} noValidate>
-          {/* Form fields remain the same */}
+          
+          {/* *** NEW: Profile Image Upload Section (Same Style as Adhar) *** */}
+          <div className="mb-6">
+            <label htmlFor="profilePic" className="block text-gray-700 font-medium mb-2">Profile Image</label>
+            <input 
+              type="file" 
+              id="profilePic" 
+              ref={profilePicRef}
+              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[#e9e4f5] file:text-[#7853C2] hover:file:bg-[#d8cff0]"
+              accept="image/*"
+              onChange={handleProfilePicChange}
+            />
+            {profilePreview && (
+              <div className="relative inline-block mt-4">
+                <img src={profilePreview} alt="Profile Preview" className="w-[100px] h-auto rounded-md" />
+                <button 
+                  type="button" 
+                  onClick={removeProfilePic}
+                  className="absolute top-[-8px] right-[-8px] bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-lg font-bold cursor-pointer border-2 border-white"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+          </div>
+          {/* *** END: Profile Image Section *** */}
+
           <div className="mb-4">
             <label htmlFor="name" className="block text-gray-700 font-medium mb-2">
               Full Name<span className="text-red-500">*</span>
