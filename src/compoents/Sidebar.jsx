@@ -123,7 +123,7 @@ function Sidebar({ isOpen, onClose }) {
 
 
  {/* New Inventory Management Nested Menu */}
-  <DropdownMenuItem 
+  {/* <DropdownMenuItem
     icon={faBoxOpen} 
     text="Inventory Management" 
     isOpen={openMenus.inventory} 
@@ -131,7 +131,7 @@ function Sidebar({ isOpen, onClose }) {
   />
   <ul style={{ ...styles.nested, ...(openMenus.inventory ? styles.nestedOpen : {}) }}>
     <LinkMenuItem icon={faBox} text="Inventory Stock" to="/manager/inventory-stock" />
-  </ul>
+  </ul> */}
 
 
 

@@ -37,7 +37,31 @@ const PrintablePageLayout = ({ item, box }) => {
         ? item.productImageUrl[0] // Use the first image for the print layout
         : item.productImageUrl; // Fallback for single string URL
 
-    return ( <div className="border-4 border-purple-800 p-6 bg-white w-full"><div className="grid grid-cols-10 gap-x-8 items-stretch"><div className="col-span-8 flex flex-col justify-between"><div><img src={logo} alt="3B Profiles Logo" className="h-24 ml-10" /><p className="text-sm font-semibold text-gray-700 mt-1">www.3bprofilespvtltd.com</p></div><div className="mt-8 space-y-4 text-xl"><div className="flex items-center"><span className="w-40 font-bold text-gray-800">Profile Code</span><span className="flex-1 border-b-2 border-gray-400 text-center font-mono">{profileCodes || 'N/A'}</span></div><div className="flex items-center"><span className="w-40 font-bold text-gray-800">Height (m)</span><span className="flex-1 border-b-2 border-gray-400 text-center font-mono">{heightDisplay}</span></div><div className="flex items-center"><span className="w-40 font-bold text-gray-800">Qty per Box</span><span className="flex-1 border-b-2 border-gray-400 text-center font-mono">{item.noOfSticks}</span></div></div></div><div className="col-span-2 flex flex-col justify-between items-center text-center"><div><img src={box.qrCodeUrl} alt="Box QR Code" className="w-40 h-40 mx-auto" /><p className="font-mono font-bold text-lg mt-1">{`${item.itemNo.trim()}/${box.boxSerialNo}`}</p></div><div className="w-full h-48 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center p-2 my-4"><img src={productImageUrl} alt="Product" className="max-w-full max-h-full object-contain" /></div><div className="w-full mt-auto"><StaticBarcodeIcon /></div></div></div></div> );
+     return (
+        <div className="border-4 border-purple-800 p-6 bg-white w-full">
+            <div className="grid grid-cols-10 gap-x-8 items-stretch">
+                {/* ... Left Side content ... */}
+                
+                <div className="col-span-2 flex flex-col justify-between items-center text-center">
+                    <div>
+                        {/* UPDATED IMAGE TAG BELOW */}
+                        <div className="bg-white p-2 mb-1 inline-block"> 
+                             <img 
+                                src={box.qrCodeUrl} 
+                                alt="Box QR Code" 
+                                className="w-48 h-48 mx-auto" // Increased size slightly from w-40
+                                style={{ imageRendering: 'pixelated' }} 
+                             />
+                        </div>
+                        <p className="font-mono font-bold text-lg mt-1">
+                            {`${item.itemNo.trim()}/${box.boxSerialNo}`}
+                        </p>
+                    </div>
+                    {/* ... Rest of the component ... */}
+                </div>
+            </div>
+        </div>
+    );
 };
 const PrintModal = ({ isOpen, onClose, item, box }) => {
   const handlePrint = () => window.print();
@@ -50,6 +74,19 @@ const PrintModal = ({ isOpen, onClose, item, box }) => {
     #printable-area, #printable-area * {
       visibility: visible;
     }
+         img[alt="Box QR Code"] {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      image-rendering: -moz-crisp-edges;
+      -ms-interpolation-mode: nearest-neighbor;
+    }
+  }
+
+  /* Screen rendering fix */
+  img[alt="Box QR Code"] {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
     #printable-area {
       position: fixed;       
       top:0;
@@ -105,6 +142,19 @@ const PrintAllBoxesModal = ({ isOpen, onClose, item }) => {
     .no-print {
       display: none !important;
     }
+  }
+       img[alt="Box QR Code"] {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      image-rendering: -moz-crisp-edges;
+      -ms-interpolation-mode: nearest-neighbor;
+    }
+  }
+
+  /* Screen rendering fix */
+  img[alt="Box QR Code"] {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
   }
 `}</style>
  <GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl" zIndex="z-[60]"><div id="printable-all-boxes-area" className="p-4 overflow-y-auto"><h2 className="text-2xl font-bold text-center mb-4 no-print">Print Preview: All Boxes</h2>{item.boxes?.map(box => ( <div key={box._id} className="printable-page"><PrintablePageLayout item={item} box={box} /></div> ))}</div><div className="no-print p-4 bg-gray-50 rounded-b-lg flex justify-end gap-3 border-t"><button onClick={handlePrint} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2"><PrintIcon /> Print All</button><button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">Close</button></div></GenericModal> </> );
@@ -469,54 +519,68 @@ function ViewItems() {
 
     // ✅ Smart normalization that supports both old and new API structures
 const normalizeItem = (item) => {
+    if (!item) return null;
+
+    // Merge logic: prefer root fields, but allow mainItem to override if it exists
     const base = item.mainItem || item;
+
     return {
-        ...item,
-        _id: base._id || item._id,
-        itemNo: base.itemNo || item.itemNo || '',
-        helpers: Array.isArray(base.helpers) ? base.helpers : [],
-        operators: Array.isArray(base.operators) ? base.operators : [],
-        boxCount: base.boxCount || item.boxCount || 0,
+        ...item,           // Start with everything (preserves top-level 'boxes')
+        ...base,           // Overlay with item details (itemNo, etc.)
+        _id: base._id || item._id, // Ensure we have a valid ID
+        
+        // Explicitly ensure these are arrays so .map() doesn't crash
+        helpers: Array.isArray(base.helpers) ? base.helpers : (Array.isArray(item.helpers) ? item.helpers : []),
+        operators: Array.isArray(base.operators) ? base.operators : (Array.isArray(item.operators) ? item.operators : []),
+        mixtures: Array.isArray(item.mixtures) ? item.mixtures : (Array.isArray(base.mixtures) ? base.mixtures : []),
+        boxes: Array.isArray(item.boxes) ? item.boxes : (Array.isArray(base.boxes) ? base.boxes : []),
+        
+        boxCount: base.boxCount || item.boxCount || (Array.isArray(item.boxes) ? item.boxes.length : 0),
+        
         productImageUrl: Array.isArray(base.productImageUrl)
             ? base.productImageUrl
-            : (base.productImageUrl ? [base.productImageUrl] : []),
-        coverImageUrl: Array.isArray(base.coverImageUrl)
-            ? base.coverImageUrl
-            : (base.coverImageUrl ? [base.coverImageUrl] : []),
+            : base.productImageUrl ? [base.productImageUrl] : (item.productImageUrl ? [item.productImageUrl] : []),
     };
 };
 
 
-   const fetchAllData = useCallback(async () => {
-  setIsLoading(true);
-  try {
-    const [listRes, detailRes] = await Promise.all([
-      fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-Allitems'),
-      fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-items'),
-    ]);
-    if (!listRes.ok || !detailRes.ok) throw new Error('Failed to fetch data.');
 
-    const listData = await listRes.json();
-    const detailData = await detailRes.json();
+const fetchAllData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+        const [listRes, detailRes] = await Promise.all([
+            fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-Allitems'),
+            fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-items'),
+        ]);
 
-    const normalizedListData = Array.isArray(listData.data)
-      ? listData.data.map(normalizeItem)
-      : [];
-    const normalizedDetailData = Array.isArray(detailData.data)
-      ? detailData.data.map(normalizeItem)
-      : [];
+        if (!listRes.ok || !detailRes.ok) throw new Error('Failed to fetch data.');
 
-    setItems(normalizedListData);
+        const listJson = await listRes.json();
+        const detailJson = await detailRes.json();
 
-    const itemMap = new Map();
-    normalizedDetailData.forEach((item) => itemMap.set(item._id, item));
-    setFullItemsMap(itemMap);
-  } catch (err) {
-    setError(err.message);
-    toast.error('Could not fetch data.');
-  } finally {
-    setIsLoading(false);
-  }
+        // Support both formats: direct array [...] or wrapped object { data: [...] }
+        const listRaw = Array.isArray(listJson) ? listJson : (listJson.data || []);
+        const detailRaw = Array.isArray(detailJson) ? detailJson : (detailJson.data || []);
+
+        const normalizedListData = listRaw.map(normalizeItem);
+        const normalizedDetailData = detailRaw.map(normalizeItem);
+
+        setItems(normalizedListData);
+
+        // Build the map for the Boxes Modal lookup
+        const itemMap = new Map();
+        normalizedDetailData.forEach((item) => {
+            if (item._id) itemMap.set(item._id, item);
+        });
+        setFullItemsMap(itemMap);
+
+    } catch (err) {
+        console.error("Fetch error:", err);
+        setError(err.message);
+        toast.error('Could not fetch data.');
+    } finally {
+        setIsLoading(false);
+    }
 }, []);
 
 
