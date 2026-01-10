@@ -72,7 +72,7 @@ function LoginPage() {
     }, 4000);
   };
 
-  const handleLogin = async (e) => {
+const handleLogin = async (e) => {
     e.preventDefault();
     if (!/^\d{10}$/.test(number)) return showToast('Please enter a valid 10-digit phone number.', 'error');
     if (!password) return showToast('Please enter your password.', 'error');
@@ -90,17 +90,17 @@ function LoginPage() {
       if (response.ok) {
         showToast('Login successful!', 'success');
 
-        // --- FIX START ---
-        // Extract 'role' directly from 'result'
-        const userRole = result.role; // This will be "admin" or "sub-admin"
-        const userName = result.user?.name || 'Manager'; // Get name from result.user, default to 'Manager'
-        const authToken = result.token; // Assuming 'token' might also be at top level or in result.user, adjust if needed
+        // --- FIXED DATA EXTRACTION ---
+        const authToken = result.token;        // Top level token
+        const userRole = result.role;          // "admin"
+        const userEmail = result.user?.email;  // User email
+        const userId = result.user?._id;       // User ID
 
-        localStorage.setItem('userName', userName);
-        localStorage.setItem('userRole', userRole || 'guest'); // Use the extracted userRole
-        localStorage.setItem('authToken', authToken); // Set the token
-
-        // --- FIX END ---
+        // Local Storage mein save karna
+        localStorage.setItem('token', authToken); // Yeh important hai ProtectedRoute ke liye
+        localStorage.setItem('userRole', userRole);
+        localStorage.setItem('userEmail', userEmail);
+        localStorage.setItem('userId', userId);
 
         setTimeout(() => {
           navigate('/manager');
