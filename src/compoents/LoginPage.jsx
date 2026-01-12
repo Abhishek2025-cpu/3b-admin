@@ -91,13 +91,13 @@ const handleLogin = async (e) => {
         showToast('Login successful!', 'success');
 
         // --- FIXED DATA EXTRACTION ---
-        const authToken = result.token;        // Top level token
-        const userRole = result.role;          // "admin"
-        const userEmail = result.user?.email;  // User email
-        const userId = result.user?._id;       // User ID
+        const authToken = result.token;        
+        const userRole = result.role;          
+        const userEmail = result.user?.email;  
+        const userId = result.user?._id;       
 
-        // Local Storage mein save karna
-        localStorage.setItem('token', authToken); // Yeh important hai ProtectedRoute ke liye
+        // Local Storage 
+        localStorage.setItem('token', authToken); 
         localStorage.setItem('userRole', userRole);
         localStorage.setItem('userEmail', userEmail);
         localStorage.setItem('userId', userId);
