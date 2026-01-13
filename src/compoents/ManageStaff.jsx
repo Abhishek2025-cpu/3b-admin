@@ -31,11 +31,10 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
         <button
           key={number}
           onClick={() => onPageChange(number)}
-          className={`px-4 py-2 font-semibold text-white rounded-md transition-colors ${
-            currentPage === number
+          className={`px-4 py-2 font-semibold text-white rounded-md transition-colors ${currentPage === number
               ? "bg-[#4b2a82]"
               : "bg-[#6f42c1] hover:bg-[#59359a]"
-          }`}
+            }`}
           disabled={currentPage === number}
         >
           {number}
@@ -170,6 +169,7 @@ const UpdateStaffModal = ({ staff, isOpen, onClose, onUpdateSuccess }) => {
   };
 
   return (
+    
     // FIX: Removed dark background and implemented pointer-events pattern
     // to prevent interaction with the page behind, matching other modals.
     <div className="fixed inset-0 flex justify-center items-center z-50 p-4 pointer-events-none">
@@ -318,9 +318,8 @@ const EmployeeDetails = ({ staff, onImageClick }) => {
                 .map((history) => (
                   <li key={history._id}>
                     <span
-                      className={`font-bold ${
-                        history.status ? "text-green-600" : "text-red-500"
-                      }`}
+                      className={`font-bold ${history.status ? "text-green-600" : "text-red-500"
+                        }`}
                     >
                       {history.status ? "Active" : "Inactive"}
                     </span>
@@ -342,6 +341,7 @@ const EmployeeDetails = ({ staff, onImageClick }) => {
 
 // --- Main Component ---
 function ManageStaff() {
+    const navigate = useNavigate();
   const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -521,7 +521,7 @@ function ManageStaff() {
             <FaUsers /> Manage Staff
           </h2>
           <button
-            onClick={() => alert("Navigate to Add Staff page")}
+            onClick={() => navigate("/manager/add-staff")}
             className="bg-[#6f42c1] hover:bg-[#59359a] text-white font-bold py-2 px-5 rounded-lg shadow-md flex items-center gap-2 transition-colors"
           >
             <FaPlus /> Add Staff
@@ -584,11 +584,11 @@ function ManageStaff() {
                               alt="DP"
                               className="w-10 h-10 rounded-full object-cover border cursor-pointer hover:scale-105 transition"
                               onClick={() =>
-  handleOpenAadharModal(
-    staff.profilePic?.url ||
-      `https://ui-avatars.com/api/?name=${staff.name}`
-  )
-}
+                                handleOpenAadharModal(
+                                  staff.profilePic?.url ||
+                                  `https://ui-avatars.com/api/?name=${staff.name}`
+                                )
+                              }
 
                             />
                           </td>
@@ -722,9 +722,8 @@ function ManageStaff() {
         isOpen={isConfirmModalOpen}
         onClose={handleCloseModals}
         onConfirm={handleToggleStatus}
-        message={`Are you sure you want to ${
-          selectedStaff?.status ? "DEACTIVATE" : "ACTIVATE"
-        } this employee?`}
+        message={`Are you sure you want to ${selectedStaff?.status ? "DEACTIVATE" : "ACTIVATE"
+          } this employee?`}
       />
     </div>
   );

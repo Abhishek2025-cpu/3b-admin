@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { BsPersonPlusFill } from 'react-icons/bs'; // Using react-icons for the bootstrap icon
+import { BsPersonPlusFill } from 'react-icons/bs';
+import { IoMdClose } from 'react-icons/io'; // For removing role tags
 
 // Alert Component for displaying feedback
 const Alert = ({ message, type, show, onClose }) => {
@@ -47,39 +48,32 @@ const PasswordPopup = ({ password, show, onClose }) => {
   );
 };
 
-
 function AddStaffForm() {
-  // State for form fields
+  // Form State
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
-  const [role, setRole] = useState('');
+  const [roles, setRoles] = useState([]); // Changed to Array for multiple roles
   const [dob, setDob] = useState('');
   const [adharNumber, setAdharNumber] = useState('');
   
-  // Adhar Image State
+  // File States
   const [adharImage, setAdharImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const adharImageRef = useRef(null);
 
-  // *** NEW: Profile Image State (Same to Same as Adhar) ***
   const [profilePic, setProfilePic] = useState(null);
   const [profilePreview, setProfilePreview] = useState(null);
   const profilePicRef = useRef(null);
   
-  // State for "Other" role and password popup
+  // Role & Popup State
   const [otherRole, setOtherRole] = useState(''); 
   const [showPasswordPopup, setShowPasswordPopup] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState('');
-  
-  // *** START: New state for loading indicator ***
   const [isLoading, setIsLoading] = useState(false);
-  // *** END: New state ***
-
-  // State for alert notifications
   const [alertInfo, setAlertInfo] = useState({ show: false, message: '', type: 'success' });
-  
-  
-  // Hides the alert automatically
+
+  const roleOptions = ['Operator', 'Helper', 'Mixture', 'Other'];
+
   useEffect(() => {
     if (alertInfo.show) {
       const timer = setTimeout(() => {
@@ -89,7 +83,8 @@ function AddStaffForm() {
     }
   }, [alertInfo]);
 
-  // 🔹 Profile Picture (DP) handlers
+  // --- Handlers ---
+
   const handleProfilePicChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -101,13 +96,9 @@ function AddStaffForm() {
   const removeProfilePic = () => {
     setProfilePic(null);
     setProfilePreview(null);
-    if (profilePicRef.current) {
-      profilePicRef.current.value = "";
-    }
+    if (profilePicRef.current) profilePicRef.current.value = "";
   };
 
-
-  // Handler for image file selection (Adhar)
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -116,50 +107,59 @@ function AddStaffForm() {
     }
   };
 
-  // Handler for removing the selected image preview (Adhar)
   const handleRemovePreview = () => {
     setAdharImage(null);
     setPreviewUrl(null);
-    if (adharImageRef.current) {
-      adharImageRef.current.value = '';
-    }
+    if (adharImageRef.current) adharImageRef.current.value = '';
   };
-  
-  // Resets all form fields
+
+  // 🔹 Multi-Role Handlers
+  const handleRoleSelect = (e) => {
+    const selectedValue = e.target.value;
+    if (selectedValue && !roles.includes(selectedValue)) {
+      setRoles([...roles, selectedValue]);
+    }
+    // Reset dropdown to default option after selection
+    e.target.value = ""; 
+  };
+
+  const removeRole = (roleToRemove) => {
+    setRoles(roles.filter(r => r !== roleToRemove));
+    if (roleToRemove === 'Other') setOtherRole('');
+  };
+
   const resetForm = () => {
     setName('');
     setMobile('');
-    setRole('');
+    setRoles([]);
     setDob('');
     setAdharNumber('');
     setOtherRole('');
-    handleRemovePreview(); // Reset Adhar
-    removeProfilePic();    // Reset Profile Pic
+    handleRemovePreview();
+    removeProfilePic();
   };
 
-  // Handler for form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const finalRole = role === 'Other' ? otherRole : role;
+    // Transform roles array to include the "Other" text if applicable
+    const finalRoles = roles.map(r => (r === 'Other' ? otherRole : r));
 
-    // Client-side validation
-    if (!name || !mobile || !finalRole || !adharImage) {
-      setAlertInfo({ show: true, message: 'Please fill in all required fields, including Aadhar image.', type: 'danger' });
+    if (!name || !mobile || roles.length === 0 || !adharImage || (roles.includes('Other') && !otherRole)) {
+      setAlertInfo({ show: true, message: 'Please fill in all required fields.', type: 'danger' });
       return;
     }
 
-    setIsLoading(true); // Set loading to true before the API call
+    setIsLoading(true);
 
     const formData = new FormData();
     formData.append('name', name);
     formData.append('mobile', mobile);
-    formData.append('role', finalRole);
+    // Joining roles as a string (adjust based on your API - if it accepts array, append each)
+    formData.append('role', finalRoles.join(', ')); 
     if (dob) formData.append('dob', dob);
     if (adharNumber) formData.append('adharNumber', adharNumber);
     if (adharImage) formData.append('adharImage', adharImage);
-    
-    // Append Profile Image if selected
     if (profilePic) formData.append('profilePic', profilePic);
 
     try {
@@ -174,13 +174,12 @@ function AddStaffForm() {
         setGeneratedPassword(result.password || 'Not Available');
         setShowPasswordPopup(true);
       } else {
-        setAlertInfo({ show: true, message: result.message || '❌ Submission failed. Please check inputs.', type: 'danger' });
+        setAlertInfo({ show: true, message: result.message || 'Submission failed.', type: 'danger' });
       }
     } catch (error) {
-      console.error('Network error:', error);
-      setAlertInfo({ show: true, message: '🚨 Network error. Please try again later.', type: 'danger' });
+      setAlertInfo({ show: true, message: 'Network error. Try again.', type: 'danger' });
     } finally {
-      setIsLoading(false); // Set loading to false after the API call finishes
+      setIsLoading(false);
     }
   };
 
@@ -189,23 +188,17 @@ function AddStaffForm() {
     setGeneratedPassword('');
     setAlertInfo({ show: true, message: '✅ Staff added successfully!', type: 'success' });
 
-    // Prepare activity object
     const activity = {
-      text: `Staff member "${name}" added as ${role === 'Other' ? otherRole : role}`,
+      text: `Staff "${name}" added with roles: ${roles.join(', ')}`,
       time: "Just now"
     };
 
-    // 🔥 Dispatch event for Dashboard to update immediately
     window.dispatchEvent(new CustomEvent("recent-activity", { detail: activity }));
-
-    // 💾 Save to sessionStorage
     const existingActivities = JSON.parse(sessionStorage.getItem("activities") || "[]");
     sessionStorage.setItem("activities", JSON.stringify([activity, ...existingActivities]));
 
     resetForm();
   };
-
-  const roleOptions = ['Operator', 'Helper', 'Mixture', 'Other'];
 
   return (
     <div className="bg-gray-100 min-h-screen p-5 font-sans">
@@ -222,21 +215,18 @@ function AddStaffForm() {
         onClose={handleClosePasswordPopup}
       />
 
-      <div 
-        className="bg-[#f5f5f5] p-8 rounded-xl shadow-lg max-w-2xl mx-auto mt-5"
-      >
+      <div className="bg-[#f5f5f5] p-8 rounded-xl shadow-lg max-w-2xl mx-auto mt-5">
         <h4 className="text-2xl font-semibold text-center mb-6 flex items-center justify-center gap-2">
           <BsPersonPlusFill /> Add Staff
         </h4>
         
         <form onSubmit={handleSubmit} noValidate>
           
-          {/* *** NEW: Profile Image Upload Section (Same Style as Adhar) *** */}
+          {/* Profile Image */}
           <div className="mb-6">
-            <label htmlFor="profilePic" className="block text-gray-700 font-medium mb-2">Profile Image</label>
+            <label className="block text-gray-700 font-medium mb-2">Profile Image</label>
             <input 
               type="file" 
-              id="profilePic" 
               ref={profilePicRef}
               className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[#e9e4f5] file:text-[#7853C2] hover:file:bg-[#d8cff0]"
               accept="image/*"
@@ -244,27 +234,17 @@ function AddStaffForm() {
             />
             {profilePreview && (
               <div className="relative inline-block mt-4">
-                <img src={profilePreview} alt="Profile Preview" className="w-[100px] h-auto rounded-md" />
-                <button 
-                  type="button" 
-                  onClick={removeProfilePic}
-                  className="absolute top-[-8px] right-[-8px] bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-lg font-bold cursor-pointer border-2 border-white"
-                >
-                  ×
-                </button>
+                <img src={profilePreview} alt="DP" className="w-[100px] h-100 object-cover rounded-md border" />
+                <button type="button" onClick={removeProfilePic} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center border-2 border-white">×</button>
               </div>
             )}
           </div>
-          {/* *** END: Profile Image Section *** */}
 
           <div className="mb-4">
-            <label htmlFor="name" className="block text-gray-700 font-medium mb-2">
-              Full Name<span className="text-red-500">*</span>
-            </label>
+            <label className="block text-gray-700 font-medium mb-2">Full Name*</label>
             <input 
               type="text" 
-              id="name" 
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7853C2]" 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7853C2] outline-none" 
               value={name}
               onChange={(e) => setName(e.target.value)}
               required 
@@ -272,45 +252,52 @@ function AddStaffForm() {
           </div>
 
           <div className="mb-4">
-            <label htmlFor="mobile" className="block text-gray-700 font-medium mb-2">
-              Mobile No<span className="text-red-500">*</span>
-            </label>
+            <label className="block text-gray-700 font-medium mb-2">Mobile No*</label>
             <input 
               type="tel" 
-              id="mobile" 
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7853C2]" 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7853C2] outline-none" 
               value={mobile}
               onChange={(e) => setMobile(e.target.value)}
               required 
             />
           </div>
 
+          {/* 🔹 UPDATED: Multiple Role Selection */}
           <div className="mb-4">
-            <label htmlFor="role" className="block text-gray-700 font-medium mb-2">
-              Role<span className="text-red-500">*</span>
-            </label>
+            <label className="block text-gray-700 font-medium mb-2">Roles* (Select multiple)</label>
+            
+            {/* Display Selected Roles as Tags */}
+            <div className="flex flex-wrap gap-2 mb-3">
+              {roles.map((r) => (
+                <span key={r} className="bg-[#7853C2] text-white px-3 py-1 rounded-full text-sm flex items-center gap-2 animate-fadeIn">
+                  {r}
+                  <IoMdClose className="cursor-pointer hover:text-red-300" onClick={() => removeRole(r)} />
+                </span>
+              ))}
+              {roles.length === 0 && <span className="text-gray-400 text-sm italic">No roles selected</span>}
+            </div>
+
             <select 
-              id="role" 
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7853C2] bg-white"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7853C2] bg-white outline-none"
+              onChange={handleRoleSelect}
+              defaultValue=""
             >
-              <option value="" disabled>Select role</option>
-              {roleOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              <option value="" disabled>Choose roles...</option>
+              {roleOptions.map(opt => (
+                <option key={opt} value={opt} disabled={roles.includes(opt)}>
+                  {opt} {roles.includes(opt) ? '(Selected)' : ''}
+                </option>
+              ))}
             </select>
           </div>
           
-          {role === 'Other' && (
-            <div className="mb-4">
-                <label htmlFor="otherRole" className="block text-gray-700 font-medium mb-2">
-                    Specify Role<span className="text-red-500">*</span>
-                </label>
+          {roles.includes('Other') && (
+            <div className="mb-4 animate-slideDown">
+                <label className="block text-gray-700 font-medium mb-2">Specify Other Role*</label>
                 <input
                     type="text"
-                    id="otherRole"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7853C2]"
-                    placeholder="please specify the role"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7853C2] outline-none"
+                    placeholder="Enter specific role"
                     value={otherRole}
                     onChange={(e) => setOtherRole(e.target.value)}
                     required
@@ -318,33 +305,31 @@ function AddStaffForm() {
             </div>
           )}
 
-          <div className="mb-4">
-            <label htmlFor="dob" className="block text-gray-700 font-medium mb-2">Date of Birth</label>
-            <input 
-              type="date" 
-              id="dob" 
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7853C2]"
-              value={dob}
-              onChange={(e) => setDob(e.target.value)}
-            />
-          </div>
-
-          <div className="mb-4">
-            <label htmlFor="adharNumber" className="block text-gray-700 font-medium mb-2">Aadhar Number</label>
-            <input 
-              type="text" 
-              id="adharNumber" 
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7853C2]"
-              value={adharNumber}
-              onChange={(e) => setAdharNumber(e.target.value)}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-gray-700 font-medium mb-2">Date of Birth</label>
+              <input 
+                type="date" 
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7853C2] outline-none"
+                value={dob}
+                onChange={(e) => setDob(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 font-medium mb-2">Aadhar Number</label>
+              <input 
+                type="text" 
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7853C2] outline-none"
+                value={adharNumber}
+                onChange={(e) => setAdharNumber(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="mb-6">
-            <label htmlFor="adharImage" className="block text-gray-700 font-medium mb-2">Aadhar Image<span className="text-red-500">*</span></label>
+            <label className="block text-gray-700 font-medium mb-2">Aadhar Image*</label>
             <input 
               type="file" 
-              id="adharImage" 
               ref={adharImageRef}
               className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[#e9e4f5] file:text-[#7853C2] hover:file:bg-[#d8cff0]"
               accept="image/*"
@@ -352,37 +337,29 @@ function AddStaffForm() {
             />
             {previewUrl && (
               <div className="relative inline-block mt-4">
-                <img src={previewUrl} alt="Preview" className="w-[100px] h-auto rounded-md" />
-                <button 
-                  type="button" 
-                  onClick={handleRemovePreview}
-                  className="absolute top-[-8px] right-[-8px] bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-lg font-bold cursor-pointer border-2 border-white"
-                >
-                  ×
-                </button>
+                <img src={previewUrl} alt="Aadhar" className="w-[100px] h-auto rounded-md border" />
+                <button type="button" onClick={handleRemovePreview} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center border-2 border-white">×</button>
               </div>
             )}
           </div>
           
-          {/* *** START: Updated Submit Button with Loader *** */}
           <button 
             type="submit" 
             disabled={isLoading}
-            className="w-full bg-[#7853C2] text-white font-bold py-3 px-4 rounded-md hover:bg-[#6643b1] transition-colors duration-300 flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full bg-[#7853C2] text-white font-bold py-3 px-4 rounded-md hover:bg-[#6643b1] transition-all duration-300 flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
           >
             {isLoading ? (
                 <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Saving...
+                    Processing...
                 </>
             ) : (
-                'Save Staff'
+                'Save Staff Member'
             )}
           </button>
-          {/* *** END: Updated Submit Button *** */}
         </form>
       </div>
     </div>
