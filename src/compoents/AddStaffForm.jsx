@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BsPersonPlusFill } from 'react-icons/bs';
-import { IoMdClose } from 'react-icons/io'; // For removing role tags
+import { IoMdClose } from 'react-icons/io';
 
 // Alert Component for displaying feedback
 const Alert = ({ message, type, show, onClose }) => {
@@ -25,23 +25,35 @@ const Alert = ({ message, type, show, onClose }) => {
   );
 };
 
-// Password Popup Component
-const PasswordPopup = ({ password, show, onClose }) => {
-  if (!show) return null;
+// Password Popup Component - Updated to show multiple credentials
+const PasswordPopup = ({ credentials, show, onClose }) => {
+  if (!show || !credentials) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-[1100]">
-      <div className="bg-white p-8 rounded-xl shadow-2xl text-center max-w-sm w-full mx-4">
-        <h3 className="text-2xl font-bold mb-4 text-gray-800">Registration Successful!</h3>
-        <p className="mb-5 text-gray-600">The staff member has been added. Their temporary password is:</p>
-        <div className="bg-gray-100 p-4 rounded-lg mb-6 border border-gray-200">
-          <p className="text-2xl font-mono font-bold tracking-widest text-gray-900 select-all">{password}</p>
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-[1100] p-4">
+      <div className="bg-white p-6 rounded-xl shadow-2xl text-center max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <h3 className="text-2xl font-bold mb-2 text-gray-800">Registration Successful!</h3>
+        <p className="mb-4 text-gray-600">Staff member added. Here are the login details:</p>
+        
+        <div className="space-y-3 mb-6">
+          {credentials.map((cred, index) => (
+            <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-left">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs font-bold uppercase text-[#7853C2]">{cred.role}</span>
+                <span className="text-xs text-gray-500">EID: {cred.eid}</span>
+              </div>
+              <p className="text-xl font-mono font-bold tracking-wider text-gray-900 select-all">
+                {cred.password}
+              </p>
+            </div>
+          ))}
         </div>
+
         <button
           onClick={onClose}
           className="w-full bg-[#7853C2] text-white font-bold py-3 px-6 rounded-md hover:bg-[#6643b1] transition-colors duration-300"
         >
-          Close & Finish
+          Done & Close
         </button>
       </div>
     </div>
@@ -52,7 +64,7 @@ function AddStaffForm() {
   // Form State
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
-  const [roles, setRoles] = useState([]); // Changed to Array for multiple roles
+  const [roles, setRoles] = useState([]); 
   const [dob, setDob] = useState('');
   const [adharNumber, setAdharNumber] = useState('');
   
@@ -68,7 +80,7 @@ function AddStaffForm() {
   // Role & Popup State
   const [otherRole, setOtherRole] = useState(''); 
   const [showPasswordPopup, setShowPasswordPopup] = useState(false);
-  const [generatedPassword, setGeneratedPassword] = useState('');
+  const [generatedCredentials, setGeneratedCredentials] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [alertInfo, setAlertInfo] = useState({ show: false, message: '', type: 'success' });
 
@@ -113,13 +125,11 @@ function AddStaffForm() {
     if (adharImageRef.current) adharImageRef.current.value = '';
   };
 
-  // 🔹 Multi-Role Handlers
   const handleRoleSelect = (e) => {
     const selectedValue = e.target.value;
     if (selectedValue && !roles.includes(selectedValue)) {
       setRoles([...roles, selectedValue]);
     }
-    // Reset dropdown to default option after selection
     e.target.value = ""; 
   };
 
@@ -142,9 +152,7 @@ function AddStaffForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Transform roles array to include the "Other" text if applicable
-    const finalRoles = roles.map(r => (r === 'Other' ? otherRole : r));
-
+    // Validation
     if (!name || !mobile || roles.length === 0 || !adharImage || (roles.includes('Other') && !otherRole)) {
       setAlertInfo({ show: true, message: 'Please fill in all required fields.', type: 'danger' });
       return;
@@ -155,12 +163,16 @@ function AddStaffForm() {
     const formData = new FormData();
     formData.append('name', name);
     formData.append('mobile', mobile);
-    // Joining roles as a string (adjust based on your API - if it accepts array, append each)
-    formData.append('role', finalRoles.join(', ')); 
     if (dob) formData.append('dob', dob);
     if (adharNumber) formData.append('adharNumber', adharNumber);
     if (adharImage) formData.append('adharImage', adharImage);
     if (profilePic) formData.append('profilePic', profilePic);
+
+    // 🔹 UPDATED: Sending roles as an array (roles[])
+    roles.forEach((r) => {
+      const finalRoleValue = (r === 'Other' ? otherRole : r);
+      formData.append('roles[]', finalRoleValue);
+    });
 
     try {
       const res = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/staff/add-employees', {
@@ -171,7 +183,8 @@ function AddStaffForm() {
       const result = await res.json();
 
       if (res.ok) {
-        setGeneratedPassword(result.password || 'Not Available');
+        // Ham result.credentials ko popup mein dikhayenge
+        setGeneratedCredentials(result.credentials || []);
         setShowPasswordPopup(true);
       } else {
         setAlertInfo({ show: true, message: result.message || 'Submission failed.', type: 'danger' });
@@ -185,7 +198,7 @@ function AddStaffForm() {
 
   const handleClosePasswordPopup = () => {
     setShowPasswordPopup(false);
-    setGeneratedPassword('');
+    setGeneratedCredentials([]);
     setAlertInfo({ show: true, message: '✅ Staff added successfully!', type: 'success' });
 
     const activity = {
@@ -211,33 +224,35 @@ function AddStaffForm() {
       
       <PasswordPopup
         show={showPasswordPopup}
-        password={generatedPassword}
+        credentials={generatedCredentials}
         onClose={handleClosePasswordPopup}
       />
 
       <div className="bg-[#f5f5f5] p-8 rounded-xl shadow-lg max-w-2xl mx-auto mt-5">
         <h4 className="text-2xl font-semibold text-center mb-6 flex items-center justify-center gap-2">
-          <BsPersonPlusFill /> Add Staff
+          <BsPersonPlusFill /> Add Staff Member
         </h4>
         
         <form onSubmit={handleSubmit} noValidate>
           
           {/* Profile Image */}
-          <div className="mb-6">
-            <label className="block text-gray-700 font-medium mb-2">Profile Image</label>
-            <input 
-              type="file" 
-              ref={profilePicRef}
-              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[#e9e4f5] file:text-[#7853C2] hover:file:bg-[#d8cff0]"
-              accept="image/*"
-              onChange={handleProfilePicChange}
-            />
-            {profilePreview && (
-              <div className="relative inline-block mt-4">
-                <img src={profilePreview} alt="DP" className="w-[100px] h-100 object-cover rounded-md border" />
-                <button type="button" onClick={removeProfilePic} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center border-2 border-white">×</button>
-              </div>
-            )}
+          <div className="mb-6 text-center sm:text-left">
+            <label className="block text-gray-700 font-medium mb-2 text-left">Profile Image</label>
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+               <input 
+                type="file" 
+                ref={profilePicRef}
+                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[#e9e4f5] file:text-[#7853C2] hover:file:bg-[#d8cff0]"
+                accept="image/*"
+                onChange={handleProfilePicChange}
+              />
+              {profilePreview && (
+                <div className="relative flex-shrink-0">
+                  <img src={profilePreview} alt="DP" className="w-16 h-16 object-cover rounded-full border-2 border-[#7853C2]" />
+                  <button type="button" onClick={removeProfilePic} className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="mb-4">
@@ -247,6 +262,7 @@ function AddStaffForm() {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7853C2] outline-none" 
               value={name}
               onChange={(e) => setName(e.target.value)}
+              placeholder=""
               required 
             />
           </div>
@@ -258,18 +274,18 @@ function AddStaffForm() {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7853C2] outline-none" 
               value={mobile}
               onChange={(e) => setMobile(e.target.value)}
+              placeholder=""
               required 
             />
           </div>
 
-          {/* 🔹 UPDATED: Multiple Role Selection */}
+          {/* Multiple Role Selection */}
           <div className="mb-4">
             <label className="block text-gray-700 font-medium mb-2">Roles* (Select multiple)</label>
             
-            {/* Display Selected Roles as Tags */}
             <div className="flex flex-wrap gap-2 mb-3">
               {roles.map((r) => (
-                <span key={r} className="bg-[#7853C2] text-white px-3 py-1 rounded-full text-sm flex items-center gap-2 animate-fadeIn">
+                <span key={r} className="bg-[#7853C2] text-white px-3 py-1 rounded-full text-sm flex items-center gap-2">
                   {r}
                   <IoMdClose className="cursor-pointer hover:text-red-300" onClick={() => removeRole(r)} />
                 </span>
@@ -292,7 +308,7 @@ function AddStaffForm() {
           </div>
           
           {roles.includes('Other') && (
-            <div className="mb-4 animate-slideDown">
+            <div className="mb-4">
                 <label className="block text-gray-700 font-medium mb-2">Specify Other Role*</label>
                 <input
                     type="text"
@@ -322,6 +338,7 @@ function AddStaffForm() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7853C2] outline-none"
                 value={adharNumber}
                 onChange={(e) => setAdharNumber(e.target.value)}
+                placeholder="123456789015"
               />
             </div>
           </div>
@@ -337,8 +354,8 @@ function AddStaffForm() {
             />
             {previewUrl && (
               <div className="relative inline-block mt-4">
-                <img src={previewUrl} alt="Aadhar" className="w-[100px] h-auto rounded-md border" />
-                <button type="button" onClick={handleRemovePreview} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center border-2 border-white">×</button>
+                <img src={previewUrl} alt="Aadhar" className="w-[120px] h-auto rounded-md border shadow-sm" />
+                <button type="button" onClick={handleRemovePreview} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center border-2 border-white text-xs">×</button>
               </div>
             )}
           </div>
@@ -346,7 +363,7 @@ function AddStaffForm() {
           <button 
             type="submit" 
             disabled={isLoading}
-            className="w-full bg-[#7853C2] text-white font-bold py-3 px-4 rounded-md hover:bg-[#6643b1] transition-all duration-300 flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+            className="w-full bg-[#7853C2] text-white font-bold py-3 px-4 rounded-md hover:bg-[#6643b1] transition-all duration-300 flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed shadow-md"
           >
             {isLoading ? (
                 <>
@@ -354,7 +371,7 @@ function AddStaffForm() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Processing...
+                    Adding Staff...
                 </>
             ) : (
                 'Save Staff Member'
