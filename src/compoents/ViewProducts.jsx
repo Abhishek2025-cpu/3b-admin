@@ -1570,69 +1570,70 @@ function AddProductModal({ isOpen, onClose, onProductAdded, categories = [], dim
     } finally { setIsCompressing(false); }
   };
 
-  const handleDimensionSelect = (e) => {
+const handleDimensionSelect = (e) => {
     const selectedId = e.target.value;
     if (!selectedId) return;
     const dim = dimensions.find((d) => d._id === selectedId);
     if (dim && !selectedDimensions.some((d) => d._id === dim._id)) {
       setSelectedDimensions((prev) => [...prev, dim]);
     }
-    e.target.value = "";
+    e.target.value = ""; 
   };
 
-  const handleFormSubmit = async (e) => {
+const handleFormSubmit = async (e) => {
     e.preventDefault();
 
     // 1. Description combine karein
     const combinedDescription = descriptionParts.filter(p => p.trim()).join(" ").trim();
 
     // 2. Validation
-    if (!formData.name || !combinedDescription) {
-      toast.error("Model Number and Description are required!");
+    if (!formData.name) {
+      toast.error("Model Number is required!");
       return;
     }
 
     const data = new FormData();
 
-    // 3. Simple fields append karein (Empty category ko skip karein)
+    // 3. Simple fields append karein
     Object.entries(formData).forEach(([k, v]) => {
-      if (k === "categoryId" && !v) return; // Skip empty category
-      data.append(k, v);
+      if (v !== "") {
+        data.append(k, v);
+      }
     });
 
     data.append("description", combinedDescription);
 
-    // 4. Dimensions mapping (ID extract karna zaroori hai)
+    // 4. Dimensions mapping
     const dimensionIds = selectedDimensions
       .map(d => (typeof d === 'object' ? d._id : d))
       .filter(id => id)
       .join(",");
     data.append("dimensions", dimensionIds);
 
-    // 5. Images append karein
-    newColorImages.forEach(f => data.append("colorImages", f, f.name));
-    newImages.forEach(f => data.append("images", f, f.name));
+    // 5. Images append karein (FIXED VARIABLE NAMES HERE)
+    colorImages.forEach(f => data.append("colorImages", f, f.name));
+    productImages.forEach(f => data.append("images", f, f.name));
 
-    const toastId = toast.loading("Updating product...");
+    const toastId = toast.loading("Adding new product...");
 
     try {
-      const res = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/products/update/${product._id}`, {
-        method: "PUT",
-        body: data // FormData ke sath Content-Type header mat lagana
+      // FIXED: Method POST aur correct endpoint (Yaha apna actual "Add" wala endpoint dalein)
+      const res = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/products/add`, {
+        method: "POST",
+        body: data
       });
 
       const responseData = await res.json();
 
       if (res.ok) {
-        toast.success("Product Updated Successfully!", { id: toastId });
-        onUpdateSuccess();
+        toast.success("Product Added Successfully!", { id: toastId });
+        onProductAdded(); // Correct callback
         onClose();
       } else {
-        // Backend jo error message dega wo dikhayega
-        throw new Error(responseData.message || "Update failed");
+        throw new Error(responseData.message || "Failed to add product");
       }
     } catch (err) {
-      console.error("Update Error:", err);
+      console.error("Add Error:", err);
       toast.error(err.message || "Server Error", { id: toastId });
     }
   };
