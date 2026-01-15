@@ -32,8 +32,8 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
           key={number}
           onClick={() => onPageChange(number)}
           className={`px-4 py-2 font-semibold text-white rounded-md transition-colors ${currentPage === number
-              ? "bg-[#4b2a82]"
-              : "bg-[#6f42c1] hover:bg-[#59359a]"
+            ? "bg-[#4b2a82]"
+            : "bg-[#6f42c1] hover:bg-[#59359a]"
             }`}
           disabled={currentPage === number}
         >
@@ -169,7 +169,7 @@ const UpdateStaffModal = ({ staff, isOpen, onClose, onUpdateSuccess }) => {
   };
 
   return (
-    
+
     // FIX: Removed dark background and implemented pointer-events pattern
     // to prevent interaction with the page behind, matching other modals.
     <div className="fixed inset-0 flex justify-center items-center z-50 p-4 pointer-events-none">
@@ -341,7 +341,7 @@ const EmployeeDetails = ({ staff, onImageClick }) => {
 
 // --- Main Component ---
 function ManageStaff() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -381,20 +381,30 @@ function ManageStaff() {
 
   const filteredStaff = useMemo(() => {
     if (!searchQuery) return staffList;
-    const lowercasedQuery = searchQuery.toLowerCase();
-    return staffList.filter((staff) =>
-      Object.values(staff).some((value) =>
-        String(value).toLowerCase().includes(lowercasedQuery)
-      )
-    );
+    const q = searchQuery.toLowerCase();
+    return staffList.filter((staff) => {
+      const basicMatch = staff.name?.toLowerCase().includes(q) || staff.mobile?.includes(q);
+      // Old data check (Top level)
+      const oldFieldMatch = staff.role?.toLowerCase().includes(q) || staff.eid?.toLowerCase().includes(q);
+      // New data check (Inside roles array)
+      const newRolesMatch = staff.roles?.some(r => r.role?.toLowerCase().includes(q) || r.eid?.toLowerCase().includes(q));
+
+      return basicMatch || oldFieldMatch || newRolesMatch;
+    });
   }, [staffList, searchQuery]);
 
   const staffSummary = useMemo(() => {
-    const roleCounts = staffList.reduce((acc, staff) => {
-      const role = staff.role || "Unassigned";
-      acc[role] = (acc[role] || 0) + 1;
-      return acc;
-    }, {});
+    const roleCounts = {};
+    staffList.forEach((staff) => {
+      // Top level role count karein (Purana data)
+      if (staff.role) {
+        roleCounts[staff.role] = (roleCounts[staff.role] || 0) + 1;
+      }
+      // Roles array count karein (Naya data)
+      staff.roles?.forEach((r) => {
+        if (r.role) roleCounts[r.role] = (roleCounts[r.role] || 0) + 1;
+      });
+    });
     return {
       totalStaff: staffList.length,
       roles: Object.keys(roleCounts).sort(),
@@ -564,103 +574,73 @@ function ManageStaff() {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedStaff.map((staff, index) => {
-                    console.log(
-                      "hjdfkshfkjsdfkfhksjk:-----------",
-                      staff.profilePic
-                    );
-                    return (
-                      <React.Fragment key={staff._id}>
-                        <tr className="border-b hover:bg-gray-50">
-                          <td className="p-3 font-medium">
-                            {(currentPage - 1) * rowsPerPage + index + 1}
-                          </td>
-                          <td className="p-3">
-                            <img
-                              src={
-                                staff.profilePic?.url ||
-                                `https://ui-avatars.com/api/?name=${staff.name}`
-                              }
-                              alt="DP"
-                              className="w-10 h-10 rounded-full object-cover border cursor-pointer hover:scale-105 transition"
-                              onClick={() =>
-                                handleOpenAadharModal(
-                                  staff.profilePic?.url ||
-                                  `https://ui-avatars.com/api/?name=${staff.name}`
-                                )
-                              }
+                  {paginatedStaff.map((staff, index) => (
+                    <React.Fragment key={staff._id}>
+                      <tr className="border-b hover:bg-gray-50">
+                        <td className="p-3">{(currentPage - 1) * rowsPerPage + index + 1}</td>
+                        <td className="p-3">
+                          <img
+                            src={staff.profilePic?.url || `https://ui-avatars.com/api/?name=${staff.name}`}
+                            alt="DP"
+                            className="w-10 h-10 rounded-full object-cover border cursor-pointer"
+                            onClick={() => handleOpenAadharModal(staff.profilePic?.url || `https://ui-avatars.com/api/?name=${staff.name}`)}
+                          />
+                        </td>
+                        <td className="p-3 font-semibold text-gray-800">{staff.name || "-"}</td>
 
-                            />
-                          </td>
+                        {/* Role Cell - Hybrid Mapping */}
+                        <td className="p-3">
+                          {staff.roles && staff.roles.length > 0 ? (
+                            staff.roles.map((r, i) => (
+                              <div key={i} className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded mb-1 w-fit border border-purple-200 font-bold uppercase">
+                                {r.role}
+                              </div>
+                            ))
+                          ) : (
+                            staff.role ? <div className="text-[10px] bg-gray-100 text-gray-700 px-2 py-0.5 rounded w-fit border border-gray-200 font-bold uppercase">{staff.role}</div> : "-"
+                          )}
+                        </td>
 
-                          <td className="p-3 font-semibold text-gray-800">
-                            {staff.name || "-"}
-                          </td>
-                          <td className="p-3">{staff.role || "-"}</td>
-                          <td className="p-3 font-mono">{staff.eid || "-"}</td>
-                          <td className="p-3 font-mono">
-                            {staff.password || "-"}
-                          </td>
-                          <td className="p-3">
-                            {staff.createdAt
-                              ? new Date(staff.createdAt).toLocaleDateString()
-                              : "-"}
-                          </td>
-                          <td className="p-3">
-                            <div className="flex items-center gap-4">
-                              <button
-                                onClick={() =>
-                                  handleToggleDetailsRow(staff._id)
-                                }
-                                title="View Details"
-                                className="p-1"
-                              >
-                                {expandedRowId === staff._id ? (
-                                  <FaEyeSlash className="text-gray-600" />
-                                ) : (
-                                  <FaEye className="text-gray-500 hover:text-gray-800" />
-                                )}
-                              </button>
-                              <label
-                                className="relative inline-flex items-center cursor-pointer"
-                                title={staff.status ? "Deactivate" : "Activate"}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={staff.status ?? false}
-                                  onChange={() => handleOpenConfirmModal(staff)}
-                                  className="sr-only peer"
-                                />
-                                <div className="w-11 h-6 bg-gray-300 rounded-full peer peer-focus:ring-2 peer-focus:ring-purple-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#6f42c1]"></div>
-                              </label>
-                              <FaPen
-                                onClick={() => handleOpenUpdateModal(staff)}
-                                className="cursor-pointer text-blue-600 hover:text-blue-800"
-                                title="Edit"
-                                size={18}
-                              />
-                              <FaTrash
-                                onClick={() => handleDelete(staff._id)}
-                                className="cursor-pointer text-red-600 hover:text-red-800"
-                                title="Delete"
-                                size={18}
-                              />
-                            </div>
+                        {/* EID Cell - Hybrid Mapping */}
+                        <td className="p-3 font-mono text-xs">
+                          {staff.roles && staff.roles.length > 0
+                            ? staff.roles.map((r, i) => <div key={i}>{r.eid}</div>)
+                            : <div>{staff.eid || "-"}</div>
+                          }
+                        </td>
+
+                        {/* Password Cell - Hybrid Mapping */}
+                        <td className="p-3 font-mono text-xs">
+                          {staff.roles && staff.roles.length > 0
+                            ? staff.roles.map((r, i) => <div key={i}>{r.password}</div>)
+                            : <div>{staff.password || "-"}</div>
+                          }
+                        </td>
+
+                        <td className="p-3">{staff.createdAt ? new Date(staff.createdAt).toLocaleDateString() : "-"}</td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-4">
+                            <button onClick={() => handleToggleDetailsRow(staff._id)}>
+                              {expandedRowId === staff._id ? <FaEyeSlash /> : <FaEye className="text-gray-500" />}
+                            </button>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input type="checkbox" checked={staff.status ?? false} onChange={() => handleOpenConfirmModal(staff)} className="sr-only peer" />
+                              <div className="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-[#6f42c1] after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                            </label>
+                            <FaPen onClick={() => handleOpenUpdateModal(staff)} className="text-blue-600 cursor-pointer" size={18} />
+                            <FaTrash onClick={() => handleDelete(staff._id)} className="text-red-600 cursor-pointer" size={18} />
+                          </div>
+                        </td>
+                      </tr>
+                      {expandedRowId === staff._id && (
+                        <tr>
+                          <td colSpan="8" className="p-0">
+                            <EmployeeDetails staff={staff} onImageClick={handleOpenAadharModal} />
                           </td>
                         </tr>
-                        {expandedRowId === staff._id && (
-                          <tr className="border-b">
-                            <td colSpan="6" className="p-0">
-                              <EmployeeDetails
-                                staff={staff}
-                                onImageClick={handleOpenAadharModal}
-                              />
-                            </td>
-                          </tr>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
+                      )}
+                    </React.Fragment>
+                  ))}
                 </tbody>
               </table>
             </div>
