@@ -105,7 +105,7 @@ function Sidebar({ isOpen, onClose }) {
         <DropdownMenuItem icon={faStickyNote} text="Sticker" isOpen={openMenus.sticker} onClick={(e) => toggleNested(e, 'sticker')} />
         <ul style={{ ...styles.nested, ...(openMenus.sticker ? styles.nestedOpen : {}) }}>
           <LinkMenuItem icon={faPlusSquare} text="Add" to="/manager/add-item" />
-          <LinkMenuItem icon={faList} text="View" to="/manager/view-items" />
+          <LinkMenuItem icon={faList} text="View" to="view-items" />
         </ul>
 
         {/* Machines Menu */}
@@ -163,6 +163,7 @@ function Sidebar({ isOpen, onClose }) {
         <ul style={{ ...styles.nested, ...(openMenus.products ? styles.nestedOpen : {}) }}>
           {/* <LinkMenuItem icon={faBox} text="Add Products" to="/manager/add-product" /> */}
           <LinkMenuItem icon={faBox} text="All Products" to="/manager/view-products" />
+            <LinkMenuItem icon={faList} text="View Inventory" to="/manager/inventory-log" /> 
            <LinkMenuItem icon={faList} text="Other Products" to="/manager/other-products"/>
 
            <LinkMenuItem icon={faStickyNote} text = 'Product Dimensions' to = '/manager/product-dimensions'/>

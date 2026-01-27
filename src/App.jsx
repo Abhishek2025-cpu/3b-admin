@@ -33,6 +33,7 @@ import AssignMachines from './compoents/AssignMachines';
 import ArchivedClients from './compoents/ArchivedClients';
 import OperatorTable from './compoents/OpreatorTable';
 import InventoryStock from './compoents/InventoryStock';
+import ViewInventoryLog from './compoents/ViewInventoryLog'; 
 
 
 const ProtectedRoute = () => {
@@ -83,6 +84,7 @@ function App() {
               <Route path="archive-clients" element={<ArchivedClients />} />
               <Route path="operators" element={<OperatorTable />} />
               <Route path="inventory-stock" element={<InventoryStock />} />
+              <Route path="/manager/inventory-log" element={<ViewInventoryLog />} />
             </Route>
           </Route>
 

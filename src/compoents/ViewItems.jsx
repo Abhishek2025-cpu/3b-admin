@@ -31,133 +31,190 @@ const UpdateBoxesModal = ({ isOpen, onClose, item, onUpdateSubmit }) => {
     return <GenericModal isOpen={isOpen} onClose={onClose}><div className="p-4 border-b flex justify-between items-center"><h2 className="text-xl font-bold text-gray-800">Add More Boxes</h2><button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button></div><form onSubmit={handleSubmit}><div className="p-6 space-y-4"><div><label className="font-semibold text-gray-700 block mb-1">Item No</label><input type="text" readOnly value={item?.itemNo?.trim() || ''} className="w-full p-2 bg-gray-100 border rounded-lg cursor-not-allowed" /></div><div><label htmlFor="new-boxes-input" className="font-semibold text-gray-700 block mb-1">Number of New Boxes to Add</label><input id="new-boxes-input" type="number" min="1" value={numberOfNewBoxes} onChange={(e) => setNumberOfNewBoxes(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., 5" required /></div></div><div className="p-4 border-t flex justify-end gap-3"><button type="button" onClick={onClose} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">Cancel</button><button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg disabled:bg-indigo-300 disabled:cursor-not-allowed">{isSubmitting ? 'Adding...' : 'Add Boxes'}</button></div></form></GenericModal>;
 };
 const PrintablePageLayout = ({ item, box }) => {
-    const profileCodes = [item.operator?.eid, item.helper?.eid].filter(Boolean).join(', ');
-    const heightDisplay = item.length ? `${item.length} Feet` : "N/A";
-    const productImageUrl = Array.isArray(item.productImageUrl) && item.productImageUrl.length > 0
-        ? item.productImageUrl[0] // Use the first image for the print layout
-        : item.productImageUrl; // Fallback for single string URL
+    // 1. Extract Profile Codes (EIDs from operators and helpers)
+    const profileCodes = [
+        ...(item.operators || []).map(op => op.eid),
+        ...(item.helpers || []).map(h => h.eid)
+    ].filter(Boolean).join(', ');
 
-     return (
-        <div className="border-4 border-purple-800 p-6 bg-white w-full">
-            <div className="grid grid-cols-10 gap-x-8 items-stretch">
-                {/* ... Left Side content ... */}
+    // 2. Qty per Box
+    const qtyPerBox = item.noOfSticks || "N/A";
+
+    // 3. Product Image (handle array or string)
+    const productImg = Array.isArray(item.productImageUrl) 
+        ? item.productImageUrl[0] 
+        : item.productImageUrl;
+
+    return (
+        <div className="border-[6px] border-purple-800 p-4 bg-white w-[800px] h-[450px] relative font-sans text-black">
+            <div className="flex h-full">
                 
-                <div className="col-span-2 flex flex-col justify-between items-center text-center">
+                {/* LEFT SECTION (70%) */}
+                <div className="w-[65%] flex flex-col justify-between pr-4">
+                    {/* Logo & Brand */}
                     <div>
-                        {/* UPDATED IMAGE TAG BELOW */}
-                        <div className="bg-white p-2 mb-1 inline-block"> 
-                             <img 
-                                src={box.qrCodeUrl} 
-                                alt="Box QR Code" 
-                                className="w-48 h-48 mx-auto" // Increased size slightly from w-40
-                                style={{ imageRendering: 'pixelated' }} 
-                             />
-                        </div>
-                        <p className="font-mono font-bold text-lg mt-1">
-                            {`${item.itemNo.trim()}/${box.boxSerialNo}`}
-                        </p>
+                        <img src={logo} alt="3B Logo" className="w-48 mb-2" />
+                        <p className="text-blue-800 font-bold text-sm ml-2">www.3bprofilespvtlt.com</p>
                     </div>
-                    {/* ... Rest of the component ... */}
+
+                    {/* Data Fields */}
+                    <div className="space-y-4 mb-8">
+                        {/* Profile Code */}
+                        <div className="flex items-end">
+                            <span className="font-bold text-xl min-w-[150px]">Profile Code</span>
+                            <div className="flex-1 border-b-2 border-blue-900 text-center text-xl font-bold pb-1">
+                                {profileCodes || "N/A"}
+                            </div>
+                        </div>
+
+                        {/* Height */}
+                        <div className="flex items-end">
+                            <span className="font-bold text-xl min-w-[150px]">Height (m)</span>
+                            <div className="flex-1 border-b-2 border-blue-900 text-center text-xl font-bold pb-1">
+                                {item.length}
+                            </div>
+                        </div>
+
+                        {/* Qty per Box */}
+                        <div className="flex items-end">
+                            <span className="font-bold text-xl min-w-[150px]">Qty per Box</span>
+                            <div className="flex-1 border-b-2 border-blue-900 text-center text-xl font-bold pb-1">
+                                {qtyPerBox}
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                {/* RIGHT SECTION (35%) */}
+                <div className="w-[35%] flex flex-col items-center border-l-2 border-gray-300 pl-4">
+                    {/* QR Code */}
+                    <div className="mt-2">
+                        <img 
+                            src={box.qrCodeUrl} 
+                            alt="Box QR" 
+                            className="w-32 h-32" 
+                            style={{ imageRendering: 'pixelated' }} 
+                        />
+                    </div>
+
+                    {/* Serial Number Text */}
+                    <p className="font-bold text-lg mt-1 mb-2">
+                        {item.itemNo?.trim()}/{box.boxSerialNo}
+                    </p>
+
+                    {/* Product Thumbnail in Dashed Box */}
+                    <div className="border-2 border-dashed border-gray-400 p-1 w-32 h-20 flex items-center justify-center bg-gray-50">
+                        {productImg ? (
+                            <img src={productImg} alt="Product" className="max-w-full max-h-full object-contain" />
+                        ) : (
+                            <span className="text-xs text-gray-400">No Image</span>
+                        )}
+                    </div>
+
+                    {/* Barcode at bottom */}
+                    <div className="mt-auto w-full">
+                        <StaticBarcodeIcon />
+                    </div>
+                </div>
+
             </div>
         </div>
     );
 };
+
 const PrintModal = ({ isOpen, onClose, item, box }) => {
   const handlePrint = () => window.print();
   if (!isOpen || !item || !box) return null;
-  return ( <> <style>{`
-  @media print {
-    body * {
-      visibility: hidden;
-    }
-    #printable-area, #printable-area * {
-      visibility: visible;
-    }
-         img[alt="Box QR Code"] {
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-      image-rendering: -moz-crisp-edges;
-      -ms-interpolation-mode: nearest-neighbor;
-    }
-  }
+  return (
+    <>
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #printable-area, #printable-area * { visibility: visible; }
+          #printable-area {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+          }
+        }
+        .no-print { display: none !important; }
+      `}</style>
 
-  /* Screen rendering fix */
-  img[alt="Box QR Code"] {
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-  }
-    #printable-area {
-      position: fixed;       
-      top:0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .no-print {
-      display: none !important;
-    }
+      <GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl" zIndex="z-[60]">
+        {/* --- Header with Cross Button --- */}
+        <div className="p-4 border-b flex justify-between items-center no-print bg-white rounded-t-xl">
+          <h2 className="text-xl font-bold text-gray-800">Print Preview</h2>
+          <button 
+            onClick={onClose} 
+            className="text-gray-500 hover:text-red-600 text-3xl font-bold leading-none"
+          >
+            &times;
+          </button>
+        </div>
 
-  
-    @page {
-      margin: 4mm;
-      border: none;
-      size: A4 portrait;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-     
-    }
-  }
-`}</style>
+        {/* --- Label Content --- */}
+        <div id="printable-area" className="p-8 flex justify-center bg-gray-100 overflow-auto">
+          <PrintablePageLayout item={item} box={box} />
+        </div>
 
- <GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl" zIndex="z-[60]"><div id="printable-area" className="p-4"><PrintablePageLayout item={item} box={box} /></div><div className="no-print p-4 bg-gray-50 rounded-b-lg flex justify-end gap-3 border-t"><button onClick={handlePrint} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg">Print</button><button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">Close</button></div></GenericModal> </> );
+        {/* --- Footer Buttons --- */}
+        <div className="no-print p-4 bg-gray-50 rounded-b-lg flex justify-end gap-3 border-t">
+          <button onClick={handlePrint} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg">
+            Print
+          </button>
+          <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">
+            Close
+          </button>
+        </div>
+      </GenericModal>
+    </>
+  );
 };
 const PrintAllBoxesModal = ({ isOpen, onClose, item }) => {
     const handlePrint = () => window.print();
     if (!isOpen || !item) return null;
     return ( <> 
     <style>{`
-  @media print {
-    body * {
-      visibility: hidden;
-    }
-    .printable-page, .printable-page * {
-      visibility: visible;
-    }
-    .printable-page {
-      page-break-after: always;
-      position: static;
-      width: 100%;
-      margin: 0;
-      padding: 0;
-    }
-    .printable-page:last-child {
-      page-break-after: auto;
-    }
-    .no-print {
-      display: none !important;
-    }
-  }
-       img[alt="Box QR Code"] {
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-      image-rendering: -moz-crisp-edges;
-      -ms-interpolation-mode: nearest-neighbor;
-    }
-  }
+      @media print {
+        body * { visibility: hidden; }
+        .printable-page, .printable-page * { visibility: visible; }
+        .printable-page { page-break-after: always; position: static; width: 100%; margin: 0; padding: 0; }
+        .printable-page:last-child { page-break-after: auto; }
+      }
+      .no-print { display: none !important; }
+    `}</style>
 
-  /* Screen rendering fix */
-  img[alt="Box QR Code"] {
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-  }
-`}</style>
- <GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl" zIndex="z-[60]"><div id="printable-all-boxes-area" className="p-4 overflow-y-auto"><h2 className="text-2xl font-bold text-center mb-4 no-print">Print Preview: All Boxes</h2>{item.boxes?.map(box => ( <div key={box._id} className="printable-page"><PrintablePageLayout item={item} box={box} /></div> ))}</div><div className="no-print p-4 bg-gray-50 rounded-b-lg flex justify-end gap-3 border-t"><button onClick={handlePrint} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2"><PrintIcon /> Print All</button><button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">Close</button></div></GenericModal> </> );
+    <GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl" zIndex="z-[60]">
+        {/* --- Header with Cross Button --- */}
+        <div className="p-4 border-b flex justify-between items-center no-print bg-white rounded-t-xl">
+          <h2 className="text-xl font-bold text-gray-800">Print All Boxes ({item.boxes?.length})</h2>
+          <button 
+            onClick={onClose} 
+            className="text-gray-500 hover:text-red-600 text-3xl font-bold leading-none"
+          >
+            &times;
+          </button>
+        </div>
+
+        {/* --- Scrollable Content --- */}
+        <div id="printable-all-boxes-area" className="p-4 overflow-y-auto max-h-[70vh]">
+            {item.boxes?.map(box => ( 
+                <div key={box._id} className="printable-page mb-8 border-b pb-8 last:border-0 last:mb-0">
+                    <PrintablePageLayout item={item} box={box} />
+                </div> 
+            ))}
+        </div>
+
+        {/* --- Footer Buttons --- */}
+        <div className="no-print p-4 bg-gray-50 rounded-b-lg flex justify-end gap-3 border-t">
+            <button onClick={handlePrint} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2">
+                <PrintIcon /> Print All
+            </button>
+            <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">
+                Close
+            </button>
+        </div>
+    </GenericModal> 
+    </> );
 };
 
 // --- ImageSliderModal (NEW COMPONENT) ---

@@ -1,3 +1,610 @@
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import toast, { Toaster } from 'react-hot-toast';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faQrcode, faPenToSquare, faTrash, faPlus, faTimes, faChevronLeft, faChevronRight, faFilter, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+import imageCompression from 'browser-image-compression';
+
+// --- Shared Constants ---
+const inputClass = "w-full p-2 mt-1 border border-gray-300 rounded-xl focus:border-[#6A3E9D] focus:ring-1 focus:ring-[#6A3E9D] focus:outline-none transition text-sm";
+const fileInputClass = "block w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-violet-50 file:text-[#6A3E9D] hover:file:bg-violet-100";
+
+// --- Reusable Components ---
+const Modal = ({ isOpen, onClose, children, maxWidth = "max-w-lg" }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 flex justify-center items-start pt-28 z-50 p-4 overflow-y-auto bg-black/20 backdrop-blur-sm">
+      <div className={`bg-white rounded-2xl shadow-2xl relative ${maxWidth} w-full border flex flex-col max-h-[calc(100vh-8rem)] animate-in fade-in zoom-in duration-200`}>
+        {children}
+      </div>
+    </div>
+  );
+};
+
+// --- Delete Confirmation Modal Component ---
+const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, productName }) => {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-md">
+      <div className="p-6 text-center">
+        <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+          <FontAwesomeIcon icon={faExclamationTriangle} size="xl" />
+        </div>
+        <h3 className="text-xl font-bold text-gray-800">Confirm Delete</h3>
+        <p className="text-gray-500 mt-2 text-sm">
+          Are you sure you want to delete <span className="font-bold text-gray-800">"{productName}"</span>? 
+          This action cannot be undone.
+        </p>
+        <div className="flex gap-3 mt-6 justify-center">
+          <button 
+            onClick={onClose} 
+            className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={onConfirm} 
+            className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium shadow-lg shadow-red-200 transition"
+          >
+            Delete Now
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
+const ImageThumb = memo(({ file, onRemove, isUrl = false }) => {
+  const [preview, setPreview] = useState("");
+  useEffect(() => {
+    if (isUrl) { setPreview(file); return; }
+    if (!file) return;
+    const objectUrl = URL.createObjectURL(file);
+    setPreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file, isUrl]);
+
+  return (
+    <div className="relative w-24 h-24 border border-gray-300 rounded-lg overflow-hidden shadow-sm group">
+      {preview && <img src={preview} alt="thumb" className="w-full h-full object-cover" />}
+      <button type="button" onClick={onRemove} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">×</button>
+    </div>
+  );
+});
+
+// --- Add Product Modal ---
+function AddProductModal({ isOpen, onClose, onProductAdded, categories = [], dimensions = [], handleAddNewDimension, newDimensionInput, setNewDimensionInput }) {
+  const [formData, setFormData] = useState({ categoryId: "", name: "", about: "", quantity: 500, pricePerPiece: "", totalPiecesPerBox: "", discountPercentage: 0, position: 1 });
+  const [descriptionParts, setDescriptionParts] = useState(Array(20).fill(""));
+  const [visibleBoxes, setVisibleBoxes] = useState(4);
+  const [selectedDimensions, setSelectedDimensions] = useState([]);
+  const [colorImages, setColorImages] = useState([]);
+  const [productImages, setProductImages] = useState([]);
+  const [isCompressing, setIsCompressing] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setFormData({ categoryId: "", name: "", about: "", quantity: 500, pricePerPiece: "", totalPiecesPerBox: "", discountPercentage: 0, position: 1 });
+      setDescriptionParts(Array(20).fill(""));
+      setVisibleBoxes(4);
+      setSelectedDimensions([]);
+      setColorImages([]);
+      setProductImages([]);
+      setNewDimensionInput("");
+    }
+  }, [isOpen, setNewDimensionInput]);
+
+  const handleFileChange = async (e, setter) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setIsCompressing(true);
+    const toastId = toast.loading("Compressing images...");
+    try {
+      const options = { maxSizeMB: 0.7, maxWidthOrHeight: 1280, useWebWorker: true };
+      const compressed = await Promise.all(files.map(f => imageCompression(f, options)));
+      setter(prev => [...prev, ...compressed]);
+      toast.success("Ready!", { id: toastId });
+    } catch (err) { toast.error("Failed", { id: toastId }); }
+    finally { setIsCompressing(false); }
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    const desc = descriptionParts.filter(p => p.trim()).join(" ").trim();
+    if (!formData.name || !desc || selectedDimensions.length === 0) return toast.error("Fill required fields");
+
+    const submissionData = new FormData();
+    Object.entries(formData).forEach(([k, v]) => submissionData.append(k, v));
+    submissionData.append("description", desc);
+    submissionData.append("dimensions", selectedDimensions.map(d => d._id).join(","));
+    colorImages.forEach(f => submissionData.append("colorImages", f, f.name));
+    productImages.forEach(f => submissionData.append("images", f, f.name));
+
+    try {
+      const res = await fetch("https://threebapi-1067354145699.asia-south1.run.app/api/products/add", { method: "POST", body: submissionData });
+      if (res.ok) { onProductAdded(); onClose(); toast.success("Added!"); }
+    } catch (err) { toast.error("Error adding product"); }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-3xl">
+      <div className="p-6 border-b flex justify-between items-center">
+        <h3 className="text-xl font-bold">Add New Product</h3>
+        <button onClick={onClose} className="text-gray-400 text-2xl">×</button>
+      </div>
+      
+      <div className="overflow-y-auto px-6 py-6 space-y-4">
+        <form id="add-form" onSubmit={handleFormSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="text-xs font-bold text-gray-500">CATEGORY</label>
+              <select 
+                name="categoryId" 
+                value={formData.categoryId} 
+                onChange={e => setFormData({...formData, categoryId: e.target.value})} 
+                className={inputClass}
+              >
+                <option value="">Select Category</option>
+                {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-500">MODEL NUMBER *</label>
+              <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className={inputClass} required />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-500">POSITION</label>
+              <input type="number" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})} className={inputClass} />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-gray-500">DESCRIPTION BOXES</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
+              {descriptionParts.slice(0, visibleBoxes).map((p, i) => (
+                <input 
+                  key={i} 
+                  value={p} 
+                  onChange={e => { 
+                    const np = [...descriptionParts]; 
+                    np[i] = e.target.value.slice(0, 20); 
+                    setDescriptionParts(np); 
+                  }} 
+                  className="w-full h-9 text-center border rounded-lg text-sm" 
+                />
+              ))}
+            </div>
+            {visibleBoxes < 20 && (
+              <button type="button" onClick={() => setVisibleBoxes(v => Math.min(v + 4, 20))} className="text-blue-600 text-xs mt-2">+ Add More</button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div><label className="text-xs font-bold">STOCK QTY</label><input type="number" value={formData.quantity} onChange={e => setFormData({...formData, quantity: e.target.value})} className={inputClass} /></div>
+            <div><label className="text-xs font-bold">PRICE/PC</label><input type="number" value={formData.pricePerPiece} onChange={e => setFormData({...formData, pricePerPiece: e.target.value})} className={inputClass} /></div>
+            <div><label className="text-xs font-bold">PCS/BOX</label><input type="number" value={formData.totalPiecesPerBox} onChange={e => setFormData({...formData, totalPiecesPerBox: e.target.value})} className={inputClass} /></div>
+            <div><label className="text-xs font-bold">DISCOUNT %</label><input type="number" value={formData.discountPercentage} onChange={e => setFormData({...formData, discountPercentage: e.target.value})} className={inputClass} /></div>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold">DIMENSIONS *</label>
+            <div className="flex gap-2">
+              <select 
+                onChange={e => { 
+                  const d = dimensions.find(x => x._id === e.target.value); 
+                  if(d && !selectedDimensions.find(s => s._id === d._id)) { setSelectedDimensions([...selectedDimensions, d]); }
+                  e.target.value=""; 
+                }} 
+                className={inputClass}
+              >
+                <option value="">Select Dimension</option>
+                {dimensions.map(d => <option key={d._id} value={d._id}>{d.value}</option>)}
+              </select>
+              <input type="text" value={newDimensionInput} onChange={e => setNewDimensionInput(e.target.value)} className={inputClass} placeholder="New..." />
+              <button type="button" onClick={handleAddNewDimension} className="bg-gray-600 text-white px-4 rounded-lg">Add</button>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {selectedDimensions.map(d => (
+                <span key={d._id} className="bg-purple-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1">
+                  {d.value}
+                  <button type="button" onClick={() => setSelectedDimensions(selectedDimensions.filter(item => item._id !== d._id))} className="ml-1 hover:text-red-200">×</button>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="text-xs font-bold">COLOR IMAGES</label>
+              <input type="file" multiple onChange={e => handleFileChange(e, setColorImages)} className={fileInputClass} />
+              <div className="flex flex-wrap gap-2 mt-2">
+                {colorImages.map((f, i) => <ImageThumb key={i} file={f} onRemove={() => setColorImages(p => p.filter((_, idx) => idx !== i))} />)}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-bold">PRODUCT IMAGES *</label>
+              <input type="file" multiple onChange={e => handleFileChange(e, setProductImages)} className={fileInputClass} />
+              <div className="flex flex-wrap gap-2 mt-2">
+                {productImages.map((f, i) => <ImageThumb key={i} file={f} onRemove={() => setProductImages(p => p.filter((_, idx) => idx !== i))} />)}
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div className="p-4 bg-gray-50 border-t flex justify-end gap-3">
+        <button onClick={onClose} className="px-6 py-2 bg-gray-200 rounded-lg" disabled={isCompressing}>Cancel</button>
+        <button type="submit" form="add-form" disabled={isCompressing} className={`px-6 py-2 bg-[#6A3E9D] text-white rounded-lg flex items-center gap-2 ${isCompressing ? 'opacity-70' : ''}`}>
+          {isCompressing ? "Saving..." : "Save Product"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+// --- Update Product Modal ---
+const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categories, dimensions, handleAddNewDimension, newDimensionInput, setNewDimensionInput }) => {
+  const [formData, setFormData] = useState({});
+  const [existingImages, setExistingImages] = useState([]);
+  const [newImages, setNewImages] = useState([]);
+  const [selectedDimensions, setSelectedDimensions] = useState([]);
+  const [descriptionParts, setDescriptionParts] = useState(Array(20).fill(""));
+  const [visibleBoxes, setVisibleBoxes] = useState(4);
+  const [isCompressing, setIsCompressing] = useState(false);
+
+  useEffect(() => {
+    if (product && isOpen) {
+      setFormData({ 
+        categoryId: product.categoryId?._id || "", 
+        name: product.name || "", 
+        about: product.about || "", 
+        pricePerPiece: product.pricePerPiece || "", 
+        totalPiecesPerBox: product.totalPiecesPerBox || "", 
+        discountPercentage: product.discountPercentage || 0, 
+        quantity: product.quantity || "", 
+        position: product.position || 0 
+      });
+      setExistingImages(product.images || []);
+      setNewImages([]);
+      setSelectedDimensions(product.dimensions || []);
+      const parts = Array(20).fill("");
+      (product.description || "").split(" ").forEach((word, i) => { if(i < 20) parts[i] = word; });
+      setDescriptionParts(parts);
+      const filledCount = parts.filter(p => p !== "").length;
+      setVisibleBoxes(Math.max(4, Math.ceil(filledCount / 4) * 4));
+    }
+  }, [product, isOpen]);
+
+  const handleFileChange = async (e) => {
+    const files = Array.from(e.target.files || []);
+    setIsCompressing(true);
+    try {
+      const options = { maxSizeMB: 0.7, maxWidthOrHeight: 1280, useWebWorker: true };
+      const compressed = await Promise.all(files.map(f => imageCompression(f, options)));
+      setNewImages(prev => [...prev, ...compressed]);
+      toast.success("Ready!");
+    } finally { setIsCompressing(false); }
+  };
+
+  const deleteExistingImage = async (img) => {
+    if (!window.confirm("Remove this image?")) return;
+    const cleanId = img.id.includes("/") ? img.id.split("/").pop() : img.id;
+    try {
+      const res = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/products/products/${product._id}/images/${cleanId}`, { method: "DELETE" });
+      if (res.ok) {
+        setExistingImages(prev => prev.filter(i => i.id !== img.id));
+        toast.success("Image deleted");
+      }
+    } catch (err) { toast.error("Delete failed"); }
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    const data = new FormData();
+    data.append("description", descriptionParts.filter(p => p.trim()).join(" ").trim());
+    data.append("dimensions", selectedDimensions.map(d => d._id || d).join(","));
+    Object.entries(formData).forEach(([k, v]) => data.append(k, v));
+    newImages.forEach(f => data.append("images", f, f.name));
+
+    const tid = toast.loading("Updating...");
+    try {
+      const res = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/products/update/${product._id}`, { method: "PUT", body: data });
+      if (res.ok) { onUpdateSuccess(); onClose(); toast.success("Updated!", { id: tid }); }
+    } catch (err) { toast.error("Update failed", { id: tid }); }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-3xl">
+      <div className="p-6 border-b flex justify-between items-center font-bold text-xl">
+        <span>Update Product</span>
+        <button onClick={onClose} className="text-gray-400">×</button>
+      </div>
+      <div className="p-6 overflow-y-auto space-y-4">
+        <form id="update-form" onSubmit={handleFormSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase">Category</label>
+              <select value={formData.categoryId} onChange={e => setFormData({...formData, categoryId: e.target.value})} className={inputClass}>
+                <option value="">Select Category</option>
+                {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div><label className="text-xs font-bold text-gray-500 uppercase">Model</label><input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className={inputClass} /></div>
+            <div><label className="text-xs font-bold text-gray-500 uppercase">Position</label><input type="number" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})} className={inputClass} /></div>
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase">Description</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
+              {descriptionParts.slice(0, visibleBoxes).map((p, i) => (
+                <input key={i} value={p} onChange={e => { const u = [...descriptionParts]; u[i] = e.target.value; setDescriptionParts(u); }} className="w-full h-9 border rounded-lg text-center text-sm" />
+              ))}
+            </div>
+            {visibleBoxes < 20 && <button type="button" onClick={() => setVisibleBoxes(v => v + 4)} className="text-blue-600 text-xs mt-2">+ Add More</button>}
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div><label className="text-xs font-bold text-gray-500 uppercase">Stock</label><input type="number" value={formData.quantity} onChange={e => setFormData({...formData, quantity: e.target.value})} className={inputClass} /></div>
+            <div><label className="text-xs font-bold text-gray-500 uppercase">Price</label><input type="number" value={formData.pricePerPiece} onChange={e => setFormData({...formData, pricePerPiece: e.target.value})} className={inputClass} /></div>
+            <div><label className="text-xs font-bold text-gray-500 uppercase">Pcs/Box</label><input type="number" value={formData.totalPiecesPerBox} onChange={e => setFormData({...formData, totalPiecesPerBox: e.target.value})} className={inputClass} /></div>
+            <div><label className="text-xs font-bold text-gray-500 uppercase">Discount%</label><input type="number" value={formData.discountPercentage} onChange={e => setFormData({...formData, discountPercentage: e.target.value})} className={inputClass} /></div>
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase">Dimensions</label>
+            <div className="flex gap-2 mt-1">
+              <select onChange={e => { const d = dimensions.find(x => x._id === e.target.value); if(d && !selectedDimensions.find(s => s._id === d._id)) setSelectedDimensions([...selectedDimensions, d]); e.target.value=""; }} className={inputClass}>
+                <option value="">Select Existing</option>
+                {dimensions.map(d => <option key={d._id} value={d._id}>{d.value}</option>)}
+              </select>
+              <input type="text" value={newDimensionInput} onChange={e => setNewDimensionInput(e.target.value)} className={inputClass} placeholder="New..." />
+              <button type="button" onClick={handleAddNewDimension} className="bg-gray-600 text-white px-4 rounded-lg">Add</button>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {selectedDimensions.map(d => <span key={d._id} className="bg-purple-600 text-white px-2 py-1 rounded text-xs">{d.value}</span>)}
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase">Images</label>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {existingImages.map((img, i) => <ImageThumb key={i} file={img.url} isUrl={true} onRemove={() => deleteExistingImage(img)} />)}
+              {newImages.map((f, i) => <ImageThumb key={i} file={f} onRemove={() => setNewImages(prev => prev.filter((_, idx) => idx !== i))} />)}
+            </div>
+            <input type="file" multiple onChange={handleFileChange} className="mt-3 block text-xs" />
+          </div>
+        </form>
+      </div>
+      <div className="p-4 bg-gray-50 border-t flex justify-end gap-2">
+        <button onClick={onClose} className="px-6 py-2 bg-gray-200 rounded-lg">Cancel</button>
+        <button type="submit" form="update-form" disabled={isCompressing} className="px-6 py-2 bg-[#6A3E9D] text-white rounded-lg">
+           {isCompressing ? "Processing..." : "Update Changes"}
+        </button>
+      </div>
+    </Modal>
+  );
+};
+
+// --- Main View Products ---
+function ViewProducts() {
+  const [products, setProducts] = useState([]);
+  const [categoryList, setCategoryList] = useState([]);
+  const [dimensionList, setDimensionList] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 10;
+
+  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isSliderOpen, setIsSliderOpen] = useState(false);
+  const [sliderImages, setSliderImages] = useState([]);
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [isQrOpen, setQrOpen] = useState(false);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [newDimInput, setNewDimInput] = useState('');
+
+  // Delete Modal States
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // We fetch separately to avoid one slow API blocking everything
+      const prodRes = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/products/all').then(r => r.json()).catch(() => ({products: []}));
+      const catRes = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/categories/all-category').then(r => r.json()).catch(() => ({categories: []}));
+      
+      // Render.com can be very slow, so we fetch it but don't let it crash the app
+      let dimData = [];
+      try {
+        const dRes = await fetch('https://threebappbackend.onrender.com/api/dimensions/get-dimensions');
+        if (dRes.ok) dimData = await dRes.json();
+      } catch (e) { console.error("Dimensions API down"); }
+
+      setProducts(prodRes.products || []);
+      setCategoryList(catRes.categories || []);
+      setDimensionList(Array.isArray(dimData) ? dimData : []);
+    } catch (e) { 
+      toast.error("Fetch failed. Please check internet."); 
+    } finally { 
+      setIsLoading(false); 
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleAddNewDim = async () => {
+    if (!newDimInput.trim()) return;
+    try {
+      const res = await fetch('https://threebappbackend.onrender.com/api/dimensions/add-dimensions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: newDimInput })
+      });
+      if(res.ok) {
+        setNewDimInput(''); fetchData(); toast.success("Added");
+      }
+    } catch (e) { toast.error("Failed"); }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!productToDelete) return;
+    const tid = toast.loading("Deleting product...");
+    try {
+      const res = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/products/delete/${productToDelete._id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        toast.success("Product deleted successfully", { id: tid });
+        fetchData();
+      } else {
+        toast.error("Failed to delete", { id: tid });
+      }
+    } catch (error) {
+      toast.error("Error occurred", { id: tid });
+    } finally {
+      setIsDeleteOpen(false);
+      setProductToDelete(null);
+    }
+  };
+
+  const filteredProducts = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    return products
+      .filter(p => {
+        const matchesSearch = term === '' || p.name?.toLowerCase().includes(term) || (p.about || "").toLowerCase().includes(term);
+        const matchesCat = filterCategory === '' || p.categoryId?._id === filterCategory;
+        return matchesSearch && matchesCat;
+      })
+      .sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
+  }, [products, searchTerm, filterCategory]);
+
+  const paginated = useMemo(() => {
+    const start = (currentPage - 1) * productsPerPage;
+    return filteredProducts.slice(start, start + productsPerPage);
+  }, [filteredProducts, currentPage]);
+
+  if (isLoading) return (
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-white z-[60]">
+        <div className="w-12 h-12 border-4 border-[#6A3E9D] border-t-transparent rounded-full animate-spin"></div>
+        <p className="mt-4 font-bold text-[#6A3E9D]">Loading Product Warehouse...</p>
+    </div>
+  );
+
+  return (
+    <div className="p-4 md:p-8 space-y-6 mt-8">
+      <Toaster position="top-right" />
+      <div className="bg-white shadow-xl rounded-2xl p-6 md:p-8">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">Product Warehouse ({products.length})</h2>
+          <button onClick={() => setIsAddOpen(true)} className="bg-[#6A3E9D] text-white py-2 px-6 rounded-lg font-semibold hover:bg-[#5a3486] transition">+ Add Product</button>
+        </div>
+
+        <div className="mb-6 flex flex-col md:flex-row gap-4">
+          <div className="relative flex-grow">
+            <input type="text" placeholder="Search frame, model or details..." className="w-full pl-10 pr-4 py-2 border rounded-xl" value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }} />
+            <FontAwesomeIcon icon={faFilter} className="absolute left-3 top-3 text-gray-400" />
+          </div>
+          <select 
+            className="p-2 border rounded-xl text-sm"
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+          >
+            <option value="">All Categories</option>
+            {categoryList.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+          </select>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left border-collapse">
+            <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
+              <tr>
+                <th className="px-4 py-3">Sr.</th>
+                <th className="px-4 py-3">Preview</th>
+                <th className="px-4 py-3">Frame</th>
+                <th className="px-4 py-3 text-center">Pos</th>
+                <th className="px-4 py-3">Dimensions</th>
+                <th className="px-4 py-3">Price</th>
+                <th className="px-4 py-3">Qty</th>
+                <th className="px-4 py-3 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginated.length > 0 ? paginated.map((product, idx) => (
+                <tr key={product._id} className="border-b hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-4">{((currentPage-1)*productsPerPage) + idx + 1}</td>
+                  <td className="px-4 py-4">
+                    <img src={product.images?.[0]?.url} onClick={() => { setSliderImages(product.images.map(i => i.url)); setIsSliderOpen(true); }} className="w-12 h-12 object-cover rounded shadow-sm cursor-pointer" alt="p" />
+                  </td>
+                  <td className="px-4 py-4 font-bold">{product.name}</td>
+                  <td className="px-4 py-4 text-center text-purple-600 font-bold">{product.position ?? "—"}</td>
+                  <td className="px-4 py-4">
+                    {product.dimensions?.filter(Boolean).map(d => d.value || d).join(', ') || "—"}
+                  </td>
+                  <td className="px-4 py-4 font-semibold">₹{product.pricePerPiece}</td>
+                  <td className="px-4 py-4">{product.quantity}</td>
+                  <td className="px-4 py-4 text-center space-x-3 whitespace-nowrap">
+                    <button title="View QR" onClick={() => { setQrCodeUrl(product.qrCodeUrl); setQrOpen(true); }} className="p-2 hover:bg-gray-100 rounded-full transition"><FontAwesomeIcon icon={faQrcode} className="text-gray-400 hover:text-black" /></button>
+                    <button title="Edit" onClick={() => { setSelectedProduct(product); setIsUpdateOpen(true); }} className="p-2 hover:bg-blue-50 rounded-full transition"><FontAwesomeIcon icon={faPenToSquare} className="text-blue-500 hover:text-blue-700" /></button>
+                    <button title="Delete" onClick={() => { setProductToDelete(product); setIsDeleteOpen(true); }} className="p-2 hover:bg-red-50 rounded-full transition"><FontAwesomeIcon icon={faTrash} className="text-red-500" /></button>
+                  </td>
+                </tr>
+              )) : (
+                <tr><td colSpan="8" className="p-10 text-center text-gray-400">No products found.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {filteredProducts.length > productsPerPage && (
+            <div className="mt-6 flex justify-center gap-2 overflow-x-auto py-2">
+            {Array.from({ length: Math.ceil(filteredProducts.length / productsPerPage) }, (_, i) => (
+                <button key={i} onClick={() => setCurrentPage(i+1)} className={`px-4 py-2 border rounded-xl transition flex-shrink-0 ${currentPage === i+1 ? 'bg-[#6A3E9D] text-white shadow-md' : 'bg-white hover:bg-gray-50'}`}>{i+1}</button>
+            ))}
+            </div>
+        )}
+      </div>
+
+      <DeleteConfirmModal 
+        isOpen={isDeleteOpen} 
+        onClose={() => { setIsDeleteOpen(false); setProductToDelete(null); }} 
+        onConfirm={handleConfirmDelete} 
+        productName={productToDelete?.name || ""} 
+      />
+
+      <ImageSliderModal isOpen={isSliderOpen} onClose={() => setIsSliderOpen(false)} images={sliderImages} />
+      
+      <Modal isOpen={isQrOpen} onClose={() => setQrOpen(false)}>
+        <div className="p-10 flex flex-col items-center text-center">
+            <h3 className="font-bold text-lg mb-4">Product QR Code</h3>
+            <img src={qrCodeUrl} className="w-64 h-64 border rounded-2xl shadow-xl mb-4" alt="QR" />
+            <p className="text-gray-500 text-sm mb-6">Scan to view product details online</p>
+            <button onClick={() => setQrOpen(false)} className="px-8 py-2 bg-gray-800 text-white rounded-xl">Close</button>
+        </div>
+      </Modal>
+
+      <AddProductModal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} onProductAdded={fetchData} categories={categoryList} dimensions={dimensionList} handleAddNewDimension={handleAddNewDim} newDimensionInput={newDimInput} setNewDimensionInput={setNewDimInput} />
+      
+      {selectedProduct && <UpdateProductModal isOpen={isUpdateOpen} onClose={() => {setIsUpdateOpen(false); setSelectedProduct(null);}} onUpdateSuccess={fetchData} product={selectedProduct} categories={categoryList} dimensions={dimensionList} handleAddNewDimension={handleAddNewDim} newDimensionInput={newDimInput} setNewDimensionInput={setNewDimInput} />}
+    </div>
+  );
+}
+
+// --- Slider Sub-Component ---
+const ImageSliderModal = ({ isOpen, onClose, images }) => {
+  const [idx, setIdx] = useState(0); 
+  useEffect(() => { if (isOpen) setIdx(0); }, [isOpen]);
+  if (!isOpen || !images.length) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-[100] p-4">
+      <button onClick={onClose} className="absolute top-8 right-8 text-white text-3xl hover:scale-110 transition"><FontAwesomeIcon icon={faTimes} /></button>
+      <button onClick={() => setIdx(i => i === 0 ? images.length-1 : i-1)} className="absolute left-5 text-white text-4xl p-4 hover:text-purple-400 transition"><FontAwesomeIcon icon={faChevronLeft} /></button>
+      <img src={images[idx]} className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl" alt="view" />
+      <button onClick={() => setIdx(i => i === images.length-1 ? 0 : i+1)} className="absolute right-5 text-white text-4xl p-4 hover:text-purple-400 transition"><FontAwesomeIcon icon={faChevronRight} /></button>
+    </div>
+  );
+};
+
+export default ViewProducts;
+
 // import React, { useState, useEffect, useCallback } from 'react';
 // import toast, { Toaster } from 'react-hot-toast';
 // import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -90,7 +697,7 @@
 //     pricePerPiece: "",
 //     totalPiecesPerBox: "",
 //     discountPercentage: 0,
-//      position: 1, 
+//      position: 1,
 //   });
 
 //   const [descriptionParts, setDescriptionParts] = useState(Array(20).fill(""));
@@ -372,8 +979,8 @@
 //         type="text"
 //         value={part}
 //         onChange={(e) => handleDescriptionPartChange(e, index)}
-//         className="w-full h-10 text-center border border-gray-300 rounded-lg 
-//         focus:border-[#6A3E9D] focus:ring-1 focus:ring-[#6A3E9D] 
+//         className="w-full h-10 text-center border border-gray-300 rounded-lg
+//         focus:border-[#6A3E9D] focus:ring-1 focus:ring-[#6A3E9D]
 //         focus:outline-none transition"
 //         maxLength={20}
 //       />
@@ -385,7 +992,7 @@
 //       <button
 //         type="button"
 //         onClick={handleAddMoreBox}
-//         className="text-sm text-blue-600 hover:text-blue-800 font-semibold 
+//         className="text-sm text-blue-600 hover:text-blue-800 font-semibold
 //           flex items-center gap-1 justify-end"
 //       >
 //         <FontAwesomeIcon icon={faPlus} size="xs" />
@@ -567,7 +1174,7 @@
 //         totalPiecesPerBox: product.totalPiecesPerBox || "",
 //         discountPercentage: product.discountPercentage || 0,
 //         quantity: product.quantity || "",
-//          position: product.position || 0, 
+//          position: product.position || 0,
 //       });
 //       setExistingImages(product.images || []);
 //       setNewImages([]);
@@ -1436,624 +2043,3 @@
 
 
 
-
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
-import toast, { Toaster } from 'react-hot-toast';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faQrcode, faPenToSquare, faTrash, faPlus, faTimes, faChevronLeft, faChevronRight, faAngleDown, faFilter } from '@fortawesome/free-solid-svg-icons';
-import imageCompression from 'browser-image-compression';
-
-// --- Reusable Components ---
-const Modal = ({ isOpen, onClose, children, maxWidth = "max-w-lg" }) => {
-  if (!isOpen) return null;
-  return (
-    // Fixed: pointer-events-none was on the backdrop, changed to allow interaction
-    <div className="fixed inset-0 flex justify-center items-start pt-28 z-50 p-4 overflow-y-auto bg-black/20">
-      <div className={`bg-white rounded-2xl shadow-2xl relative ${maxWidth} w-full border flex flex-col max-h-[calc(100vh-8rem)]`}>
-        {children}
-      </div>
-    </div>
-  );
-};
-
-// --- FIX: Memory-Safe ImageThumb to prevent crashes ---
-const ImageThumb = memo(({ file, onRemove, isUrl = false, showRemove = true }) => {
-  const [preview, setPreview] = useState("");
-
-  useEffect(() => {
-    if (isUrl) {
-      setPreview(file);
-      return;
-    }
-    const objectUrl = URL.createObjectURL(file);
-    setPreview(objectUrl);
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [file, isUrl]);
-
-  return (
-    <div className="relative w-28 h-28 border border-gray-300 rounded-lg overflow-hidden shadow-sm">
-      {preview && <img src={preview} alt="product" className="w-full h-full object-cover" />}
-
-      {/* Agar showRemove true hoga tabhi cross dikhega, varna nahi */}
-      {showRemove && (
-        <button type="button" onClick={onRemove} className="absolute top-1 right-1 bg-white/80 rounded-full w-6 h-6 flex items-center justify-center text-lg font-bold text-red-600 cursor-pointer hover:bg-red-100">×</button>
-      )}
-    </div>
-  );
-});
-
-// --- Image Slider Modal Component ---
-const ImageSliderModal = ({ isOpen, onClose, images }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  useEffect(() => { if (isOpen) setCurrentIndex(0); }, [isOpen]);
-
-  const goToPrevious = () => setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-  const goToNext = () => setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-
-  if (!isOpen || images.length === 0) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[100] p-4">
-      <button onClick={onClose} className="absolute top-3 right-3 text-white bg-gray-800 bg-opacity-75 rounded-full p-2 text-xl z-10 hover:bg-opacity-100">
-        <FontAwesomeIcon icon={faTimes} />
-      </button>
-      <div className="relative bg-white rounded-lg shadow-xl overflow-hidden max-w-4xl w-full max-h-[90vh] flex flex-col">
-        <div className="flex-grow flex items-center justify-center relative p-4">
-          <button onClick={goToPrevious} className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-gray-800 bg-opacity-75 rounded-full p-2 text-xl z-10 hover:bg-opacity-100">
-            <FontAwesomeIcon icon={faChevronLeft} />
-          </button>
-          <img src={images[currentIndex]} alt={`Product`} className="max-w-full max-h-[75vh] object-contain rounded-lg" />
-          <button onClick={goToNext} className="absolute right-2 top-1/2 -translate-y-1/2 text-white bg-gray-800 bg-opacity-75 rounded-full p-2 text-xl z-10 hover:bg-opacity-100">
-            <FontAwesomeIcon icon={faChevronRight} />
-          </button>
-        </div>
-        <div className="text-center p-2 text-gray-700">{currentIndex + 1} / {images.length}</div>
-      </div>
-    </div>
-  );
-};
-
-// --- Add Product Modal ---
-function AddProductModal({ isOpen, onClose, onProductAdded, categories = [], dimensions = [], handleAddNewDimension, newDimensionInput, setNewDimensionInput }) {
-  const [formData, setFormData] = useState({ categoryId: "", name: "", about: "", quantity: "", pricePerPiece: "", totalPiecesPerBox: "", discountPercentage: 0, position: 1 });
-  const [descriptionParts, setDescriptionParts] = useState(Array(20).fill(""));
-  const [visibleDescriptionBoxes, setVisibleDescriptionBoxes] = useState(4);
-  const [selectedDimensions, setSelectedDimensions] = useState([]);
-  const [colorImages, setColorImages] = useState([]);
-  const [productImages, setProductImages] = useState([]);
-  const [isCompressing, setIsCompressing] = useState(false);
-
-  const handleAddMoreBox = () => setVisibleDescriptionBoxes((prev) => Math.min(prev + 1, 20));
-
-  useEffect(() => {
-    if (!isOpen) {
-      setFormData({ categoryId: "", name: "", about: "", quantity: 500, pricePerPiece: "", totalPiecesPerBox: "", discountPercentage: 0, position: 1 });
-      setDescriptionParts(Array(20).fill(""));
-      setVisibleDescriptionBoxes(4);
-      setSelectedDimensions([]);
-      setColorImages([]);
-      setProductImages([]);
-      setIsCompressing(false);
-      setNewDimensionInput("");
-    }
-  }, [isOpen, setNewDimensionInput]);
-
-  const handleDescriptionPartChange = (e, index) => {
-    const newParts = [...descriptionParts];
-    newParts[index] = e.target.value.substring(0, 20);
-    setDescriptionParts(newParts);
-  };
-
-  const handleInputChange = (e) => setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-
-  const handleFileChange = async (e, setFiles, currentFiles = [], limit) => {
-    const filesToProcess = Array.from(e.target.files || []);
-    e.target.value = null;
-    if (filesToProcess.length === 0) return;
-    if (limit && filesToProcess.length + (currentFiles?.length || 0) > limit) {
-      toast.error(`Max ${limit} images allowed.`);
-      return;
-    }
-
-    setIsCompressing(true);
-    const toastId = toast.loading(`Compressing...`);
-    // OPTIMIZATION: Reduced maxSize for faster uploads and less memory usage
-    const compressionOptions = { maxSizeMB: 0.7, maxWidthOrHeight: 1280, useWebWorker: true };
-
-    try {
-      const compressedFiles = await Promise.all(filesToProcess.map((file) => imageCompression(file, compressionOptions)));
-      compressedFiles.forEach((file, i) => (file.name = filesToProcess[i].name));
-      setFiles((prev) => [...prev, ...compressedFiles]);
-      toast.success("Compressed!", { id: toastId });
-    } catch (err) {
-      toast.error("Failed processing.", { id: toastId });
-    } finally { setIsCompressing(false); }
-  };
-
-const handleDimensionSelect = (e) => {
-    const selectedId = e.target.value;
-    if (!selectedId) return;
-    const dim = dimensions.find((d) => d._id === selectedId);
-    if (dim && !selectedDimensions.some((d) => d._id === dim._id)) {
-      setSelectedDimensions((prev) => [...prev, dim]);
-    }
-    e.target.value = ""; 
-  };
-
-const handleFormSubmit = async (e) => {
-    e.preventDefault();
-
-    // 1. Description combine karein
-    const combinedDescription = descriptionParts.filter(p => p.trim()).join(" ").trim();
-
-    // 2. Validation
-    if (!formData.name) {
-      toast.error("Model Number is required!");
-      return;
-    }
-
-    const data = new FormData();
-
-    // 3. Simple fields append karein
-    Object.entries(formData).forEach(([k, v]) => {
-      if (v !== "") {
-        data.append(k, v);
-      }
-    });
-
-    data.append("description", combinedDescription);
-
-    // 4. Dimensions mapping
-    const dimensionIds = selectedDimensions
-      .map(d => (typeof d === 'object' ? d._id : d))
-      .filter(id => id)
-      .join(",");
-    data.append("dimensions", dimensionIds);
-
-    // 5. Images append karein (FIXED VARIABLE NAMES HERE)
-    colorImages.forEach(f => data.append("colorImages", f, f.name));
-    productImages.forEach(f => data.append("images", f, f.name));
-
-    const toastId = toast.loading("Adding new product...");
-
-    try {
-      // FIXED: Method POST aur correct endpoint (Yaha apna actual "Add" wala endpoint dalein)
-      const res = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/products/add`, {
-        method: "POST",
-        body: data
-      });
-
-      const responseData = await res.json();
-
-      if (res.ok) {
-        toast.success("Product Added Successfully!", { id: toastId });
-        onProductAdded(); // Correct callback
-        onClose();
-      } else {
-        throw new Error(responseData.message || "Failed to add product");
-      }
-    } catch (err) {
-      console.error("Add Error:", err);
-      toast.error(err.message || "Server Error", { id: toastId });
-    }
-  };
-
-  const inputClass = "w-full p-2 mt-1 border border-gray-300 rounded-xl focus:border-[#6A3E9D] focus:ring-1 focus:ring-[#6A3E9D] outline-none";
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-3xl">
-      <div className="p-6 border-b flex justify-between items-center">
-        <h3 className="text-2xl font-bold">Add New Product</h3>
-        <button onClick={onClose} className="text-gray-400 text-2xl">×</button>
-      </div>
-      <div className="overflow-y-auto px-6 py-6 flex-grow">
-        <form id="add-product-form" onSubmit={handleFormSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><label className="text-sm font-semibold">Category</label>
-              <select name="categoryId" value={formData.categoryId} onChange={handleInputChange} className={inputClass}>
-                <option value="">Select Category</option>
-                {categories.map((cat) => (<option key={cat._id} value={cat._id}>{cat.name}</option>))}
-              </select>
-            </div>
-            <div><label className="text-sm font-semibold">Model Number</label>
-              <input type="text" name="name" value={formData.name} onChange={handleInputChange} required className={inputClass} />
-            </div>
-            <div><label className="text-sm font-semibold">Position</label>
-              <input type="number" name="position" value={formData.position} onChange={handleInputChange} className={inputClass} />
-            </div>
-          </div>
-          <div><label className="text-sm font-semibold">Description</label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
-              {descriptionParts.slice(0, visibleDescriptionBoxes).map((part, index) => (
-                <input key={index} type="text" value={part} onChange={(e) => handleDescriptionPartChange(e, index)} className="w-full h-10 text-center border rounded-lg" maxLength={20} />
-              ))}
-            </div>
-            {visibleDescriptionBoxes < 20 && <button type="button" onClick={handleAddMoreBox} className="text-sm text-blue-600 mt-2">+ Add More Boxes</button>}
-          </div>
-          <div><label className="text-sm font-semibold">About</label><textarea name="about" value={formData.about} onChange={handleInputChange} rows={2} className={inputClass}></textarea></div>
-          <div><label className="text-sm font-semibold">Color Images</label>
-            <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, setColorImages, colorImages)} className="block w-full text-xs mt-1" disabled={isCompressing} />
-            <div className="flex flex-wrap gap-2 mt-2">
-              {colorImages.map((file, i) => (<ImageThumb key={i} file={file} onRemove={() => setColorImages(prev => prev.filter((_, idx) => idx !== i))} />))}
-            </div>
-          </div>
-          <div><label className="text-sm font-semibold">Dimensions</label>
-            <div className="flex gap-2"><select onChange={handleDimensionSelect} className={inputClass}><option value="">Select</option>{dimensions.map(d => <option key={d._id} value={d._id}>{d.value}</option>)}</select>
-              <input type="text" value={newDimensionInput} onChange={(e) => setNewDimensionInput(e.target.value)} className={inputClass} placeholder="New..." />
-              <button type="button" onClick={handleAddNewDimension} className="bg-gray-600 text-white px-4 rounded-lg">Add</button></div>
-            <div className="mt-2">{selectedDimensions.map(d => <span key={d._id} className="inline-block bg-[#6A3E9D] text-white text-xs px-2 py-1 rounded-full mr-1">{d.value}</span>)}</div>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <input type="number" name="quantity" placeholder="Qty" value={formData.quantity} onChange={handleInputChange} className={inputClass} />
-            <input type="number" name="pricePerPiece" placeholder="Price" value={formData.pricePerPiece} onChange={handleInputChange} className={inputClass} />
-            <input type="number" name="totalPiecesPerBox" placeholder="Pcs/Box" value={formData.totalPiecesPerBox} onChange={handleInputChange} className={inputClass} />
-            <input type="number" name="discountPercentage" placeholder="Disc %" value={formData.discountPercentage} onChange={handleInputChange} className={inputClass} />
-          </div>
-          <div><label className="text-sm font-semibold">Product Images</label>
-            <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, setProductImages, productImages)} className="block w-full text-xs mt-1" disabled={isCompressing} />
-            <div className="flex flex-wrap gap-2 mt-2">
-              {productImages.map((file, i) => (<ImageThumb key={i} file={file} onRemove={() => setProductImages(prev => prev.filter((_, idx) => idx !== i))} />))}
-            </div>
-          </div>
-        </form>
-      </div>
-      <div className="p-4 bg-gray-50 border-t flex justify-end gap-2">
-        <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-lg">Cancel</button>
-        <button type="submit" form="add-product-form" className="px-4 py-2 bg-[#6A3E9D] text-white rounded-lg" disabled={isCompressing}>{isCompressing ? "Wait..." : "Add Product"}</button>
-      </div>
-    </Modal>
-  );
-}
-
-
-const UpdateProductModal = ({
-  isOpen,
-  onClose,
-  onUpdateSuccess,
-  product,
-  categories,
-  dimensions,
-  handleAddNewDimension,
-  newDimensionInput,
-  setNewDimensionInput,
-}) => {
-  const [formData, setFormData] = useState({
-    categoryId: "", name: "", about: "", pricePerPiece: "", totalPiecesPerBox: "", discountPercentage: 0, quantity: "", position: 1,
-  });
-
-  const [descriptionParts, setDescriptionParts] = useState(Array(20).fill(""));
-  const [visibleDescriptionBoxes, setVisibleDescriptionBoxes] = useState(4);
-  const [selectedDimensions, setSelectedDimensions] = useState([]);
-
-  // Images ke liye states
-  const [existingImages, setExistingImages] = useState([]);
-  const [existingColorImages, setExistingColorImages] = useState([]);
-  const [newImages, setNewImages] = useState([]);
-  const [newColorImages, setNewColorImages] = useState([]);
-  const [isCompressing, setIsCompressing] = useState(false);
-
-  // Jab Edit par click ho toh data bharna
-  useEffect(() => {
-    if (product && isOpen) {
-      setFormData({
-        categoryId: product.categoryId?._id || product.categoryId || "",
-        name: product.name || "",
-        about: product.about || "",
-        pricePerPiece: product.pricePerPiece || "",
-        totalPiecesPerBox: product.totalPiecesPerBox || "",
-        discountPercentage: product.discountPercentage || 0,
-        quantity: product.quantity || "",
-        position: product.position || 1,
-      });
-
-      // Description split logic
-      const desc = product.description || "";
-      const parts = Array(20).fill("");
-      const splitDesc = desc.split(" ").filter(p => p.trim());
-      splitDesc.forEach((p, i) => { if (i < 20) parts[i] = p; });
-      setDescriptionParts(parts);
-      setVisibleDescriptionBoxes(Math.max(4, Math.min(splitDesc.length + 1, 20)));
-
-      setSelectedDimensions(product.dimensions || []);
-      setExistingImages(product.images || []);
-      setExistingColorImages(product.colorImages || []);
-      setNewImages([]);
-      setNewColorImages([]);
-    }
-  }, [product, isOpen]);
-
-  // Update API Function
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    const combinedDescription = descriptionParts.filter(p => p.trim()).join(" ").trim();
-    const data = new FormData();
-
-    Object.entries(formData).forEach(([k, v]) => data.append(k, v));
-    data.append("description", combinedDescription);
-    const safeDimensions = selectedDimensions
-      .filter(d => d !== null && d !== undefined) 
-      .map(d => (typeof d === 'object' ? d._id : d)) 
-      .join(",");
-
-    data.append("dimensions", safeDimensions);
-
-    newColorImages.forEach(f => data.append("colorImages", f, f.name));
-    newImages.forEach(f => data.append("images", f, f.name));
-
-    try {
-      const res = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/products/update/${product._id}`, {
-        method: "PUT",
-        body: data
-      });
-      if (res.ok) {
-        toast.success("Product Updated Successfully!");
-        onUpdateSuccess();
-        onClose();
-      }
-    } catch (err) { toast.error("Server Error"); }
-  };
-
-  const handleFileChange = async (e, setFiles) => {
-    const files = Array.from(e.target.files);
-    e.target.value = null;
-    setIsCompressing(true);
-    const options = { maxSizeMB: 0.7, maxWidthOrHeight: 1280, useWebWorker: true };
-    try {
-      const compressed = await Promise.all(files.map(f => imageCompression(f, options)));
-      setFiles(prev => [...prev, ...compressed]);
-      toast.success("Images Ready");
-    } finally { setIsCompressing(false); }
-  };
-
-  const inputClass = "w-full p-2 mt-1 border border-gray-300 rounded-xl focus:ring-1 focus:ring-[#6A3E9D] outline-none";
-
-  if (!isOpen) return null;
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-3xl">
-      <div className="p-6 border-b font-bold text-xl flex justify-between">
-        Update Product
-        <button onClick={onClose} className="text-gray-400">×</button>
-      </div>
-
-      <div className="p-6 overflow-y-auto max-h-[75vh]">
-        <form id="update-form" onSubmit={handleFormSubmit} className="space-y-5">
-
-          {/* Category, Model, Position */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="text-sm font-semibold">Category</label>
-              <select name="categoryId" value={formData.categoryId} onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })} className={inputClass}>
-                <option value="">Select Category</option>
-                {categories.map(cat => <option key={cat._id} value={cat._id}>{cat.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-semibold">Model Number</label>
-              <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className={inputClass} />
-            </div>
-            <div>
-              <label className="text-sm font-semibold">Position</label>
-              <input type="number" value={formData.position} onChange={(e) => setFormData({ ...formData, position: e.target.value })} className={inputClass} />
-            </div>
-          </div>
-
-          {/* Description Boxes */}
-          <div>
-            <label className="text-sm font-semibold">Description (20 Boxes)</label>
-            <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 mt-1">
-              {descriptionParts.slice(0, visibleDescriptionBoxes).map((p, i) => (
-                <input key={i} value={p} onChange={(e) => { const np = [...descriptionParts]; np[i] = e.target.value; setDescriptionParts(np); }} className="border p-2 rounded text-center text-sm" maxLength={20} />
-              ))}
-            </div>
-          </div>
-
-          {/* Color Images - Cross Button Removed from Old Images */}
-          <div>
-            <label className="text-sm font-semibold text-purple-700">Existing Color Images</label>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {existingColorImages.map((img, i) => <ImageThumb key={i} file={img.url} isUrl={true} showRemove={false} />)}
-            </div>
-            <label className="block mt-2 text-xs font-bold uppercase text-gray-400">Upload New Color Images:</label>
-            <input type="file" multiple onChange={(e) => handleFileChange(e, setNewColorImages)} className="text-xs" />
-          </div>
-
-          {/* About Field */}
-          <div>
-            <label className="text-sm font-semibold">About</label>
-            <textarea value={formData.about} onChange={(e) => setFormData({ ...formData, about: e.target.value })} className={inputClass} rows="2"></textarea>
-          </div>
-
-          {/* Qty, Price, Disc */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <input type="number" placeholder="Price" value={formData.pricePerPiece} onChange={(e) => setFormData({ ...formData, pricePerPiece: e.target.value })} className={inputClass} />
-            <input type="number" placeholder="Pieces/Box" value={formData.totalPiecesPerBox} onChange={(e) => setFormData({ ...formData, totalPiecesPerBox: e.target.value })} className={inputClass} />
-            <input type="number" placeholder="Qty" value={formData.quantity} onChange={(e) => setFormData({ ...formData, quantity: e.target.value })} className={inputClass} />
-            <input type="number" placeholder="Discount %" value={formData.discountPercentage} onChange={(e) => setFormData({ ...formData, discountPercentage: e.target.value })} className={inputClass} />
-          </div>
-
-          {/* Product Images - Cross Button Removed from Old Images */}
-          <div>
-            <label className="text-sm font-semibold text-purple-700">Existing Product Images </label>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {existingImages.map((img, i) => <ImageThumb key={i} file={img.url} isUrl={true} showRemove={false} />)}
-            </div>
-            <label className="block mt-2 text-xs font-bold uppercase text-gray-400">Upload New Product Images:</label>
-            <input type="file" multiple onChange={(e) => handleFileChange(e, setNewImages)} className="text-xs" />
-          </div>
-
-        </form>
-      </div>
-
-      <div className="p-4 border-t flex justify-end gap-3 bg-gray-50">
-        <button onClick={onClose} className="px-6 py-2 bg-gray-200 rounded-lg font-bold">Cancel</button>
-        <button type="submit" form="update-form" className="px-6 py-2 bg-[#6A3E9D] text-white rounded-lg font-bold" disabled={isCompressing}>
-          {isCompressing ? "Processing..." : "Update Product"}
-        </button>
-      </div>
-    </Modal>
-  );
-};
-
-// --- Main Component ---
-function ViewProducts() {
-  const [products, setProducts] = useState([]);
-  const [categoryList, setCategoryList] = useState([]);
-  const [dimensionList, setDimensionList] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [isCarouselOpen, setCarouselOpen] = useState(false);
-  const [carouselImages, setCarouselImages] = useState([]);
-  const [isQrOpen, setQrOpen] = useState(false);
-  const [qrCodeUrl, setQrCodeUrl] = useState('');
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [newDimensionInput, setNewDimensionInput] = useState('');
-
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterCategory, setFilterCategory] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const productsPerPage = 10;
-
-  const fetchData = useCallback(async () => {
-
-    setError(null);
-
-
-    fetch('https://threebapi-1067354145699.asia-south1.run.app/api/products/all')
-      .then(res => res.json())
-      .then(data => {
-        setProducts(data.products || []);
-        setIsLoading(false);
-      })
-      .catch(err => {
-        console.error("Products error:", err);
-        setIsLoading(false);
-      });
-
-
-    fetch('https://threebapi-1067354145699.asia-south1.run.app/api/categories/all-category')
-      .then(res => res.json())
-      .then(data => setCategoryList(data.categories || []))
-      .catch(err => console.error("Categories error:", err));
-
-
-    fetch('https://threebappbackend.onrender.com/api/dimensions/get-dimensions')
-      .then(res => res.json())
-      .then(data => setDimensionList(data || []))
-      .catch(err => console.error("Dimensions error:", err));
-
-  }, []);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
-
-  const handleAddNewDimension = async () => {
-    if (!newDimensionInput.trim()) return toast.error("Enter value");
-    try {
-      await fetch('https://threebappbackend.onrender.com/api/dimensions/add-dimensions', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ value: newDimensionInput })
-      });
-      setNewDimensionInput('');
-      fetchData();
-      toast.success("Added");
-    } catch (e) { toast.error("Failed"); }
-  };
-
-  // --- FIX: Optimized Filtering to prevent UI lag ---
-  const filteredProducts = useMemo(() => {
-    return products
-      .filter(p => {
-        const matchesSearch = searchTerm === '' || p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.about.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCat = filterCategory === '' || (p.categoryId && p.categoryId._id === filterCategory);
-        return matchesSearch && matchesCat;
-      })
-      .sort((a, b) => (a.position ?? Infinity) - (b.position ?? Infinity));
-  }, [products, searchTerm, filterCategory]);
-
-  const currentProducts = useMemo(() => {
-    const last = currentPage * productsPerPage;
-    return filteredProducts.slice(last - productsPerPage, last);
-  }, [filteredProducts, currentPage]);
-
-  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
-
-  if (isLoading) return <div className="text-center p-20 font-bold text-[#6A3E9D]">Loading Inventory...</div>;
-
-  return (
-    <div className="p-4 md:p-8 space-y-6 mt-8">
-      <Toaster position="top-right" />
-      <div className="bg-white shadow-xl rounded-2xl p-6 md:p-8">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">View All Products</h2>
-          <button onClick={() => setIsAddModalOpen(true)} className="bg-[#6A3E9D] text-white py-2 px-6 rounded-lg">+ Add Product</button>
-        </div>
-
-        <div className="mb-6">
-          <div className="relative max-w-md">
-            <input type="text" placeholder="Search..." className="w-full pl-10 pr-4 py-2 border rounded-xl outline-none focus:ring-1 ring-[#6A3E9D]" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} />
-            <FontAwesomeIcon icon={faFilter} className="absolute left-3 top-3 text-gray-400" />
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left border-collapse">
-            <thead className="bg-gray-50 uppercase text-xs">
-              <tr>
-                <th className="px-4 py-3">Sr.</th>
-                <th className="px-4 py-3">Image</th>
-                <th className="px-4 py-3">Frame</th>
-                <th className="px-4 py-3">Pos</th>
-                <th className="px-4 py-3">Price</th>
-                <th className="px-4 py-3">Qty</th>
-                <th className="px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentProducts.map((product, index) => (
-                <tr key={product._id} className="border-b hover:bg-gray-50">
-                  <td className="px-4 py-4">{((currentPage - 1) * productsPerPage) + index + 1}</td>
-                  <td className="px-4 py-4">
-                    <img src={product.images?.[0]?.url} onClick={() => { setCarouselImages(product.images.map(i => i.url)); setCarouselOpen(true); }} className="w-12 h-12 object-cover rounded cursor-pointer" alt="p" />
-                  </td>
-                  <td className="px-4 py-4 font-bold">{product.name}</td>
-                  <td className="px-4 py-4 text-purple-600 font-bold">{product.position ?? "—"}</td>
-                  <td className="px-4 py-4">₹{product.pricePerPiece}</td>
-                  <td className="px-4 py-4">{product.quantity}</td>
-                  <td className="px-4 py-4 space-x-2">
-                    <button onClick={() => { setQrCodeUrl(product.qrCodeUrl); setQrOpen(true); }}><FontAwesomeIcon icon={faQrcode} /></button>
-                    <button onClick={() => { setSelectedProduct(product); setIsUpdateModalOpen(true); }} className="text-blue-600"><FontAwesomeIcon icon={faPenToSquare} /></button>
-                    <button onClick={async () => { if (window.confirm("Delete?")) { await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/products/delete/${product._id}`, { method: 'DELETE' }); fetchData(); } }} className="text-red-600"><FontAwesomeIcon icon={faTrash} /></button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="mt-6 flex justify-center gap-2">
-          {Array.from({ length: totalPages }, (_, i) => (
-            <button key={i} onClick={() => setCurrentPage(i + 1)} className={`px-3 py-1 border rounded ${currentPage === i + 1 ? 'bg-[#6A3E9D] text-white' : ''}`}>{i + 1}</button>
-          ))}
-        </div>
-      </div>
-
-      <ImageSliderModal isOpen={isCarouselOpen} onClose={() => setCarouselOpen(false)} images={carouselImages} />
-
-      <Modal isOpen={isQrOpen} onClose={() => setQrOpen(false)}>
-        <div className="p-10 flex flex-col items-center">
-          <img src={qrCodeUrl} className="w-64 h-64 border rounded-xl" alt="QR" />
-          <button onClick={() => setQrOpen(false)} className="mt-4 text-gray-500">Close</button>
-        </div>
-      </Modal>
-
-      <AddProductModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onProductAdded={fetchData} categories={categoryList} dimensions={dimensionList} handleAddNewDimension={handleAddNewDimension} newDimensionInput={newDimensionInput} setNewDimensionInput={setNewDimensionInput} />
-
-      {selectedProduct && <UpdateProductModal isOpen={isUpdateModalOpen} onClose={() => { setIsUpdateModalOpen(false); setSelectedProduct(null); }} onUpdateSuccess={fetchData} product={selectedProduct} categories={categoryList} dimensions={dimensionList} handleAddNewDimension={handleAddNewDimension} newDimensionInput={newDimensionInput} setNewDimensionInput={setNewDimensionInput} />}
-    </div>
-  );
-}
-
-export default ViewProducts;
