@@ -21,7 +21,16 @@ const ProgressIcon = () => (
 // --- Reusable Components (Unchanged) ---
 const GenericModal = ({ isOpen, onClose, children, maxWidth = "max-w-lg", zIndex = "z-50" }) => {
     if (!isOpen) return null;
-    return <div className={`fixed inset-0 ${zIndex} flex justify-center items-center p-4 pointer-events-none`}><div className={`${maxWidth} bg-white rounded-xl shadow-2xl w-full max-h-[80vh] flex flex-col pointer-events-auto`}>{children}</div></div>;
+    return (
+        <div className={`fixed inset-0 ${zIndex} flex justify-center items-center p-4 overflow-hidden`}>
+         
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
+            
+            <div className={`${maxWidth} bg-white rounded-2xl shadow-2xl w-full max-h-[95vh] flex flex-col relative z-10 overflow-hidden`}>
+                {children}
+            </div>
+        </div>
+    );
 };
 const UpdateBoxesModal = ({ isOpen, onClose, item, onUpdateSubmit }) => {
     const [numberOfNewBoxes, setNumberOfNewBoxes] = useState('');
@@ -139,24 +148,22 @@ const PrintModal = ({ isOpen, onClose, item, box }) => {
         .no-print { display: none !important; }
       `}</style>
 
-      <GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl" zIndex="z-[60]">
-        {/* --- Header with Cross Button --- */}
+      {/* यहाँ zIndex को z-[10010] किया गया है */}
+      <GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl" zIndex="z-[10010]">
         <div className="p-4 border-b flex justify-between items-center no-print bg-white rounded-t-xl">
           <h2 className="text-xl font-bold text-gray-800">Print Preview</h2>
           <button 
             onClick={onClose} 
-            className="text-gray-500 hover:text-red-600 text-3xl font-bold leading-none"
+            className="text-gray-400 hover:text-red-600 text-4xl font-light p-2"
           >
             &times;
           </button>
         </div>
 
-        {/* --- Label Content --- */}
         <div id="printable-area" className="p-8 flex justify-center bg-gray-100 overflow-auto">
           <PrintablePageLayout item={item} box={box} />
         </div>
 
-        {/* --- Footer Buttons --- */}
         <div className="no-print p-4 bg-gray-50 rounded-b-lg flex justify-end gap-3 border-t">
           <button onClick={handlePrint} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg">
             Print
@@ -901,7 +908,15 @@ const handleOpenProgressModal = async (itemId) => {
           </div>
         </div>
         
-        <BoxesModal isOpen={isBoxesModalOpen} onClose={handleCloseBoxesModal} item={selectedItemForBoxes} onOpenPrintModal={handleOpenPrintModal} onOpenUpdateModal={handleOpenUpdateModal} onOpenPrintAllModal={handleOpenPrintAllModal}  zIndex="z-[9999]" />
+       <BoxesModal 
+    isOpen={isBoxesModalOpen} 
+    onClose={handleCloseBoxesModal} 
+    item={selectedItemForBoxes} 
+    onOpenPrintModal={handleOpenPrintModal} 
+    onOpenUpdateModal={handleOpenUpdateModal} 
+    onOpenPrintAllModal={handleOpenPrintAllModal}  
+    zIndex="z-[10000]" 
+/>
         
 
         <PrintModal isOpen={isPrintModalOpen} onClose={handleClosePrintModal} item={selectedItemForBoxes} box={selectedBoxForPrint} />
