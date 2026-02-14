@@ -1,18 +1,15 @@
 // src/components/Sidebar.jsx
 
-import React, { useState, useEffect } from 'react'; // Import useEffect
+import React, { useState, useEffect } from 'react'; 
 import { Link, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileInvoiceDollar } from "@fortawesome/free-solid-svg-icons";
 
 
-
-
-
 import {
   faTachometerAlt, faStickyNote, faPlusSquare, faList, faUsers, faUserTie, faUserFriends,
   faComments, faUserPlus, faUsersCog, faThLarge, faBoxOpen, faBox,
-  faShoppingCart, faCog, faChevronDown, faGlobe, faUserShield, faUndo, faBell,faCogs, faTasks, faChartBar,faArchive 
+  faShoppingCart, faCog, faChevronDown, faGlobe, faUserShield, faUndo, faBell,faCogs, faTasks, faChartBar,faArchive, faBarcode // <--- ADDED faBarcode
 } from '@fortawesome/free-solid-svg-icons';
 
 import profilePic from '../assets/3b.png';
@@ -71,7 +68,7 @@ const DropdownMenuItem = ({ icon, text, isOpen, onClick }) => (
 
 function Sidebar({ isOpen, onClose }) {
   const [openMenus, setOpenMenus] = useState({});
-  const [userRole, setUserRole] = useState(null); // State to store user role
+  const [userRole, setUserRole] = useState(null); 
 
   // Use useEffect to read the role from localStorage when the component mounts
   useEffect(() => {
@@ -79,7 +76,7 @@ function Sidebar({ isOpen, onClose }) {
     if (storedRole) {
       setUserRole(storedRole);
     }
-  }, []); // Empty dependency array means this runs once on mount
+  }, []); 
 
   const toggleNested = (e, menuId) => {
     e.stopPropagation();
@@ -87,7 +84,7 @@ function Sidebar({ isOpen, onClose }) {
   };
 
   const userName = localStorage.getItem('userName') || 'Manager';
-  const userEmail = "manager@3bprofiles.com"; // Assuming a default email for the manager
+  const userEmail = "manager@3bprofiles.com"; 
 
   return (
     <div style={{ ...styles.sideMenu, ...(isOpen ? styles.sideMenuOpen : {}) }}>
@@ -110,7 +107,7 @@ function Sidebar({ isOpen, onClose }) {
 
         {/* Machines Menu */}
 <DropdownMenuItem 
-  icon={faCogs}   // you can replace with a better icon like faIndustry or faTools if you prefer
+  icon={faCogs}   
   text="Machines" 
   isOpen={openMenus.machines} 
   onClick={(e) => toggleNested(e, 'machines')} 
@@ -163,7 +160,13 @@ function Sidebar({ isOpen, onClose }) {
         <ul style={{ ...styles.nested, ...(openMenus.products ? styles.nestedOpen : {}) }}>
           {/* <LinkMenuItem icon={faBox} text="Add Products" to="/manager/add-product" /> */}
           <LinkMenuItem icon={faBox} text="All Products" to="/manager/view-products" />
-            <LinkMenuItem icon={faList} text="View Inventory" to="/manager/inventory-log" /> 
+          {/* <LinkMenuItem icon={faList} text="View Inventory" to="/manager/inventory-log" />  */}
+          
+          {/* --- NEW SCAN QR LINK --- */}
+          <LinkMenuItem icon={faBarcode} text="Scan QR" to="/manager/scan-qr" /> 
+          {/* --- END NEW SCAN QR LINK --- */}
+
+          <LinkMenuItem icon={faList} text="View Inventory" to="/manager/inventory-log" /> 
            <LinkMenuItem icon={faList} text="Other Products" to="/manager/other-products"/>
 
            <LinkMenuItem icon={faStickyNote} text = 'Product Dimensions' to = '/manager/product-dimensions'/>

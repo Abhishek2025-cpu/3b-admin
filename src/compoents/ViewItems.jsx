@@ -2,8 +2,7 @@ import logo from '../assets/3b.png';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 
-
-// --- SVG Icons (Unchanged, adding new ProgressIcon) ---
+// --- SVG Icons (Unchanged) ---
 const ViewIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.022 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" /></svg> );
 const BoxIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 4a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V4zm2-1a1 1 0 00-1 1v2h14V4a1 1 0 00-1-1H4zM3 9v9a1 1 0 001 1h12a1 1 0 001-1V9H3z" /></svg> );
 const DeleteIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg> );
@@ -17,13 +16,17 @@ const ProgressIcon = () => (
     </svg>
 );
 
+// --- Reusable Components ---
 
-// --- Reusable Components (Unchanged) ---
 const GenericModal = ({ isOpen, onClose, children, maxWidth = "max-w-lg", zIndex = "z-50" }) => {
     if (!isOpen) return null;
     return (
+        // ***********************************************************************************
+        // FIX: Removed print:hidden from the outermost modal wrapper. 
+        // This was causing the content to have display: none in print media.
+        // ***********************************************************************************
         <div className={`fixed inset-0 ${zIndex} flex justify-center items-center p-4 overflow-hidden`}>
-         
+            {/* Added print:hidden to hide the modal wrapper during print, we will force show the content later */}
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
             
             <div className={`${maxWidth} bg-white rounded-2xl shadow-2xl w-full max-h-[95vh] flex flex-col relative z-10 overflow-hidden`}>
@@ -32,6 +35,7 @@ const GenericModal = ({ isOpen, onClose, children, maxWidth = "max-w-lg", zIndex
         </div>
     );
 };
+
 const UpdateBoxesModal = ({ isOpen, onClose, item, onUpdateSubmit }) => {
     const [numberOfNewBoxes, setNumberOfNewBoxes] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,8 +43,9 @@ const UpdateBoxesModal = ({ isOpen, onClose, item, onUpdateSubmit }) => {
     if (!isOpen) return null;
     return <GenericModal isOpen={isOpen} onClose={onClose}><div className="p-4 border-b flex justify-between items-center"><h2 className="text-xl font-bold text-gray-800">Add More Boxes</h2><button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button></div><form onSubmit={handleSubmit}><div className="p-6 space-y-4"><div><label className="font-semibold text-gray-700 block mb-1">Item No</label><input type="text" readOnly value={item?.itemNo?.trim() || ''} className="w-full p-2 bg-gray-100 border rounded-lg cursor-not-allowed" /></div><div><label htmlFor="new-boxes-input" className="font-semibold text-gray-700 block mb-1">Number of New Boxes to Add</label><input id="new-boxes-input" type="number" min="1" value={numberOfNewBoxes} onChange={(e) => setNumberOfNewBoxes(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., 5" required /></div></div><div className="p-4 border-t flex justify-end gap-3"><button type="button" onClick={onClose} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">Cancel</button><button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg disabled:bg-indigo-300 disabled:cursor-not-allowed">{isSubmitting ? 'Adding...' : 'Add Boxes'}</button></div></form></GenericModal>;
 };
+
 const PrintablePageLayout = ({ item, box }) => {
-    // 1. Extract Profile Codes (EIDs from operators and helpers)
+    // 1. Extract Profile Codes
     const profileCodes = [
         ...(item.operators || []).map(op => op.eid),
         ...(item.helpers || []).map(h => h.eid)
@@ -49,13 +54,14 @@ const PrintablePageLayout = ({ item, box }) => {
     // 2. Qty per Box
     const qtyPerBox = item.noOfSticks || "N/A";
 
-    // 3. Product Image (handle array or string)
+    // 3. Product Image
     const productImg = Array.isArray(item.productImageUrl) 
         ? item.productImageUrl[0] 
         : item.productImageUrl;
 
     return (
-        <div className="border-[6px] border-purple-800 p-4 bg-white w-[800px] h-[450px] relative font-sans text-black">
+       // Is line ko dhundiye aur replace kijiye:
+<div className="border-[4px] border-purple-800 p-4 bg-white w-[100mm] h-[150mm] relative font-sans text-black mx-auto print:mx-0 print:w-[100mm] print:h-[150mm] overflow-hidden flex flex-col">
             <div className="flex h-full">
                 
                 {/* LEFT SECTION (70%) */}
@@ -132,89 +138,209 @@ const PrintablePageLayout = ({ item, box }) => {
 };
 
 const PrintModal = ({ isOpen, onClose, item, box }) => {
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    window.print();
+  };
+
   if (!isOpen || !item || !box) return null;
+
   return (
     <>
-      <style>{`
-        @media print {
-          body * { visibility: hidden; }
-          #printable-area, #printable-area * { visibility: visible; }
-          #printable-area {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; align-items: center; justify-content: center;
-          }
-        }
-        .no-print { display: none !important; }
-      `}</style>
+<style>{`
+  @media print {
 
-      {/* यहाँ zIndex को z-[10010] किया गया है */}
-      <GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl" zIndex="z-[10010]">
-        <div className="p-4 border-b flex justify-between items-center no-print bg-white rounded-t-xl">
-          <h2 className="text-xl font-bold text-gray-800">Print Preview</h2>
-          <button 
-            onClick={onClose} 
-            className="text-gray-400 hover:text-red-600 text-4xl font-light p-2"
-          >
-            &times;
-          </button>
-        </div>
+    @page {
+      size: 100mm 150mm;
+      margin: 0;
+    }
 
-        <div id="printable-area" className="p-8 flex justify-center bg-gray-100 overflow-auto">
-          <PrintablePageLayout item={item} box={box} />
-        </div>
+    html, body {
+      width: 100mm;
+      height: 150mm;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+    }
 
-        <div className="no-print p-4 bg-gray-50 rounded-b-lg flex justify-end gap-3 border-t">
-          <button onClick={handlePrint} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg">
-            Print
-          </button>
-          <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">
-            Close
-          </button>
-        </div>
-      </GenericModal>
+    body * {
+      visibility: hidden !important;
+    }
+
+    #printable-area, 
+    #printable-area * {
+      visibility: visible !important;
+    }
+
+    #printable-area {
+      position: fixed !important;
+      left: 0;
+      top: 0;
+      width: 100mm !important;
+      height: 150mm !important;
+      overflow: hidden !important;
+
+      page-break-before: always;
+      page-break-after: always;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .label-page {
+      width: 100mm;
+      height: 150mm;
+      page-break-after: always;
+      break-after: page;
+    }
+
+    .label-page:last-child {
+      page-break-after: auto;
+    }
+
+    img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .no-print {
+      display: none !important;
+    }
+  }
+`}</style>
+
+
+<GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl" zIndex="z-[10010]">
+  <div className="p-4 border-b flex justify-between items-center no-print bg-white">
+    <h2 className="text-xl font-bold text-gray-800">Print Preview</h2>
+    <button onClick={onClose} className="text-gray-400 hover:text-red-600 text-4xl font-light p-2">&times;</button>
+  </div>
+
+  {/* Wrapper jo screen par aur print par dono jagah center karega */}
+  <div 
+    id="printable-area" 
+    className="preview-wrapper overflow-y-auto p-8 bg-gray-200 flex justify-center items-start min-h-[400px]" 
+    style={{ maxHeight: 'calc(100vh - 200px)' }} 
+  >
+    {/* Sticker Container */}
+    <div className="bg-white shadow-2xl print:shadow-none print:m-0">
+        <PrintablePageLayout item={item} box={box} />
+    </div>
+  </div>
+
+  <div className="no-print p-4 bg-gray-50 flex justify-end gap-3 border-t">
+    <button 
+      onClick={handlePrint} 
+      className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-8 rounded-lg flex items-center gap-2 shadow-lg"
+    >
+      <PrintIcon /> Print / Save as PDF
+    </button>
+    <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">
+      Close
+    </button>
+  </div>
+
+  {/* UPDATED PRINT CSS */}
+  <style dangerouslySetInnerHTML={{ __html: `
+    @media print {
+      /* 1. Baaki sab hide karo */
+      body * { visibility: hidden; }
+      
+      /* 2. Sirf printable area dikhao */
+      #printable-area, #printable-area * { visibility: visible; }
+      
+      /* 3. Printable area ko poori screen par failao aur center karo */
+      #printable-area {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100vw;
+        height: 100vh;
+        display: flex !important;
+        justify-content: center !important; /* Horizontal Center */
+        align-items: center !important;    /* Vertical Center */
+        background: white !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      /* 4. Extra margins hatao */
+      @page {
+        margin: 0;
+        size: auto;
+      }
+      
+      .no-print { display: none !important; }
+    }
+  `}} />
+</GenericModal>
     </>
   );
 };
+
 const PrintAllBoxesModal = ({ isOpen, onClose, item }) => {
     const handlePrint = () => window.print();
+
     if (!isOpen || !item) return null;
+
     return ( <> 
-    <style>{`
+<style>{`
       @media print {
-        body * { visibility: hidden; }
-        .printable-page, .printable-page * { visibility: visible; }
-        .printable-page { page-break-after: always; position: static; width: 100%; margin: 0; padding: 0; }
-        .printable-page:last-child { page-break-after: auto; }
+        @page {
+          size: 100mm 150mm;
+          margin: 0;
+        }
+        body {
+          margin: 0;
+          padding: 0;
+          visibility: hidden !important;
+        }
+        #printable-all-boxes-area, 
+        #printable-all-boxes-area *,
+        .printable-page,
+        .printable-page * {
+            visibility: visible !important;
+            -webkit-print-color-adjust: exact !important;
+        }
+
+        #printable-all-boxes-area {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100mm !important;
+            display: block !important;
+        }
+
+        .printable-page { 
+            width: 100mm !important;
+            height: 150mm !important;
+            display: block !important;
+            break-after: page !important; /* Forcefully naye page par bhejega */
+            page-break-after: always !important; /* Purane browsers ke liye */
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+        }
+        .no-print { display: none !important; }
       }
-      .no-print { display: none !important; }
     `}</style>
 
-    <GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl" zIndex="z-[60]">
-        {/* --- Header with Cross Button --- */}
-        <div className="p-4 border-b flex justify-between items-center no-print bg-white rounded-t-xl">
+    <GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl" zIndex="z-[10010]">
+        <div className="p-4 border-b flex justify-between items-center no-print bg-white">
           <h2 className="text-xl font-bold text-gray-800">Print All Boxes ({item.boxes?.length})</h2>
-          <button 
-            onClick={onClose} 
-            className="text-gray-500 hover:text-red-600 text-3xl font-bold leading-none"
-          >
-            &times;
-          </button>
+          <button onClick={onClose} className="text-gray-500 hover:text-red-600 text-3xl">&times;</button>
         </div>
 
-        {/* --- Scrollable Content --- */}
-        <div id="printable-all-boxes-area" className="p-4 overflow-y-auto max-h-[70vh]">
+        <div id="printable-all-boxes-area" className="p-4 overflow-y-auto max-h-[70vh] bg-gray-100">
             {item.boxes?.map(box => ( 
-                <div key={box._id} className="printable-page mb-8 border-b pb-8 last:border-0 last:mb-0">
+                <div key={box._id} className="printable-page mb-8 border-b border-dashed border-gray-400 pb-8 last:border-0">
                     <PrintablePageLayout item={item} box={box} />
                 </div> 
             ))}
         </div>
 
-        {/* --- Footer Buttons --- */}
-        <div className="no-print p-4 bg-gray-50 rounded-b-lg flex justify-end gap-3 border-t">
-            <button onClick={handlePrint} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2">
-                <PrintIcon /> Print All
+        <div className="no-print p-4 bg-gray-50 flex justify-end gap-3 border-t">
+            <button onClick={handlePrint} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2">
+                <PrintIcon /> Print All / Save PDF
             </button>
             <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">
                 Close
@@ -223,8 +349,7 @@ const PrintAllBoxesModal = ({ isOpen, onClose, item }) => {
     </GenericModal> 
     </> );
 };
-
-// --- ImageSliderModal (NEW COMPONENT) ---
+// --- ImageSliderModal ---
 const ImageSliderModal = ({ isOpen, onClose, images, startIndex = 0 }) => {
     const [currentIndex, setCurrentIndex] = useState(startIndex);
 
@@ -285,11 +410,8 @@ const ImageSliderModal = ({ isOpen, onClose, images, startIndex = 0 }) => {
     );
 };
 
-// --- BoxesModal (UPDATED for responsiveness) & ItemDetails (Unchanged) ---
+// --- BoxesModal & ItemDetails ---
 const BoxesModal = ({ isOpen, onClose, item, onOpenPrintModal, onOpenUpdateModal, onOpenPrintAllModal  }) => {
-        console.log('BoxesModal isOpen:', isOpen);
-    console.log('BoxesModal item:', item);
-    console.log('Boxes array:', item?.boxes);
     if (!isOpen) return null;
     return (
         <GenericModal isOpen={isOpen} onClose={onClose}>
@@ -358,7 +480,7 @@ const BoxesModal = ({ isOpen, onClose, item, onOpenPrintModal, onOpenUpdateModal
     );
 };
 
-const ItemDetails = ({ item, onOpenProgressModal }) => { // Added onOpenProgressModal prop
+const ItemDetails = ({ item, onOpenProgressModal }) => {
     if (!item) return null;
     return ( 
         <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 bg-gray-50">
@@ -370,7 +492,7 @@ const ItemDetails = ({ item, onOpenProgressModal }) => { // Added onOpenProgress
             <div><p className="font-semibold text-gray-700">Helper EID:</p><p>{item.helper?.eid || 'N/A'}</p></div>
             <div className="col-span-full mt-4">
                 <button 
-                    onClick={() => onOpenProgressModal(item.machine?._id)} // Use machine._id from the item
+                    onClick={() => onOpenProgressModal(item.machine?._id)} 
                     className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
                 >
                     <ProgressIcon /> View Progress
@@ -380,7 +502,7 @@ const ItemDetails = ({ item, onOpenProgressModal }) => { // Added onOpenProgress
     );
 };
 
-// --- ProgressModal Component (NEW) ---
+// --- ProgressModal Component ---
 const ProgressModal = ({ isOpen, onClose, machineId }) => {
     const [progressData, setProgressData] = useState(null);
     const [isLoadingProgress, setIsLoadingProgress] = useState(false);
@@ -422,14 +544,14 @@ const ProgressModal = ({ isOpen, onClose, machineId }) => {
         if (isOpen) {
             fetchMachineProgress(machineId);
         } else {
-            setProgressData(null); // Clear data when modal closes
+            setProgressData(null); 
             setProgressError(null);
         }
     }, [isOpen, machineId, fetchMachineProgress]);
 
     const handleOpenImageSlider = (images) => {
         setCurrentImages(images);
-        setCurrentImageIndex(0); // Always start from the first image
+        setCurrentImageIndex(0); 
         setIsImageSliderOpen(true);
     };
 
@@ -438,7 +560,6 @@ const ProgressModal = ({ isOpen, onClose, machineId }) => {
         setCurrentImages([]);
         setCurrentImageIndex(0);
     };
-
 
     if (!isOpen) return null;
 
@@ -468,9 +589,9 @@ const ProgressModal = ({ isOpen, onClose, machineId }) => {
                                 <h4 className="font-medium text-gray-700 mb-2">Assigned Employees:</h4>
                                 <ul className="list-disc list-inside ml-4">
                                     {progressData.employees.map(emp => (
-<li key={emp._id} className="text-gray-600">
-    {emp.name} ({emp.role} - EID: {emp.eid})
-</li>
+                                        <li key={emp._id} className="text-gray-600">
+                                            {emp.name} ({emp.role} - EID: {emp.eid})
+                                        </li>
                                     ))}
                                 </ul>
                             </div>
@@ -582,70 +703,68 @@ function ViewItems() {
     const [selectedMachineIdForProgress, setSelectedMachineIdForProgress] = useState(null);
 
     // ✅ Smart normalization that supports both old and new API structures
-const normalizeItem = (item) => {
-    if (!item) return null;
+    const normalizeItem = (item) => {
+        if (!item) return null;
 
-    // Merge logic: prefer root fields, but allow mainItem to override if it exists
-    const base = item.mainItem || item;
+        // Merge logic: prefer root fields, but allow mainItem to override if it exists
+        const base = item.mainItem || item;
 
-    return {
-        ...item,           // Start with everything (preserves top-level 'boxes')
-        ...base,           // Overlay with item details (itemNo, etc.)
-        _id: base._id || item._id, // Ensure we have a valid ID
-        
-        // Explicitly ensure these are arrays so .map() doesn't crash
-        helpers: Array.isArray(base.helpers) ? base.helpers : (Array.isArray(item.helpers) ? item.helpers : []),
-        operators: Array.isArray(base.operators) ? base.operators : (Array.isArray(item.operators) ? item.operators : []),
-        mixtures: Array.isArray(item.mixtures) ? item.mixtures : (Array.isArray(base.mixtures) ? base.mixtures : []),
-        boxes: Array.isArray(item.boxes) ? item.boxes : (Array.isArray(base.boxes) ? base.boxes : []),
-        
-        boxCount: base.boxCount || item.boxCount || (Array.isArray(item.boxes) ? item.boxes.length : 0),
-        
-        productImageUrl: Array.isArray(base.productImageUrl)
-            ? base.productImageUrl
-            : base.productImageUrl ? [base.productImageUrl] : (item.productImageUrl ? [item.productImageUrl] : []),
+        return {
+            ...item,           // Start with everything (preserves top-level 'boxes')
+            ...base,           // Overlay with item details (itemNo, etc.)
+            _id: base._id || item._id, // Ensure we have a valid ID
+            
+            // Explicitly ensure these are arrays so .map() doesn't crash
+            helpers: Array.isArray(base.helpers) ? base.helpers : (Array.isArray(item.helpers) ? item.helpers : []),
+            operators: Array.isArray(base.operators) ? base.operators : (Array.isArray(item.operators) ? item.operators : []),
+            mixtures: Array.isArray(item.mixtures) ? item.mixtures : (Array.isArray(base.mixtures) ? base.mixtures : []),
+            boxes: Array.isArray(item.boxes) ? item.boxes : (Array.isArray(base.boxes) ? base.boxes : []),
+            
+            boxCount: base.boxCount || item.boxCount || (Array.isArray(item.boxes) ? item.boxes.length : 0),
+            
+            productImageUrl: Array.isArray(base.productImageUrl)
+                ? base.productImageUrl
+                : base.productImageUrl ? [base.productImageUrl] : (item.productImageUrl ? [item.productImageUrl] : []),
+        };
     };
-};
 
+    const fetchAllData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const [listRes, detailRes] = await Promise.all([
+                fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-Allitems'),
+                fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-items'),
+            ]);
 
+            if (!listRes.ok || !detailRes.ok) throw new Error('Failed to fetch data.');
 
-const fetchAllData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-        const [listRes, detailRes] = await Promise.all([
-            fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-Allitems'),
-            fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-items'),
-        ]);
+            const listJson = await listRes.json();
+            const detailJson = await detailRes.json();
 
-        if (!listRes.ok || !detailRes.ok) throw new Error('Failed to fetch data.');
+            // Support both formats: direct array [...] or wrapped object { data: [...] }
+            const listRaw = Array.isArray(listJson) ? listJson : (listJson.data || []);
+            const detailRaw = Array.isArray(detailJson) ? detailJson : (detailJson.data || []);
 
-        const listJson = await listRes.json();
-        const detailJson = await detailRes.json();
+            const normalizedListData = listRaw.map(normalizeItem);
+            const normalizedDetailData = detailRaw.map(normalizeItem);
 
-        // Support both formats: direct array [...] or wrapped object { data: [...] }
-        const listRaw = Array.isArray(listJson) ? listJson : (listJson.data || []);
-        const detailRaw = Array.isArray(detailJson) ? detailJson : (detailJson.data || []);
+            setItems(normalizedListData);
 
-        const normalizedListData = listRaw.map(normalizeItem);
-        const normalizedDetailData = detailRaw.map(normalizeItem);
+            // Build the map for the Boxes Modal lookup
+            const itemMap = new Map();
+            normalizedDetailData.forEach((item) => {
+                if (item._id) itemMap.set(item._id, item);
+            });
+            setFullItemsMap(itemMap);
 
-        setItems(normalizedListData);
-
-        // Build the map for the Boxes Modal lookup
-        const itemMap = new Map();
-        normalizedDetailData.forEach((item) => {
-            if (item._id) itemMap.set(item._id, item);
-        });
-        setFullItemsMap(itemMap);
-
-    } catch (err) {
-        console.error("Fetch error:", err);
-        setError(err.message);
-        toast.error('Could not fetch data.');
-    } finally {
-        setIsLoading(false);
-    }
-}, []);
+        } catch (err) {
+            console.error("Fetch error:", err);
+            setError(err.message);
+            toast.error('Could not fetch data.');
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
 
 
     useEffect(() => { fetchAllData(); }, [fetchAllData]);
@@ -663,21 +782,18 @@ const fetchAllData = useCallback(async () => {
 
     const handleToggleRow = (itemId) => setExpandedRowId(expandedRowId === itemId ? null : itemId);
 
-const handleOpenBoxesModal = (itemFromList) => {
-  const fullItemData = fullItemsMap.get(itemFromList._id);
+    const handleOpenBoxesModal = (itemFromList) => {
+      const fullItemData = fullItemsMap.get(itemFromList._id);
 
-  if (fullItemData) {
-    setSelectedItemForBoxes(fullItemData);
-  } else {
-    console.warn('⚠️ Fallback: using list item since fullItemData not found.');
-    setSelectedItemForBoxes(itemFromList); // fallback so modal opens
-  }
+      if (fullItemData) {
+        setSelectedItemForBoxes(fullItemData);
+      } else {
+        console.warn('⚠️ Fallback: using list item since fullItemData not found.');
+        setSelectedItemForBoxes(itemFromList); // fallback so modal opens
+      }
 
-  setIsBoxesModalOpen(true);
-};
-
-
-
+      setIsBoxesModalOpen(true);
+    };
 
     const handleCloseBoxesModal = () => setIsBoxesModalOpen(false);
     const handleOpenPrintModal = (box) => { setSelectedBoxForPrint(box); setIsPrintModalOpen(true); };
@@ -694,42 +810,38 @@ const handleOpenBoxesModal = (itemFromList) => {
     };
     const handleCloseImageSlider = () => { setIsImageSliderModalOpen(false); setImagesForSlider([]); setInitialImageIndex(0); };
 
-const handleOpenProgressModal = async (itemId) => {
-  console.log("🟢 Opening progress for item:", itemId);
-  setIsProgressModalOpen(true);
-  setIsLoading(true);
+    const handleOpenProgressModal = async (itemId) => {
+      console.log("🟢 Opening progress for item:", itemId);
+      setIsProgressModalOpen(true);
+      setIsLoading(true);
 
-  try {
-    const res = await fetch(
-      "https://threebapi-1067354145699.asia-south1.run.app/api/machines/all"
-    );
-    if (!res.ok) throw new Error("Failed to fetch machine progress");
-    const { data } = await res.json();
+      try {
+        const res = await fetch(
+          "https://threebapi-1067354145699.asia-south1.run.app/api/machines/all"
+        );
+        if (!res.ok) throw new Error("Failed to fetch machine progress");
+        const { data } = await res.json();
 
-    // ✅ Match machines linked to this item (by mainItem._id)
-    const filtered = Array.isArray(data)
-      ? data.filter(machine => machine.mainItem?._id === itemId)
-      : [];
+        // ✅ Match machines linked to this item (by mainItem._id)
+        const filtered = Array.isArray(data)
+          ? data.filter(machine => machine.mainItem?._id === itemId)
+          : [];
 
-    console.log("🧠 Filtered machines:", filtered);
+        console.log("🧠 Filtered machines:", filtered);
 
-    if (!filtered.length) {
-      toast.error("No progress data found for this item.");
-    }
+        if (!filtered.length) {
+          toast.error("No progress data found for this item.");
+        }
 
-    // Store the filtered list (not itemId) directly
-    setSelectedMachineIdForProgress(filtered);
-  } catch (err) {
-    console.error("Progress fetch error:", err);
-    toast.error("Failed to fetch progress data.");
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-
-
-
+        // Store the filtered list (not itemId) directly
+        setSelectedMachineIdForProgress(filtered);
+      } catch (err) {
+        console.error("Progress fetch error:", err);
+        toast.error("Failed to fetch progress data.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
     const handleCloseProgressModal = () => {
         setIsProgressModalOpen(false);
@@ -860,21 +972,21 @@ const handleOpenProgressModal = async (itemId) => {
                         )}
                       </td>
                       <td className="px-6 py-4">
-  {item.mixtures && item.mixtures.length > 0
-    ? item.mixtures.map(mix => mix.name).join(", ")
-    : "N/A"}
-</td>
+                        {item.mixtures && item.mixtures.length > 0
+                            ? item.mixtures.map(mix => mix.name).join(", ")
+                            : "N/A"}
+                      </td>
 
-                   <td className="px-6 py-4">
-  {item.operators.length > 0
-    ? item.operators.map(op => op.name).join(', ')
-    : 'N/A'}
-</td>
-<td className="px-6 py-4">
-  {item.helpers.length > 0
-    ? item.helpers.map(h => h.name).join(', ')
-    : 'N/A'}
-</td>
+                       <td className="px-6 py-4">
+                        {item.operators.length > 0
+                            ? item.operators.map(op => op.name).join(', ')
+                            : 'N/A'}
+                        </td>
+                        <td className="px-6 py-4">
+                        {item.helpers.length > 0
+                            ? item.helpers.map(h => h.name).join(', ')
+                            : 'N/A'}
+                        </td>
 
                       <td className="px-6 py-4 text-center font-mono text-lg">{item.boxCount}</td>
                       <td className="px-6 py-4 text-center">
@@ -891,7 +1003,7 @@ const handleOpenProgressModal = async (itemId) => {
                             <td colSpan="6" className="p-0">
                                 <ItemDetails 
                                     item={fullItemsMap.get(item._id)} 
-                                    onOpenProgressModal={handleOpenProgressModal} // Pass the new handler
+                                    onOpenProgressModal={handleOpenProgressModal}
                                 />
                             </td>
                         </tr> 
@@ -909,16 +1021,15 @@ const handleOpenProgressModal = async (itemId) => {
         </div>
         
        <BoxesModal 
-    isOpen={isBoxesModalOpen} 
-    onClose={handleCloseBoxesModal} 
-    item={selectedItemForBoxes} 
-    onOpenPrintModal={handleOpenPrintModal} 
-    onOpenUpdateModal={handleOpenUpdateModal} 
-    onOpenPrintAllModal={handleOpenPrintAllModal}  
-    zIndex="z-[10000]" 
-/>
+            isOpen={isBoxesModalOpen} 
+            onClose={handleCloseBoxesModal} 
+            item={selectedItemForBoxes} 
+            onOpenPrintModal={handleOpenPrintModal} 
+            onOpenUpdateModal={handleOpenUpdateModal} 
+            onOpenPrintAllModal={handleOpenPrintAllModal}  
+            zIndex="z-[10000]" 
+        />
         
-
         <PrintModal isOpen={isPrintModalOpen} onClose={handleClosePrintModal} item={selectedItemForBoxes} box={selectedBoxForPrint} />
         <UpdateBoxesModal isOpen={isUpdateModalOpen} onClose={handleCloseUpdateModal} item={selectedItemForBoxes} onUpdateSubmit={handleUpdateSubmit} />
         <PrintAllBoxesModal isOpen={isPrintAllModalOpen} onClose={handleClosePrintAllModal} item={selectedItemForBoxes} />
@@ -932,11 +1043,11 @@ const handleOpenProgressModal = async (itemId) => {
         />
 
         {/* New Progress Modal */}
-<ProgressModal
-  isOpen={isProgressModalOpen}
-  onClose={handleCloseProgressModal}
-  machineId={selectedMachineIdForProgress?.[0]?.machine?._id || null}
-/>
+        <ProgressModal
+          isOpen={isProgressModalOpen}
+          onClose={handleCloseProgressModal}
+          machineId={selectedMachineIdForProgress?.[0]?.machine?._id || null}
+        />
 
         </>
     );

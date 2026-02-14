@@ -18,10 +18,14 @@
     "@mui/material": "^7.3.4",
     "@tailwindcss/vite": "^4.1.11",
     "@vitejs/plugin-react": "^4.6.0",
-    "axios": "^1.10.0",
+    "axios": "^1.13.4",
     "browser-image-compression": "^2.0.2",
     "date-fns": "^4.1.0",
+    "html2canvas": "^1.4.1",
+    "html5-qrcode": "^2.3.8",
     "install": "^0.13.0",
+    "jspdf": "^4.0.0",
+    "jsqr": "^1.4.0",
     "lucide-react": "^0.544.0",
     "moment": "^2.30.1",
     "moment-timezone": "^0.6.0",
@@ -39,7 +43,8 @@
     "recharts": "^3.5.0",
     "sweetalert2": "^11.26.3",
     "tailwindcss": "^4.1.11",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",

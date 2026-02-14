@@ -1,7 +1,18 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faQrcode, faPenToSquare, faTrash, faPlus, faTimes, faChevronLeft, faChevronRight, faFilter, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+import { 
+  faQrcode, 
+  faPenToSquare, 
+  faTrash, 
+  faTimes, 
+  faChevronLeft, 
+  faChevronRight, 
+  faFilter, 
+  faExclamationTriangle,
+  faDownload,
+  faPrint 
+} from '@fortawesome/free-solid-svg-icons';
 import imageCompression from 'browser-image-compression';
 
 // --- Shared Constants ---
@@ -104,8 +115,7 @@ function AddProductModal({ isOpen, onClose, onProductAdded, categories = [], dim
     Object.entries(formData).forEach(([k, v]) => submissionData.append(k, v));
     submissionData.append("description", desc);
     
-    // Proper dimension handling (Sending only IDs)
-    const dimIds = selectedDimensions.map(d => d._id || d);
+    const dimIds = selectedDimensions.map(d => d._id || d).filter(Boolean);
     submissionData.append("dimensions", dimIds.join(","));
 
     colorImages.forEach(f => submissionData.append("colorImages", f, f.name));
@@ -200,7 +210,7 @@ function AddProductModal({ isOpen, onClose, onProductAdded, categories = [], dim
   );
 }
 
-// --- Update Product Modal (FIXED DIMENSIONS BLANK ISSUE) ---
+// --- Update Product Modal ---
 const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categories = [], dimensions = [], handleAddNewDimension, newDimensionInput, setNewDimensionInput }) => {
   const [formData, setFormData] = useState({});
   const [existingImages, setExistingImages] = useState([]);
@@ -232,7 +242,6 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
       setNewImages([]);
       setNewColorImages([]);
       
-      // Fixing dimension initialization
       setSelectedDimensions(product.dimensions || []);
       
       const parts = Array(20).fill("");
@@ -279,11 +288,16 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
     const data = new FormData();
     data.append("description", descriptionParts.filter(p => p?.trim()).join(" ").trim());
     
-    // FIX: Converting dimension objects/strings to comma-separated ID string
-    const dimIds = selectedDimensions.map(d => d?._id || d).filter(Boolean);
+    const dimIds = selectedDimensions
+        .map(d => (typeof d === 'object' && d !== null ? d._id : d))
+        .filter(id => id && id !== "undefined");
+    
     data.append("dimensions", dimIds.join(","));
 
-    Object.entries(formData).forEach(([k, v]) => data.append(k, v));
+    Object.entries(formData).forEach(([k, v]) => {
+        if(v !== null && v !== undefined) data.append(k, v);
+    });
+
     newImages.forEach(f => data.append("images", f, f.name));
     newColorImages.forEach(f => data.append("colorImages", f, f.name));
 
@@ -339,7 +353,13 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
           <div>
             <label className="text-xs font-bold text-gray-500 uppercase">Dimensions</label>
             <div className="flex gap-2 mt-1">
-              <select onChange={e => { const d = dimensions.find(x => x._id === e.target.value); if(d && !selectedDimensions.find(s => (s._id || s) === d._id)) setSelectedDimensions([...selectedDimensions, d]); e.target.value=""; }} className={inputClass}>
+              <select onChange={e => { 
+                const d = dimensions.find(x => x._id === e.target.value); 
+                if(d && !selectedDimensions.find(s => (s._id || s) === d._id)) {
+                   setSelectedDimensions([...selectedDimensions, d]);
+                }
+                e.target.value=""; 
+              }} className={inputClass}>
                 <option value="">Select Existing</option>
                 {dimensions.map(d => <option key={d._id} value={d._id}>{d.value}</option>)}
               </select>
@@ -395,55 +415,105 @@ function ViewProducts() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
+  
+  // --- PAGINATION STATE ---
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 10;
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProductCount, setTotalProductCount] = useState(0); // To show total count before filtering
 
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isSliderOpen, setIsSliderOpen] = useState(false);
   const [sliderImages, setSliderImages] = useState([]);
+  
+  // --- QR State ---
   const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [qrProductName, setQrProductName] = useState('');
+  const [qrPcsPerBox, setQrPcsPerBox] = useState('');
   const [isQrOpen, setQrOpen] = useState(false);
+
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newDimInput, setNewDimInput] = useState('');
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
 
-  const fetchData = useCallback(async () => {
+  // Base API URL for products
+  const PRODUCTS_API = 'https://threebapi-1067354145699.asia-south1.run.app/api/products';
+  const DIMENSIONS_API = 'https://threebappbackend.onrender.com/api/dimensions';
+
+
+  const fetchData = useCallback(async (page = 1) => {
     setIsLoading(true);
     try {
-      const prodRes = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/products/all').then(r => r.json()).catch(() => ({products: []}));
-      const catRes = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/categories/all-category').then(r => r.json()).catch(() => ({categories: []}));
-      
-      let dimData = [];
-      try {
-        const dRes = await fetch('https://threebappbackend.onrender.com/api/dimensions/get-dimensions');
-        if (dRes.ok) dimData = await dRes.json();
-      } catch (e) { console.error("Dimensions API down"); }
+      // Fetch Categories and Dimensions in parallel
+      const [catRes, dimRes] = await Promise.all([
+          fetch(`${PRODUCTS_API.replace('/api/products', '/api/categories')}/all-category`).then(r => r.json().catch(() => ({categories: []}))),
+          fetch(`${DIMENSIONS_API}/get-dimensions`).then(r => r.json().catch(() => []))
+      ]);
 
-      setProducts(prodRes.products || []);
       setCategoryList(catRes.categories || []);
-      setDimensionList(Array.isArray(dimData) ? dimData : []);
+      setDimensionList(Array.isArray(dimRes) ? dimRes : []);
+
+      // Fetch Products with Pagination
+      const paginatedUrl = `${PRODUCTS_API}/all?page=${page}`;
+      const prodRes = await fetch(paginatedUrl);
+
+      if (prodRes.ok) {
+        const data = await prodRes.json();
+        setProducts(data.products || []);
+        setTotalPages(data.totalPages || 1);
+        setTotalProductCount(data.totalProducts  || 0); // Assuming API returns total count
+        setCurrentPage(page);
+      } else {
+        const errorData = await prodRes.json().catch(() => ({}));
+        toast.error(`Failed to load products: ${errorData.message || 'Unknown error'}`);
+        setProducts([]);
+        setTotalPages(1);
+        setTotalProductCount(0);
+      }
+
     } catch (e) { 
-      toast.error("Fetch failed"); 
+      toast.error("Fetch failed or API is down"); 
+      console.error(e);
     } finally { 
       setIsLoading(false); 
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  // Initial load and any dependency change that requires refetching everything (like Add/Delete)
+  useEffect(() => { 
+    fetchData(currentPage); 
+  }, [fetchData]);
+
+  // Re-fetch products when sorting/filtering changes, resetting to page 1
+  useEffect(() => {
+    setCurrentPage(1); // Reset to first page on filter/search change
+  }, [searchTerm, filterCategory]);
+
+  // Refetch data when currentPage or filtered term changes (to respect the page in the URL)
+  useEffect(() => {
+      if (!isLoading) { // Prevent firing on initial load when isLoading is true
+          // Use a slightly different fetchData call that incorporates filters if necessary
+          // For now, since filters are not explicitly sent to this paginated API, we rely on client-side filtering for the *current* page results
+          // If the API supported server-side filtering, the fetchData logic above would need to be more complex.
+          // For this implementation, we filter client-side *after* fetching the page.
+          // If you want server-side filtering, the API call needs to support it (e.g., /api/products/all?page=1&category=xyz&search=abc)
+      }
+  }, [currentPage, searchTerm, filterCategory]); // <-- This only triggers the client-side filter below
 
   const handleAddNewDim = async () => {
     if (!newDimInput.trim()) return;
     try {
-      const res = await fetch('https://threebappbackend.onrender.com/api/dimensions/add-dimensions', {
+      const res = await fetch(`${DIMENSIONS_API}/add-dimensions`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ value: newDimInput })
       });
       if(res.ok) {
         setNewDimInput(''); 
-        const dRes = await fetch('https://threebappbackend.onrender.com/api/dimensions/get-dimensions');
+        // Refetch dimensions only
+        const dRes = await fetch(`${DIMENSIONS_API}/get-dimensions`);
         if(dRes.ok) setDimensionList(await dRes.json());
         toast.success("Dimension Added");
       }
@@ -454,10 +524,11 @@ function ViewProducts() {
     if (!productToDelete) return;
     const tid = toast.loading("Deleting product...");
     try {
-      const res = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/products/delete/${productToDelete._id}`, { method: 'DELETE' });
+      const res = await fetch(`${PRODUCTS_API}/delete/${productToDelete._id}`, { method: 'DELETE' });
       if (res.ok) {
         toast.success("Product deleted successfully", { id: tid });
-        fetchData();
+        // Re-fetch current page after deletion
+        fetchData(currentPage); 
       } else {
         toast.error("Failed to delete", { id: tid });
       }
@@ -469,6 +540,119 @@ function ViewProducts() {
     }
   };
 
+  // --- FIXED PRINT LOGIC (No CORS Error) ---
+  const handlePrintSticker = () => {
+    if (!qrCodeUrl) return toast.error("QR not found");
+    
+    // Create a new temporary window for printing
+    const printWindow = window.open('', '_blank');
+    
+    // Write HTML for the sticker (Design exactly like your photo)
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print Sticker - ${qrProductName}</title>
+          <style>
+            @page {
+              size: 40mm 100mm;
+              margin: 0;
+            }
+            body {
+              margin: 0;
+              padding: 5mm;
+              font-family: 'Arial', sans-serif;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              text-align: center;
+              width: 30mm;
+            }
+            .qr-code {
+              width: 30mm;
+              height: 30mm;
+              object-fit: contain;
+              margin-bottom: 4mm;
+            }
+            .label {
+              font-size: 7pt;
+              font-weight: bold;
+              color: #666;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              margin-bottom: 1mm;
+            }
+            .model-name {
+              font-size: 26pt;
+              font-weight: 900;
+              color: #000;
+              margin: 0;
+              line-height: 1;
+            }
+            .pcs {
+              font-size: 10pt;
+              font-weight: bold;
+              color: #333;
+              margin-top: 2mm;
+            }
+            .website {
+              font-size: 6pt;
+              font-weight: bold;
+              color: #6A3E9D;
+              margin-top: 6mm;
+              border-top: 0.2mm solid #eee;
+              padding-top: 2mm;
+              width: 100%;
+            }
+          </style>
+        </head>
+        <body>
+          <img src="${qrCodeUrl}" class="qr-code" />
+          <div class="label">MODEL NO.</div>
+          <div class="model-name">${qrProductName}</div>
+          <div class="pcs">${qrPcsPerBox || '0'} pcs/box</div>
+          <div class="website">www.3bprofilespvtltd.com</div>
+          
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  const handleDownloadQr = async () => {
+    if (!qrCodeUrl) return;
+    const toastId = toast.loading("Processing download...");
+    try {
+      const response = await fetch(qrCodeUrl, { method: 'GET', headers: { 'Cache-Control': 'no-cache' } });
+      if (!response.ok) throw new Error("Network response was not ok");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${qrProductName.replace(/\s+/g, '_')}_QR.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success("Downloaded!", { id: toastId });
+    } catch (error) {
+      const link = document.createElement('a');
+      link.href = qrCodeUrl;
+      link.target = '_blank';
+      link.download = `${qrProductName.replace(/\s+/g, '_')}_QR.png`; 
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Opened in new tab", { id: toastId });
+    }
+  };
+
+  // Client-side filtering on the currently fetched page data
   const filteredProducts = useMemo(() => {
     const term = searchTerm.toLowerCase();
     return products
@@ -480,13 +664,17 @@ function ViewProducts() {
       .sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
   }, [products, searchTerm, filterCategory]);
 
-  const paginated = useMemo(() => {
-    const start = (currentPage - 1) * productsPerPage;
-    return filteredProducts.slice(start, start + productsPerPage);
-  }, [filteredProducts, currentPage]);
+  // Since we are now paginating server-side, filteredProducts will only contain the results for the current page.
+  // We no longer need the slicing/pagination logic for display, just for the pagination control buttons.
 
-  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+  const paginated = filteredProducts; // paginated is now just filteredProducts since the server returned the page.
 
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+        fetchData(page);
+    }
+  };
+  
   const getPageNumbers = () => {
     const pages = [];
     if (totalPages <= 5) {
@@ -494,13 +682,11 @@ function ViewProducts() {
     } else {
       pages.push(1, 2);
       if (currentPage > 3) pages.push('...');
-      if (currentPage > 2 && currentPage < totalPages - 1) {
-        pages.push(currentPage);
-      }
+      if (currentPage > 2 && currentPage < totalPages - 1) pages.push(currentPage);
       if (currentPage < totalPages - 2) pages.push('...');
       pages.push(totalPages - 1, totalPages);
     }
-    return [...new Set(pages)];
+    return [...new Set(pages)].filter(p => p !== 0); // Remove potential '0' from edge cases
   };
 
   if (isLoading) return (
@@ -515,16 +701,16 @@ function ViewProducts() {
       <Toaster position="top-right" />
       <div className="bg-white shadow-xl rounded-2xl p-6 md:p-8">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Product Warehouse ({products.length})</h2>
+          <h2 className="text-2xl font-bold">Product Warehouse ({totalProductCount})</h2>
           <button onClick={() => setIsAddOpen(true)} className="bg-[#6A3E9D] text-white py-2 px-6 rounded-lg font-semibold hover:bg-[#5a3486] transition">+ Add Product</button>
         </div>
 
         <div className="mb-6 flex flex-col md:flex-row gap-4">
           <div className="relative flex-grow">
-            <input type="text" placeholder="Search frame, model or details..." className="w-full pl-10 pr-4 py-2 border rounded-xl" value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }} />
+            <input type="text" placeholder="Search frame, model or details..." className="w-full pl-10 pr-4 py-2 border rounded-xl" value={searchTerm} onChange={e => { setSearchTerm(e.target.value); }} />
             <FontAwesomeIcon icon={faFilter} className="absolute left-3 top-3 text-gray-400" />
           </div>
-          <select className="p-2 border rounded-xl text-sm" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
+          <select className="p-2 border rounded-xl text-sm" value={filterCategory} onChange={(e) => { setFilterCategory(e.target.value); }}>
             <option value="">All Categories</option>
             {categoryList.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
           </select>
@@ -547,6 +733,7 @@ function ViewProducts() {
             <tbody>
               {paginated.length > 0 ? paginated.map((product, idx) => (
                 <tr key={product._id} className="border-b hover:bg-gray-50 transition-colors">
+                  {/* Serial number adjusted for server-side pagination */}
                   <td className="px-4 py-4">{((currentPage-1)*productsPerPage) + idx + 1}</td>
                   <td className="px-4 py-4">
                     <img src={product.images?.[0]?.url || 'https://via.placeholder.com/50'} onClick={() => { if(product.images?.length) { setSliderImages(product.images.map(i => i.url)); setIsSliderOpen(true); } }} className="w-12 h-12 object-cover rounded shadow-sm cursor-pointer" alt="p" />
@@ -559,23 +746,23 @@ function ViewProducts() {
                   <td className="px-4 py-4 font-semibold">₹{product.pricePerPiece}</td>
                   <td className="px-4 py-4">{product.quantity}</td>
                   <td className="px-4 py-4 text-center space-x-3 whitespace-nowrap">
-                    <button title="View QR" onClick={() => { setQrCodeUrl(product.qrCodeUrl); setQrOpen(true); }} className="p-2 hover:bg-gray-100 rounded-full transition"><FontAwesomeIcon icon={faQrcode} className="text-gray-400 hover:text-black" /></button>
+                    <button title="View QR" onClick={() => { setQrCodeUrl(product.qrCodeUrl); setQrProductName(product.name); setQrPcsPerBox(product.totalPiecesPerBox); setQrOpen(true); }} className="p-2 hover:bg-gray-100 rounded-full transition"><FontAwesomeIcon icon={faQrcode} className="text-gray-400 hover:text-black" /></button>
                     <button title="Edit" onClick={() => { setSelectedProduct(product); setIsUpdateOpen(true); }} className="p-2 hover:bg-blue-50 rounded-full transition"><FontAwesomeIcon icon={faPenToSquare} className="text-blue-500 hover:text-blue-700" /></button>
                     <button title="Delete" onClick={() => { setProductToDelete(product); setIsDeleteOpen(true); }} className="p-2 hover:bg-red-50 rounded-full transition"><FontAwesomeIcon icon={faTrash} className="text-red-500" /></button>
                   </td>
                 </tr>
               )) : (
-                <tr><td colSpan="8" className="p-10 text-center text-gray-400">No products found.</td></tr>
+                <tr><td colSpan="8" className="p-10 text-center text-gray-400">No products found matching your criteria.</td></tr>
               )}
             </tbody>
           </table>
         </div>
 
-        {filteredProducts.length > productsPerPage && (
+        {totalPages > 1 && (
             <div className="mt-8 flex justify-center items-center gap-3 py-2">
                 <button 
                   disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(prev => prev - 1)}
+                  onClick={() => handlePageChange(currentPage - 1)}
                   className={`px-4 py-2 border rounded-xl transition flex items-center gap-2 font-medium ${currentPage === 1 ? 'opacity-40 cursor-not-allowed bg-gray-50' : 'hover:bg-gray-50 text-[#6A3E9D]'}`}
                 >
                   <FontAwesomeIcon icon={faChevronLeft} size="sm" /> Prev
@@ -585,7 +772,7 @@ function ViewProducts() {
                     <button 
                       key={i} 
                       disabled={page === '...'}
-                      onClick={() => page !== '...' && setCurrentPage(page)} 
+                      onClick={() => handlePageChange(page)} 
                       className={`w-10 h-10 border rounded-xl transition font-bold flex items-center justify-center 
                         ${page === '...' ? 'border-none bg-transparent cursor-default' : 
                           currentPage === page ? 'bg-[#6A3E9D] text-white shadow-lg' : 'bg-white hover:bg-gray-50 text-gray-600'}`}
@@ -596,7 +783,7 @@ function ViewProducts() {
                 </div>
                 <button 
                   disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(prev => prev + 1)}
+                  onClick={() => handlePageChange(currentPage + 1)}
                   className={`px-4 py-2 border rounded-xl transition flex items-center gap-2 font-medium ${currentPage === totalPages ? 'opacity-40 cursor-not-allowed bg-gray-50' : 'hover:bg-gray-50 text-[#6A3E9D]'}`}
                 >
                   Next <FontAwesomeIcon icon={faChevronRight} size="sm" />
@@ -608,22 +795,64 @@ function ViewProducts() {
       <DeleteConfirmModal isOpen={isDeleteOpen} onClose={() => { setIsDeleteOpen(false); setProductToDelete(null); }} onConfirm={handleConfirmDelete} productName={productToDelete?.name || ""} />
       <ImageSliderModal isOpen={isSliderOpen} onClose={() => setIsSliderOpen(false)} images={sliderImages} />
       
+      {/* --- QR Code Modal with PRINT button --- */}
       <Modal isOpen={isQrOpen} onClose={() => setQrOpen(false)}>
-        <div className="p-10 flex flex-col items-center text-center">
-            <h3 className="font-bold text-lg mb-4">Product QR Code</h3>
-            {qrCodeUrl ? <img src={qrCodeUrl} className="w-64 h-64 border rounded-2xl shadow-xl mb-4" alt="QR" /> : <div className="w-64 h-64 bg-gray-100 flex items-center justify-center rounded-2xl">No QR available</div>}
-            <p className="text-gray-500 text-sm mb-6">Scan to view product details online</p>
-            <button onClick={() => setQrOpen(false)} className="px-8 py-2 bg-gray-800 text-white rounded-xl">Close</button>
+        <div className="p-8 flex flex-col items-center text-center">
+            <h3 className="font-bold text-xl mb-2 text-gray-800">Product QR Code</h3>
+            
+            <div className="bg-white p-4 rounded-xl border-2 border-dashed border-gray-200 mb-4 shadow-sm">
+                {qrCodeUrl ? (
+                    <img src={qrCodeUrl} className="w-56 h-56 object-contain" alt="QR" />
+                ) : (
+                    <div className="w-56 h-56 bg-gray-50 flex items-center justify-center rounded-lg">
+                        <span className="text-gray-400 text-sm">No QR Available</span>
+                    </div>
+                )}
+            </div>
+
+            <div className="mb-6">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Model / Frame</p>
+                <h2 className="text-2xl font-black text-[#6A3E9D] tracking-tight leading-none">
+                    {qrProductName || "Unknown Product"}
+                </h2>
+                <p className="text-xs text-gray-500 mt-1">{qrPcsPerBox ? `${qrPcsPerBox} Pcs/Box` : ''}</p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-2 w-full">
+                <div className="flex gap-2 w-full">
+                    <button 
+                        onClick={handlePrintSticker} 
+                        disabled={!qrCodeUrl}
+                        className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-100 transition flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                        <FontAwesomeIcon icon={faPrint} /> Print Sticker
+                    </button>
+                    <button 
+                        onClick={handleDownloadQr} 
+                        disabled={!qrCodeUrl}
+                        className="flex-1 py-3 bg-[#6A3E9D] hover:bg-[#5a3486] text-white rounded-xl font-bold shadow-lg shadow-purple-100 transition flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                        <FontAwesomeIcon icon={faDownload} /> Download
+                    </button>
+                </div>
+                <button 
+                    onClick={() => setQrOpen(false)} 
+                    className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition"
+                >
+                    Close
+                </button>
+            </div>
         </div>
       </Modal>
 
-      <AddProductModal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} onProductAdded={fetchData} categories={categoryList} dimensions={dimensionList} handleAddNewDimension={handleAddNewDim} newDimensionInput={newDimInput} setNewDimensionInput={setNewDimInput} />
+      <AddProductModal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} onProductAdded={() => fetchData(1)} categories={categoryList} dimensions={dimensionList} handleAddNewDimension={handleAddNewDim} newDimensionInput={newDimInput} setNewDimensionInput={setNewDimInput} />
       
       {selectedProduct && (
         <UpdateProductModal 
             isOpen={isUpdateOpen} 
             onClose={() => {setIsUpdateOpen(false); setSelectedProduct(null);}} 
-            onUpdateSuccess={fetchData} 
+            onUpdateSuccess={() => fetchData(currentPage)} // Refetch current page after update
             product={selectedProduct} 
             categories={categoryList} 
             dimensions={dimensionList} 

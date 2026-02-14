@@ -34,6 +34,8 @@ import ArchivedClients from './compoents/ArchivedClients';
 import OperatorTable from './compoents/OpreatorTable';
 import InventoryStock from './compoents/InventoryStock';
 import ViewInventoryLog from './compoents/ViewInventoryLog'; 
+import ScanQrPage from './ScanQrPage';
+import Settings from './compoents/Settings';
 
 
 const ProtectedRoute = () => {
@@ -85,6 +87,8 @@ function App() {
               <Route path="operators" element={<OperatorTable />} />
               <Route path="inventory-stock" element={<InventoryStock />} />
               <Route path="/manager/inventory-log" element={<ViewInventoryLog />} />
+               <Route path="scan-qr" element={<ScanQrPage />} /> 
+                <Route path="settings" element={<Settings />} /> 
             </Route>
           </Route>
 
