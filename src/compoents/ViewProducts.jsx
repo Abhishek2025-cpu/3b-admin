@@ -420,7 +420,7 @@ function ViewProducts() {
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 10;
   const [totalPages, setTotalPages] = useState(1);
-  const [totalProductCount, setTotalProductCount] = useState(0); // To show total count before filtering
+  const [totalProductCount, setTotalProductCount] = useState(0); 
 
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -439,7 +439,6 @@ function ViewProducts() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
 
-  // Base API URL for products
   const PRODUCTS_API = 'https://threebapi-1067354145699.asia-south1.run.app/api/products';
   const DIMENSIONS_API = 'https://threebappbackend.onrender.com/api/dimensions';
 
@@ -447,7 +446,6 @@ function ViewProducts() {
   const fetchData = useCallback(async (page = 1) => {
     setIsLoading(true);
     try {
-      // Fetch Categories and Dimensions in parallel
       const [catRes, dimRes] = await Promise.all([
           fetch(`${PRODUCTS_API.replace('/api/products', '/api/categories')}/all-category`).then(r => r.json().catch(() => ({categories: []}))),
           fetch(`${DIMENSIONS_API}/get-dimensions`).then(r => r.json().catch(() => []))
@@ -456,7 +454,6 @@ function ViewProducts() {
       setCategoryList(catRes.categories || []);
       setDimensionList(Array.isArray(dimRes) ? dimRes : []);
 
-      // Fetch Products with Pagination
       const paginatedUrl = `${PRODUCTS_API}/all?page=${page}`;
       const prodRes = await fetch(paginatedUrl);
 
@@ -464,7 +461,7 @@ function ViewProducts() {
         const data = await prodRes.json();
         setProducts(data.products || []);
         setTotalPages(data.totalPages || 1);
-        setTotalProductCount(data.totalProducts  || 0); // Assuming API returns total count
+        setTotalProductCount(data.totalProducts  || 0); 
         setCurrentPage(page);
       } else {
         const errorData = await prodRes.json().catch(() => ({}));
@@ -482,26 +479,13 @@ function ViewProducts() {
     }
   }, []);
 
-  // Initial load and any dependency change that requires refetching everything (like Add/Delete)
   useEffect(() => { 
     fetchData(currentPage); 
   }, [fetchData]);
 
-  // Re-fetch products when sorting/filtering changes, resetting to page 1
   useEffect(() => {
-    setCurrentPage(1); // Reset to first page on filter/search change
+    setCurrentPage(1); 
   }, [searchTerm, filterCategory]);
-
-  // Refetch data when currentPage or filtered term changes (to respect the page in the URL)
-  useEffect(() => {
-      if (!isLoading) { // Prevent firing on initial load when isLoading is true
-          // Use a slightly different fetchData call that incorporates filters if necessary
-          // For now, since filters are not explicitly sent to this paginated API, we rely on client-side filtering for the *current* page results
-          // If the API supported server-side filtering, the fetchData logic above would need to be more complex.
-          // For this implementation, we filter client-side *after* fetching the page.
-          // If you want server-side filtering, the API call needs to support it (e.g., /api/products/all?page=1&category=xyz&search=abc)
-      }
-  }, [currentPage, searchTerm, filterCategory]); // <-- This only triggers the client-side filter below
 
   const handleAddNewDim = async () => {
     if (!newDimInput.trim()) return;
@@ -512,7 +496,6 @@ function ViewProducts() {
       });
       if(res.ok) {
         setNewDimInput(''); 
-        // Refetch dimensions only
         const dRes = await fetch(`${DIMENSIONS_API}/get-dimensions`);
         if(dRes.ok) setDimensionList(await dRes.json());
         toast.success("Dimension Added");
@@ -527,7 +510,6 @@ function ViewProducts() {
       const res = await fetch(`${PRODUCTS_API}/delete/${productToDelete._id}`, { method: 'DELETE' });
       if (res.ok) {
         toast.success("Product deleted successfully", { id: tid });
-        // Re-fetch current page after deletion
         fetchData(currentPage); 
       } else {
         toast.error("Failed to delete", { id: tid });
@@ -540,65 +522,85 @@ function ViewProducts() {
     }
   };
 
-  // --- FIXED PRINT LOGIC (No CORS Error) ---
+  // --- UPDATED HORIZONTAL PRINT LOGIC (100mm x 50mm) ---
   const handlePrintSticker = () => {
     if (!qrCodeUrl) return toast.error("QR not found");
     
-    // Create a new temporary window for printing
     const printWindow = window.open('', '_blank');
     
-    // Write HTML for the sticker (Design exactly like your photo)
     printWindow.document.write(`
       <html>
         <head>
           <title>Print Sticker - ${qrProductName}</title>
           <style>
             @page {
-              size: 40mm 100mm;
+              size: 100mm 50mm;
               margin: 0;
             }
             body {
               margin: 0;
-              padding: 5mm;
+              padding: 0;
               font-family: 'Arial', sans-serif;
               display: flex;
-              flex-direction: column;
               align-items: center;
-              text-align: center;
-              width: 30mm;
+              justify-content: center;
+              width: 100mm;
+              height: 50mm;
+              box-sizing: border-box;
+              background-color: #fff;
+            }
+            .container {
+              display: flex;
+              width: 100%;
+              height: 100%;
+              align-items: center;
+              padding: 5mm;
+              gap: 8mm;
+            }
+            .qr-side {
+              flex: 0 0 40mm;
+              display: flex;
+              align-items: center;
+              justify-content: center;
             }
             .qr-code {
-              width: 30mm;
-              height: 30mm;
+              width: 40mm;
+              height: 40mm;
               object-fit: contain;
-              margin-bottom: 4mm;
+            }
+            .info-side {
+              flex: 1;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              text-align: left;
             }
             .label {
-              font-size: 7pt;
+              font-size: 10pt;
               font-weight: bold;
               color: #666;
               text-transform: uppercase;
-              letter-spacing: 0.5px;
-              margin-bottom: 1mm;
+              letter-spacing: 1px;
+              margin-bottom: 2mm;
             }
             .model-name {
-              font-size: 26pt;
+              font-size: 38pt;
               font-weight: 900;
               color: #000;
               margin: 0;
               line-height: 1;
             }
             .pcs {
-              font-size: 10pt;
+              font-size: 14pt;
               font-weight: bold;
               color: #333;
-              margin-top: 2mm;
+              margin-top: 3mm;
             }
             .website {
-              font-size: 6pt;
+              font-size: 8pt;
               font-weight: bold;
               color: #6A3E9D;
-              margin-top: 6mm;
+              margin-top: 4mm;
               border-top: 0.2mm solid #eee;
               padding-top: 2mm;
               width: 100%;
@@ -606,11 +608,17 @@ function ViewProducts() {
           </style>
         </head>
         <body>
-          <img src="${qrCodeUrl}" class="qr-code" />
-          <div class="label">MODEL NO.</div>
-          <div class="model-name">${qrProductName}</div>
-          <div class="pcs">${qrPcsPerBox || '0'} pcs/box</div>
-          <div class="website">www.3bprofilespvtltd.com</div>
+          <div class="container">
+            <div class="qr-side">
+              <img src="${qrCodeUrl}" class="qr-code" />
+            </div>
+            <div class="info-side">
+              <div class="label">MODEL NO.</div>
+              <div class="model-name">${qrProductName}</div>
+              <div class="pcs">${qrPcsPerBox || '0'} pcs/box</div>
+              <div class="website">www.3bprofilespvtltd.com</div>
+            </div>
+          </div>
           
           <script>
             window.onload = function() {
@@ -652,7 +660,6 @@ function ViewProducts() {
     }
   };
 
-  // Client-side filtering on the currently fetched page data
   const filteredProducts = useMemo(() => {
     const term = searchTerm.toLowerCase();
     return products
@@ -664,10 +671,7 @@ function ViewProducts() {
       .sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
   }, [products, searchTerm, filterCategory]);
 
-  // Since we are now paginating server-side, filteredProducts will only contain the results for the current page.
-  // We no longer need the slicing/pagination logic for display, just for the pagination control buttons.
-
-  const paginated = filteredProducts; // paginated is now just filteredProducts since the server returned the page.
+  const paginated = filteredProducts; 
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -686,7 +690,7 @@ function ViewProducts() {
       if (currentPage < totalPages - 2) pages.push('...');
       pages.push(totalPages - 1, totalPages);
     }
-    return [...new Set(pages)].filter(p => p !== 0); // Remove potential '0' from edge cases
+    return [...new Set(pages)].filter(p => p !== 0); 
   };
 
   if (isLoading) return (
@@ -733,7 +737,6 @@ function ViewProducts() {
             <tbody>
               {paginated.length > 0 ? paginated.map((product, idx) => (
                 <tr key={product._id} className="border-b hover:bg-gray-50 transition-colors">
-                  {/* Serial number adjusted for server-side pagination */}
                   <td className="px-4 py-4">{((currentPage-1)*productsPerPage) + idx + 1}</td>
                   <td className="px-4 py-4">
                     <img src={product.images?.[0]?.url || 'https://via.placeholder.com/50'} onClick={() => { if(product.images?.length) { setSliderImages(product.images.map(i => i.url)); setIsSliderOpen(true); } }} className="w-12 h-12 object-cover rounded shadow-sm cursor-pointer" alt="p" />
@@ -795,7 +798,6 @@ function ViewProducts() {
       <DeleteConfirmModal isOpen={isDeleteOpen} onClose={() => { setIsDeleteOpen(false); setProductToDelete(null); }} onConfirm={handleConfirmDelete} productName={productToDelete?.name || ""} />
       <ImageSliderModal isOpen={isSliderOpen} onClose={() => setIsSliderOpen(false)} images={sliderImages} />
       
-      {/* --- QR Code Modal with PRINT button --- */}
       <Modal isOpen={isQrOpen} onClose={() => setQrOpen(false)}>
         <div className="p-8 flex flex-col items-center text-center">
             <h3 className="font-bold text-xl mb-2 text-gray-800">Product QR Code</h3>
@@ -818,7 +820,6 @@ function ViewProducts() {
                 <p className="text-xs text-gray-500 mt-1">{qrPcsPerBox ? `${qrPcsPerBox} Pcs/Box` : ''}</p>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex flex-col gap-2 w-full">
                 <div className="flex gap-2 w-full">
                     <button 
@@ -852,7 +853,7 @@ function ViewProducts() {
         <UpdateProductModal 
             isOpen={isUpdateOpen} 
             onClose={() => {setIsUpdateOpen(false); setSelectedProduct(null);}} 
-            onUpdateSuccess={() => fetchData(currentPage)} // Refetch current page after update
+            onUpdateSuccess={() => fetchData(currentPage)} 
             product={selectedProduct} 
             categories={categoryList} 
             dimensions={dimensionList} 
