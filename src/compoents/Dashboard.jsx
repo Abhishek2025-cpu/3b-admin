@@ -1,4 +1,3 @@
-// src/components/Dashboard.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -6,247 +5,206 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
 
-// --- STYLES ---
-const styles = {
-  dashboardContainer: { padding: '20px', fontFamily: "'Poppins', sans-serif", backgroundColor: '#f4f6f8', minHeight: '100vh' },
-  userInfo: { backgroundColor: '#fff', padding: '20px', textAlign: 'center', borderBottom: '2px solid #7853C2', marginBottom: '20px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' },
-  
-  // --- GREETING MODAL STYLES ---
-  modalOverlay: {
-    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)', backdropFilter: 'blur(8px)',
-    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
-    animation: 'fadeIn 0.5s ease-out'
-  },
-  modalContent: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    padding: '40px 60px', borderRadius: '24px', textAlign: 'center',
-    boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-    border: '1px solid rgba(255,255,255,0.3)',
-    transform: 'scale(1)', animation: 'popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-  },
-  greetingIcon: { fontSize: '4rem', marginBottom: '15px', display: 'block' },
-  greetingText: { fontSize: '2.5rem', fontWeight: 'bold', color: '#333', margin: 0, fontFamily: "'Dancing Script', cursive" },
-  subGreeting: { fontSize: '1.1rem', color: '#666', marginTop: '10px', letterSpacing: '1px', textTransform: 'uppercase' },
+const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F'];
 
-  // Rest of your existing styles...
-  controlsContainer: { display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', backgroundColor: '#fff', padding: '15px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' },
-  dateInput: { padding: '8px', borderRadius: '5px', border: '1px solid #ddd', marginLeft: '5px' },
-  statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px', marginBottom: '30px' },
-  statCard: { backgroundColor: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 6px rgba(0,0,0,0.1)', textAlign: 'center' },
-  statValue: { fontSize: '1.8rem', fontWeight: 'bold', color: '#6f42c1', margin: '10px 0' },
-  statLabel: { color: '#666', fontSize: '0.9rem' },
-  chartsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px', marginBottom: '30px' },
-  chartWrapper: { backgroundColor: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', height: '350px' },
-  chartTitle: { fontSize: '1.2rem', marginBottom: '15px', color: '#333', borderLeft: '4px solid #6f42c1', paddingLeft: '10px' },
-  dashboardGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' },
-  card: { backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', padding: '25px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', textAlign: 'center', transition: 'transform 0.2s' },
-  cardIcon: { fontSize: '2.5rem', marginBottom: '15px', color: '#6f42c1' },
-  cardTitle: { fontSize: '1.2rem', fontWeight: 'bold', color: '#333' },
-  recentActivityContainer: { backgroundColor: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' },
-  recentTitle: { fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '15px', color: '#6f42c1', fontFamily: "'Dancing Script', cursive" },
-  activityList: { listStyle: 'none', padding: 0, margin: 0 },
-  activityItem: { padding: '10px 0', borderBottom: '1px solid #eee' },
-  activityText: { fontSize: '1rem', color: '#333' },
-  timestamp: { fontSize: '0.8rem', color: '#777', marginLeft: '8px' }
-};
+const responsiveStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Poppins:wght@300;400;600&display=swap');
 
-// CSS Animations as a Global Style string
-const animationStyles = `
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes popIn { 
     0% { transform: scale(0.5); opacity: 0; } 
     100% { transform: scale(1); opacity: 1; } 
   }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+  }
+
+  .charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+  }
+
+  .ops-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+  }
+
+  @media (max-width: 600px) {
+    .stats-grid { grid-template-columns: 1fr; }
+    .ops-grid { grid-template-columns: repeat(2, 1fr); }
+    .chart-wrapper { height: 300px !important; }
+    .modal-content { width: 85% !important; padding: 30px 20px !important; }
+    .greeting-text { font-size: 1.8rem !important; }
+    .controls-container { flex-direction: column; align-items: flex-start !important; gap: 15px !important; }
+  }
 `;
 
-const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F'];
+const styles = {
+  container: { padding: '15px', fontFamily: "'Poppins', sans-serif", backgroundColor: '#f8f9fa', minHeight: '100vh' },
+  header: { backgroundColor: '#fff', padding: '25px 15px', textAlign: 'center', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', marginBottom: '20px' },
+  modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(10px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, animation: 'fadeIn 0.4s ease' },
+  modalContent: { backgroundColor: '#fff', padding: '50px', borderRadius: '28px', textAlign: 'center', boxShadow: '0 25px 50px rgba(0,0,0,0.2)', animation: 'popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)' },
+  greetingIcon: { fontSize: '3.5rem', marginBottom: '10px', display: 'block' },
+  greetingText: { fontSize: '2.4rem', fontWeight: 'bold', color: '#333', margin: 0, fontFamily: "'Dancing Script', cursive" },
+  controls: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: '20px', borderRadius: '16px', marginBottom: '25px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
+  dateInput: { padding: '8px 12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', outline: 'none', marginTop: '5px' },
+  card: { backgroundColor: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', textAlign: 'center', transition: 'transform 0.2s', border: '1px solid #f0f0f0' },
+  statValue: { fontSize: '1.6rem', fontWeight: 'bold', color: '#6f42c1', margin: '8px 0' },
+  chartBox: { backgroundColor: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', height: '380px' },
+  opCard: { backgroundColor: '#fff', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.04)', transition: 'all 0.3s' },
+  activityBox: { backgroundColor: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }
+};
 
 const Card = ({ icon, title, onClick }) => (
-  <div style={styles.card} onClick={onClick}>
-    <div style={styles.cardIcon}>{icon}</div>
-    <div style={styles.cardTitle}>{title}</div>
+  <div style={styles.opCard} onClick={onClick} className="op-item">
+    <div style={{ fontSize: '2rem', marginBottom: '10px' }}>{icon}</div>
+    <div style={{ fontSize: '0.95rem', fontWeight: '600', color: '#444' }}>{title}</div>
   </div>
 );
 
 function Dashboard() {
-  const userName = localStorage.getItem('userName') || 'Manager';
   const navigate = useNavigate();
-
-  // --- STATE ---
+  const userName = localStorage.getItem('userName') || 'Manager';
   const [orders, setOrders] = useState([]);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showGreeting, setShowGreeting] = useState(true); // Control Greeting Visibility
+  const [showGreeting, setShowGreeting] = useState(true);
   const [greetingInfo, setGreetingInfo] = useState({ text: '', icon: '' });
-
   const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
 
-  // --- LOGIC FOR GREETING ---
   useEffect(() => {
     const hour = new Date().getHours();
-    let welcome = { text: '', icon: '' };
+    if (hour < 12) setGreetingInfo({ text: 'Good Morning', icon: '☀️' });
+    else if (hour < 17) setGreetingInfo({ text: 'Good Afternoon', icon: '🌤️' });
+    else if (hour < 21) setGreetingInfo({ text: 'Good Evening', icon: '🌆' });
+    else setGreetingInfo({ text: 'Good Night', icon: '🌙' });
 
-    if (hour < 12) welcome = { text: 'Good Morning', icon: '☀️' };
-    else if (hour < 17) welcome = { text: 'Good Afternoon', icon: '🌤️' };
-    else if (hour < 21) welcome = { text: 'Good Evening', icon: '🌆' };
-    else welcome = { text: 'Good Night', icon: '🌙' };
-
-    setGreetingInfo(welcome);
-
-    // Auto-hide popup after 3.5 seconds
-    const timer = setTimeout(() => {
-      setShowGreeting(false);
-    }, 3500);
-
+    const timer = setTimeout(() => setShowGreeting(false), 3000);
     return () => clearTimeout(timer);
   }, []);
 
-  // --- FETCH DATA ---
   useEffect(() => {
-    const fetchOrders = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/orders/get-orders');
-        const data = await response.json();
+        const res = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/orders/get-orders');
+        const data = await res.json();
         if (data.success) setOrders(data.orders);
-      } catch (error) {
-        console.error("Error fetching orders:", error);
-      } finally {
-        setLoading(false);
-      }
+      } catch (e) { console.error(e); }
+      finally { setLoading(false); }
     };
-    fetchOrders();
-
-    const stored = JSON.parse(sessionStorage.getItem("activities") || "[]");
-    setActivities(stored);
-
-    const handleNewActivity = (e) => {
-      const newActivity = { id: Date.now(), ...e.detail };
-      setActivities(prev => [newActivity, ...prev]);
-    };
-    window.addEventListener("recent-activity", handleNewActivity);
-    return () => window.removeEventListener("recent-activity", handleNewActivity);
+    fetchData();
+    setActivities(JSON.parse(sessionStorage.getItem("activities") || "[]"));
   }, []);
 
-  // --- DATA PROCESSING (useMemo) ---
-  const processedData = useMemo(() => {
-    if (!orders.length) return { statusData: [], salesData: [], productData: [], returnData: [], totalRevenue: 0, totalOrders: 0 };
-    const filteredOrders = orders.filter(o => {
-        const d = o.createdAt.split('T')[0];
-        return d >= startDate && d <= endDate;
+  const data = useMemo(() => {
+    const filtered = orders.filter(o => {
+      const d = o.createdAt.split('T')[0];
+      return d >= startDate && d <= endDate;
     });
 
-    let revenue = 0;
-    const statusCounts = {};
-    const productCounts = {};
-    const salesTimeline = {};
-    let returns = 0;
-
-    filteredOrders.forEach(order => {
-      revenue += (order.totalAmount || 0);
-      statusCounts[order.currentStatus] = (statusCounts[order.currentStatus] || 0) + 1;
-      const date = order.createdAt.split('T')[0];
-      salesTimeline[date] = (salesTimeline[date] || 0) + (order.totalAmount || 0);
-      if (order.returnEligible) returns++;
-      if (order.products) {
-        order.products.forEach(p => {
-          productCounts[p.productName] = (productCounts[p.productName] || 0) + (p.quantity || 1);
-        });
-      }
+    let rev = 0;
+    const stats = {}, sales = {};
+    filtered.forEach(o => {
+      rev += (o.totalAmount || 0);
+      stats[o.currentStatus] = (stats[o.currentStatus] || 0) + 1;
+      const d = o.createdAt.split('T')[0];
+      sales[d] = (sales[d] || 0) + (o.totalAmount || 0);
     });
 
     return {
-      statusData: Object.keys(statusCounts).map(k => ({ name: k, value: statusCounts[k] })),
-      salesData: Object.keys(salesTimeline).sort().map(d => ({ date: d, sales: salesTimeline[d] })),
-      productData: Object.keys(productCounts).map(k => ({ name: k, count: productCounts[k] })).sort((a,b) => b.count-a.count).slice(0,5),
-      returnData: [{name: 'Returnable', value: returns}, {name: 'Non-Returnable', value: filteredOrders.length - returns}],
-      totalRevenue: revenue,
-      totalOrders: filteredOrders.length
+      statusData: Object.keys(stats).map(k => ({ name: k, value: stats[k] })),
+      salesData: Object.keys(sales).sort().map(d => ({ date: d, sales: sales[d] })),
+      totalRev: rev,
+      totalOrders: filtered.length
     };
   }, [orders, startDate, endDate]);
 
-  const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(val);
+  const formatINR = (v) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(v);
 
   return (
-    <div style={styles.dashboardContainer}>
-      <style>{animationStyles}</style>
+    <div style={styles.container}>
+      <style>{responsiveStyles}</style>
 
-      {/* --- PREMIUM GREETING MODAL --- */}
       {showGreeting && (
         <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
+          <div style={styles.modalContent} className="modal-content">
             <span style={styles.greetingIcon}>{greetingInfo.icon}</span>
-            <h1 style={styles.greetingText}>
-              {greetingInfo.text}, <span style={{color: '#6f42c1'}}>{userName}!</span>
+            <h1 style={styles.greetingText} className="greeting-text">
+              {greetingInfo.text}, <span style={{ color: '#6f42c1' }}>{userName}</span>
             </h1>
-            <p style={styles.subGreeting}>System is ready for your operations</p>
+            <p style={{ color: '#888', marginTop: '10px', fontSize: '0.9rem' }}>LOADING YOUR COMMAND CENTER</p>
           </div>
         </div>
       )}
 
-      <div style={styles.userInfo}>
-        <h2 style={{fontFamily: "'Dancing Script', cursive", fontSize: '2rem'}}>Welcome back, {userName}!</h2>
-        <p>Sales Analytics & Operations Overview</p>
-      </div>
+      <header style={styles.header}>
+        <h2 style={{ fontFamily: "'Dancing Script', cursive", fontSize: '2.2rem', color: '#333', margin: 0 }}>Hello, {userName}!</h2>
+        <p style={{ color: '#777', margin: '5px 0 0', fontSize: '0.9rem' }}>Business Overview & Analytics</p>
+      </header>
 
-      {/* --- DATE FILTERS --- */}
-      <div style={styles.controlsContainer}>
-        <h3 style={{ margin: 0, color: '#6f42c1' }}>📊 Performance Insights</h3>
-        <div>
-          <label>From: <input type="date" style={styles.dateInput} value={startDate} onChange={(e) => setStartDate(e.target.value)} /></label>
-          <label style={{ marginLeft: '15px' }}>To: <input type="date" style={styles.dateInput} value={endDate} onChange={(e) => setEndDate(e.target.value)} /></label>
+      <div style={styles.controls} className="controls-container">
+        <h3 style={{ margin: 0, color: '#6f42c1', fontSize: '1.1rem' }}>📈 Performance</h3>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <label style={{ fontSize: '0.8rem', color: '#666' }}>From <br/><input type="date" style={styles.dateInput} value={startDate} onChange={e => setStartDate(e.target.value)} /></label>
+          <label style={{ fontSize: '0.8rem', color: '#666' }}>To <br/><input type="date" style={styles.dateInput} value={endDate} onChange={e => setEndDate(e.target.value)} /></label>
         </div>
       </div>
 
-      {loading ? <p style={{ textAlign: 'center' }}>Loading Analytics...</p> : (
+      {loading ? <div style={{ textAlign: 'center', padding: '40px' }}>Loading Analytics...</div> : (
         <>
-          <div style={styles.statsGrid}>
-            <div style={styles.statCard}>
-              <div style={styles.statLabel}>Total Revenue</div>
-              <div style={styles.statValue}>{formatCurrency(processedData.totalRevenue)}</div>
+          <div className="stats-grid">
+            <div style={styles.card}>
+              <div style={{ color: '#666', fontSize: '0.85rem' }}>Total Revenue</div>
+              <div style={styles.statValue}>{formatINR(data.totalRev)}</div>
             </div>
-            <div style={styles.statCard}>
-              <div style={styles.statLabel}>Total Orders</div>
-              <div style={styles.statValue}>{processedData.totalOrders}</div>
+            <div style={styles.card}>
+              <div style={{ color: '#666', fontSize: '0.85rem' }}>Total Orders</div>
+              <div style={styles.statValue}>{data.totalOrders}</div>
             </div>
-            <div style={styles.statCard}>
-              <div style={styles.statLabel}>Avg Order Value</div>
-              <div style={styles.statValue}>{formatCurrency(processedData.totalRevenue / (processedData.totalOrders || 1))}</div>
+            <div style={styles.card}>
+              <div style={{ color: '#666', fontSize: '0.85rem' }}>Avg. Order Value</div>
+              <div style={styles.statValue}>{formatINR(data.totalRev / (data.totalOrders || 1))}</div>
             </div>
           </div>
 
-          <div style={styles.chartsGrid}>
-            {/* Sales Trend */}
-            <div style={styles.chartWrapper}>
-              <h4 style={styles.chartTitle}>📅 Sales Trend</h4>
+          <div className="charts-grid">
+            <div style={styles.chartBox} className="chart-wrapper">
+              <h4 style={{ margin: '0 0 15px', color: '#444' }}>Sales Trend</h4>
               <ResponsiveContainer width="100%" height="85%">
-                <AreaChart data={processedData.salesData}>
+                <AreaChart data={data.salesData}>
                   <defs>
                     <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
+                      <stop offset="5%" stopColor="#8884d8" stopOpacity={0.3}/>
                       <stop offset="95%" stopColor="#8884d8" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="date" tick={{fontSize: 12}} />
-                  <YAxis tick={{fontSize: 12}} />
-                  <Tooltip formatter={(value) => formatCurrency(value)} />
-                  <Area type="monotone" dataKey="sales" stroke="#8884d8" fillOpacity={1} fill="url(#colorSales)" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
+                  <XAxis dataKey="date" hide />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip />
+                  <Area type="monotone" dataKey="sales" stroke="#8884d8" fill="url(#colorSales)" strokeWidth={2} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
 
-            {/* Order Status */}
-            <div style={styles.chartWrapper}>
-              <h4 style={styles.chartTitle}>📦 Order Status</h4>
+            <div style={styles.chartBox} className="chart-wrapper">
+              <h4 style={{ margin: '0 0 15px', color: '#444' }}>Order Status</h4>
               <ResponsiveContainer width="100%" height="85%">
                 <PieChart>
-                  <Pie data={processedData.statusData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" label>
-                    {processedData.statusData.map((e, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  <Pie data={data.statusData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} dataKey="value">
+                    {data.statusData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
                   <Tooltip />
-                  <Legend />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -254,24 +212,26 @@ function Dashboard() {
         </>
       )}
 
-      <h3 style={{...styles.recentTitle, marginTop: '40px'}}>Operations</h3>
-      <div style={styles.dashboardGrid}>
-        <Card icon="📦" title="Inventory Management" onClick={() => navigate('/manager/view-items')} />
-        <Card icon="⚙️" title="Assign Machines" />
-        <Card icon="📝" title="View Reports" />
-        <Card icon="👥" title="Add Staff" onClick={() => navigate('/manager/manage-staff')} />
+      <h3 style={{ fontSize: '1.2rem', marginBottom: '15px', color: '#333' }}>Quick Actions</h3>
+      <div className="ops-grid">
+        <Card icon="📦" title="Inventory" onClick={() => navigate('/manager/view-items')} />
+        <Card icon="⚙️" title="Machines" />
+        <Card icon="📝" title="Reports" />
+        <Card icon="👥" title="Staff" onClick={() => navigate('/manager/manage-staff')} />
       </div>
 
-      <div style={styles.recentActivityContainer}>
-        <h3 style={styles.recentTitle}>Recent Activity</h3>
-        <ul style={styles.activityList}>
-          {activities.length > 0 ? activities.slice(0,5).map(activity => (
-            <li key={activity.id} style={styles.activityItem}>
-              <span style={styles.activityText}>{activity.text}</span>
-              <span style={styles.timestamp}>({activity.time})</span>
-            </li>
-          )) : <p style={{color: '#999'}}>No recent system activity.</p>}
-        </ul>
+      <div style={styles.activityBox}>
+        <h3 style={{ margin: '0 0 15px', fontSize: '1.1rem', color: '#6f42c1' }}>Recent Activity</h3>
+        {activities.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {activities.slice(0, 5).map(a => (
+              <div key={a.id} style={{ borderBottom: '1px solid #f0f0f0', paddingBottom: '8px', fontSize: '0.9rem' }}>
+                <span style={{ color: '#333' }}>{a.text}</span>
+                <span style={{ color: '#aaa', fontSize: '0.75rem', marginLeft: '10px' }}>{a.time}</span>
+              </div>
+            ))}
+          </div>
+        ) : <p style={{ color: '#999', fontSize: '0.9rem' }}>No recent activities found.</p>}
       </div>
     </div>
   );

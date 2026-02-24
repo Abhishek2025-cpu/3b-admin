@@ -7,37 +7,36 @@ const ImageModal = ({ isOpen, onClose, imageUrl }) => {
 
   useEffect(() => {
     const handleEsc = (event) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
+      if (event.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', handleEsc);
-    return () => {
-      window.removeEventListener('keydown', handleEsc);
-    };
+    return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-50 transition-opacity duration-300"
+      className="fixed inset-0 bg-white/95 flex justify-center items-center z-[9999] p-4 backdrop-blur-md"
       onClick={onClose}
     >
+      {/* Close Button - Updated for White Background */}
       <button
-        onClick={onClose}
-        className="absolute top-4 right-4 text-white text-5xl font-bold hover:text-gray-300 transition-colors"
-        aria-label="Close image view"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+        className="absolute top-6 right-6 z-[10000] bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-full w-12 h-12 flex items-center justify-center transition-all border border-gray-300 shadow-sm"
+        aria-label="Close"
       >
-        &times;
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
       </button>
 
-      <div
-        className="relative p-4"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="relative max-w-5xl w-full flex justify-center" onClick={(e) => e.stopPropagation()}>
         <img
           src={imageUrl}
-          alt="Product Full View"
-          className="max-w-[90vw] max-h-[85vh] object-contain"
+          alt="Preview"
+          className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-[0_20px_50px_rgba(0,0,0,0.1)] animate-in zoom-in duration-300"
         />
       </div>
     </div>
@@ -45,7 +44,13 @@ const ImageModal = ({ isOpen, onClose, imageUrl }) => {
 };
 
 const SelectInput = ({ name, value, onChange, options, placeholder }) => (
-  <select name={name} value={value} onChange={onChange} required className="p-2 border rounded-xl w-full bg-white focus:ring-2 focus:ring-purple-500 outline-none">
+  <select 
+    name={name} 
+    value={value} 
+    onChange={onChange} 
+    required 
+    className="p-2 border rounded-xl w-full bg-white focus:ring-2 focus:ring-purple-500 outline-none"
+  >
     <option value="">{placeholder}</option>
     {options.map(opt => (
       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -54,18 +59,17 @@ const SelectInput = ({ name, value, onChange, options, placeholder }) => (
 );
 
 const Spinner = () => (
-    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-    </svg>
+  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+  </svg>
 );
 
 function AddItem() {
   const [formData, setFormData] = useState({
     itemNo: '', length: '9.5 Feet', noOfSticks: '', noOfBoxes: '',
     helperId: '', operatorId: '', shift: '', mixtureId: '',
-    company: '', machineNumber: '', mixtureMachine: '', 
-    image: '', 
+    company: '', machineNumber: '', mixtureMachine: '', image: '', 
   });
 
   const [helpers, setHelpers] = useState([]);
@@ -79,51 +83,40 @@ function AddItem() {
 
   useEffect(() => {
     async function fetchStaff() {
-        try {
-            const res = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/staff/get-employees');
-            const data = await res.json();
-
-            const processStaffByRole = (roleName) => {
-              return data.filter(e => {
-                if (e.role === roleName) return true;
-                if (e.roles && Array.isArray(e.roles)) {
-                  return e.roles.some(r => r.role === roleName);
-                }
-                return false;
-              }).map(e => {
-                let displayEid = e.eid;
-                if (!displayEid && e.roles) {
-                  const roleObj = e.roles.find(r => r.role === roleName);
-                  displayEid = roleObj ? roleObj.eid : '';
-                }
-                return { 
-                  value: e._id, 
-                  label: `${e.name} (${displayEid || 'N/A'})` 
-                };
-              });
-            };
-
-            setHelpers(processStaffByRole('Helper'));
-            setOperators(processStaffByRole('Operator'));
-            setMixtures(processStaffByRole('Mixture'));
-            
-        } catch (error) {
-            console.error("Staff fetch error:", error);
-            toast.error('Failed to load staff list.');
-        }
+      try {
+        const res = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/staff/get-employees');
+        const data = await res.json();
+        const processStaffByRole = (roleName) => {
+          return data.filter(e => {
+            if (e.role === roleName) return true;
+            if (e.roles && Array.isArray(e.roles)) return e.roles.some(r => r.role === roleName);
+            return false;
+          }).map(e => {
+            let displayEid = e.eid;
+            if (!displayEid && e.roles) {
+              const roleObj = e.roles.find(r => r.role === roleName);
+              displayEid = roleObj ? roleObj.eid : '';
+            }
+            return { value: e._id, label: `${e.name} (${displayEid || 'N/A'})` };
+          });
+        };
+        setHelpers(processStaffByRole('Helper'));
+        setOperators(processStaffByRole('Operator'));
+        setMixtures(processStaffByRole('Mixture'));
+      } catch (error) {
+        toast.error('Failed to load staff list.');
+      }
     }
 
     async function fetchProducts() {
-        try {
-            const res = await fetch('https://threeb-1067354145699.asia-south1.run.app/api/products/all?all=true');
-            const data = await res.json();
-            const productOptions = data.products.map(p => ({ value: p.name, label: p.name }));
-            const newProductDetailsMap = new Map(data.products.map(p => [p.name, p]));
-            setProducts(productOptions);
-            setProductDetailsMap(newProductDetailsMap);
-        } catch (err) {
-            toast.error('Failed to load product list.');
-        }
+      try {
+        const res = await fetch('https://threeb-1067354145699.asia-south1.run.app/api/products/all?all=true');
+        const data = await res.json();
+        setProducts(data.products.map(p => ({ value: p.name, label: p.name })));
+        setProductDetailsMap(new Map(data.products.map(p => [p.name, p])));
+      } catch (err) {
+        toast.error('Failed to load product list.');
+      }
     }
 
     fetchStaff();
@@ -138,12 +131,7 @@ function AddItem() {
   const handleItemChange = (e) => {
     const { value } = e.target;
     const selectedProduct = productDetailsMap.get(value);
-    
-    let imageUrl = '';
-    if (selectedProduct?.images?.length > 0) {
-      imageUrl = selectedProduct.images[0].url;
-    }
-
+    const imageUrl = selectedProduct?.images?.[0]?.url || '';
     setFormData(prev => ({
       ...prev,
       itemNo: value,
@@ -155,45 +143,33 @@ function AddItem() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.noOfBoxes <= 0) {
-      toast.error('Number of boxes must be a positive number.');
-      return;
-    }
-    
-    if (!formData.itemNo || !formData.image) {
-        toast.error('Please select an item with an image.');
-        return;
-    }
+    if (formData.noOfBoxes <= 0) return toast.error('Enter valid box quantity.');
+    if (!formData.itemNo || !formData.image) return toast.error('Select an item with image.');
     
     setIsLoading(true);
-
     const submissionData = new FormData();
-    Object.keys(formData).forEach(key => {
-        submissionData.append(key, formData[key]);
-    });
+    Object.keys(formData).forEach(key => submissionData.append(key, formData[key]));
 
     try {
       const response = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/add-items', {
         method: 'POST',
         body: submissionData,
       });
-      
-      const responseData = await response.json();
-
+      const data = await response.json();
       if (response.ok) {
-        toast.success(`Successfully created!`);
+        toast.success(`Success!`);
         setFormData({
-            itemNo: '', length: '9.5 Feet', noOfSticks: '', noOfBoxes: '', helperId: '',
-            operatorId: '', shift: '', company: '', machineNumber: '', mixtureId: '', 
-            mixtureMachine: '', image: '',
+          itemNo: '', length: '9.5 Feet', noOfSticks: '', noOfBoxes: '', helperId: '',
+          operatorId: '', shift: '', company: '', machineNumber: '', mixtureId: '', 
+          mixtureMachine: '', image: '',
         });
         setImagePreview('');
         e.target.reset();
       } else {
-        toast.error(responseData.error || 'An unknown error occurred.');
+        toast.error(data.error || 'Submission failed');
       }
     } catch (err) {
-      toast.error('Submission failed. Please check your connection.');
+      toast.error('Connection error.');
     } finally {
       setIsLoading(false);
     }
@@ -201,7 +177,7 @@ function AddItem() {
 
   return (
     <div className="bg-white shadow-2xl rounded-2xl p-6 md:p-10 w-full max-w-4xl mx-auto mt-5 border border-gray-100">
-      <ToastContainer position="top-right" autoClose={5000} />
+      <ToastContainer position="top-right" autoClose={3000} />
 
       <ImageModal 
         isOpen={isModalOpen} 
@@ -210,49 +186,41 @@ function AddItem() {
       />
 
       <h2 className="text-3xl font-extrabold mb-8 text-center text-gray-800 border-b pb-4">
-        Add New Production Item
+        Production Entry
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid md:grid-cols-2 gap-x-6 gap-y-5">
-          
-          {/* Item Selection */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-gray-700 ml-1">Select Item *</label>
             <SelectInput name="itemNo" value={formData.itemNo} onChange={handleItemChange} options={products} placeholder="Choose Product" />
           </div>
 
-          {/* Length (Read Only) */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-gray-700 ml-1">Length</label>
-            <input type="text" name="length" value={formData.length} readOnly className="p-2 border rounded-xl w-full bg-gray-50 text-gray-500 cursor-not-allowed" />
+            <input type="text" name="length" value={formData.length} readOnly className="p-2 border rounded-xl w-full bg-gray-50 text-gray-500" />
           </div>
 
-          {/* No of Sticks (Read Only) */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-gray-700 ml-1">Sticks per Box</label>
-            <input type="text" name="noOfSticks" value={formData.noOfSticks} readOnly placeholder="Auto-filled" className="p-2 border rounded-xl w-full bg-gray-50 text-gray-500 cursor-not-allowed" />
+            <input type="text" name="noOfSticks" value={formData.noOfSticks} readOnly className="p-2 border rounded-xl w-full bg-gray-50 text-gray-500" />
           </div>
 
-          {/* Mixture Staff */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-gray-700 ml-1">Mixture Staff *</label>
             <SelectInput name="mixtureId" value={formData.mixtureId} onChange={handleChange} options={mixtures} placeholder="Select Mixture" />
           </div>
 
-          {/* Helper Staff */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-gray-700 ml-1">Helper Staff *</label>
             <SelectInput name="helperId" value={formData.helperId} onChange={handleChange} options={helpers} placeholder="Select Helper" />
           </div>
 
-          {/* Operator Staff */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-gray-700 ml-1">Operator Staff *</label>
             <SelectInput name="operatorId" value={formData.operatorId} onChange={handleChange} options={operators} placeholder="Select Operator" />
           </div>
 
-          {/* Shift Selection */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-gray-700 ml-1">Shift *</label>
             <select name="shift" value={formData.shift} onChange={handleChange} required className="p-2 border rounded-xl w-full bg-white focus:ring-2 focus:ring-purple-500 outline-none">
@@ -262,13 +230,11 @@ function AddItem() {
             </select>
           </div>
 
-          {/* No of Boxes */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-gray-700 ml-1">Number of Boxes *</label>
-            <input type="number" name="noOfBoxes" value={formData.noOfBoxes} onChange={handleChange} placeholder="Enter quantity" required min="1" className="p-2 border rounded-xl w-full focus:ring-2 focus:ring-purple-500 outline-none" />
+            <input type="number" name="noOfBoxes" value={formData.noOfBoxes} onChange={handleChange} placeholder="Quantity" required min="1" className="p-2 border rounded-xl w-full focus:ring-2 focus:ring-purple-500 outline-none" />
           </div>
 
-          {/* Machine Number */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-gray-700 ml-1">Machine Number *</label>
             <select name="machineNumber" value={formData.machineNumber} onChange={handleChange} required className="p-2 border rounded-xl w-full bg-white focus:ring-2 focus:ring-purple-500 outline-none">
@@ -277,7 +243,6 @@ function AddItem() {
             </select>
           </div>
 
-          {/* Company */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-gray-700 ml-1">Company *</label>
             <select name="company" value={formData.company} onChange={handleChange} required className="p-2 border rounded-xl w-full bg-white focus:ring-2 focus:ring-purple-500 outline-none">
@@ -288,38 +253,37 @@ function AddItem() {
           </div>
         </div>
         
-        {/* Image Preview Section */}
         <div className="mt-4">
-          <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">Product Preview</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">Product Preview (Click to Zoom)</label>
           {imagePreview ? (
-            <div className="relative group">
+            <div className="relative cursor-pointer group" onClick={() => setIsModalOpen(true)}>
               <img 
                 src={imagePreview} 
-                alt="Selected product" 
-                className="w-full h-64 object-contain rounded-xl border-2 border-gray-200 cursor-pointer group-hover:border-purple-400 transition-all shadow-sm"
-                onClick={() => setIsModalOpen(true)}
+                alt="Product" 
+                className="w-full h-64 object-contain rounded-xl border-2 border-gray-200 transition-all group-hover:border-purple-400 group-hover:shadow-md"
               />
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-10 rounded-xl pointer-events-none">
-                <span className="bg-white px-3 py-1 rounded-full text-xs font-bold shadow-md">Click to expand</span>
+              <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/10 transition-all rounded-xl">
+                 <span className="bg-white/90 px-4 py-2 rounded-full text-xs font-bold opacity-0 group-hover:opacity-100 transition-all flex items-center gap-2">
+                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                   </svg>
+                   Full View
+                 </span>
               </div>
             </div>
           ) : (
-            <div className="mt-2 flex flex-col justify-center items-center h-64 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 bg-gray-50">
-              <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-              </svg>
-              <p>Image will appear here after item selection</p>
+            <div className="flex flex-col justify-center items-center h-64 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-gray-400">
+              <p>Selection preview</p>
             </div>
           )}
         </div>
 
-        {/* Submit Button */}
         <button 
           type="submit" 
           disabled={isLoading} 
-          className="bg-[#6F42C1] hover:bg-[#5a37a0] text-white px-6 py-4 rounded-xl w-full font-bold text-lg shadow-lg hover:shadow-purple-200 transition-all disabled:bg-purple-300 disabled:cursor-not-allowed flex items-center justify-center mt-8"
+          className="bg-[#6F42C1] hover:bg-[#5a37a0] text-white px-6 py-4 rounded-xl w-full font-bold text-lg shadow-lg transition-all disabled:opacity-50 flex items-center justify-center mt-8"
         >
-          {isLoading ? ( <> <Spinner /> Submitting... </> ) : 'Submit Production Entry'}
+          {isLoading ? <><Spinner /> Submitting...</> : 'Submit Production Entry'}
         </button>
       </form>
     </div>

@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { FaArrowLeft, FaTimes } from 'react-icons/fa';
-import toast, { Toaster } from 'react-hot-toast'; // Import react-hot-toast and Toaster
-import imageCompression from 'browser-image-compression'; // Import the image compression library
+import React, { useState, useEffect, useMemo } from 'react';
+import { FaTimes } from 'react-icons/fa';
+import toast, { Toaster } from 'react-hot-toast';
+import imageCompression from 'browser-image-compression';
 
 // --- Reusable Helper Components ---
 
-// A full-screen loader overlay
 const LoaderOverlay = ({ show, message }) => {
   if (!show) return null;
   return (
@@ -18,13 +17,11 @@ const LoaderOverlay = ({ show, message }) => {
   );
 };
 
-// Component for handling multiple image uploads and previews efficiently
 const ImageUploader = ({ files, onFilesChange }) => {
   const previewUrls = useMemo(() =>
     files.map(file => URL.createObjectURL(file)),
     [files]);
 
-  // Cleanup object URLs to prevent memory leaks
   useEffect(() => {
     return () => {
       previewUrls.forEach(url => URL.revokeObjectURL(url));
@@ -33,7 +30,12 @@ const ImageUploader = ({ files, onFilesChange }) => {
 
   const handleFileChange = (e) => {
     const newFiles = Array.from(e.target.files);
-    onFilesChange([...files, ...newFiles]);
+    // Extra Validation: Sirf images allow karein
+    const validImages = newFiles.filter(file => file.type.startsWith('image/'));
+    if (validImages.length !== newFiles.length) {
+      toast.error("Only image files are allowed!");
+    }
+    onFilesChange([...files, ...validImages]);
   };
 
   const handleRemove = (indexToRemove) => {
@@ -79,21 +81,28 @@ function AddCategoryForm() {
   const [formData, setFormData] = useState(initialFormState);
   const [imageFiles, setImageFiles] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [compressionProgress, setCompressionProgress] = useState(null); // { current: 0, total: 0 }
+  const [compressionProgress, setCompressionProgress] = useState(null);
   const [uploadingCategory, setUploadingCategory] = useState(false);
 
+  // Input change handler with number validation
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+
+    if (name === 'position') {
+      // Validation: Sirf numbers allow karein (No decimals, no alphabets, no symbols)
+      const onlyNums = value.replace(/[^0-9]/g, '');
+      setFormData(prev => ({ ...prev, [name]: onlyNums }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const compressAndUpload = async (files) => {
     const compressedFiles = [];
     const compressionOptions = {
-      maxSizeMB: 1,           // (default: Number.POSITIVE_INFINITY)
-      maxWidthOrHeight: 1920, // compressed image's max width or height in pixels (default: undefined)
-      useWebWorker: true,     // optional, use multi-thread web worker, default to false
-      // onProgress: (p) => setCompressionProgress(p) // Callback for progress if needed
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
     };
 
     for (let i = 0; i < files.length; i++) {
@@ -106,8 +115,7 @@ function AddCategoryForm() {
       } catch (error) {
         console.error('Error compressing image:', error);
         toast.error(`Failed to compress image ${i + 1}.`, { id: 'image-compression' });
-        // Optionally, stop the whole process or push the original file
-        throw error; // Propagate the error to stop submission
+        throw error;
       }
     }
     toast.success(`Successfully compressed ${files.length} images!`, { id: 'image-compression' });
@@ -117,57 +125,66 @@ function AddCategoryForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // --- Frontend Validations ---
+    if (!formData.name.trim() || formData.name.length < 3) {
+      toast.error('Category name must be at least 3 characters long.');
+      return;
+    }
+
+    if (!formData.position) {
+      toast.error('Please enter a valid position number.');
+      return;
+    }
+
     if (imageFiles.length === 0) {
       toast.error('Please select at least one image.');
       return;
     }
 
     setIsSubmitting(true);
-    setUploadingCategory(true); // Indicate that category submission is starting
+    setUploadingCategory(true);
 
     try {
       const compressedImages = await compressAndUpload(imageFiles);
 
       const data = new FormData();
-      data.append('name', formData.name);
+      data.append('name', formData.name.trim());
       data.append('position', Number(formData.position));
 
       compressedImages.forEach(file => {
         data.append('images', file);
       });
 
-      // Show "Adding category..." toast for the fetch operation
       const responsePromise = fetch('https://threebapi-1067354145699.asia-south1.run.app/api/categories/add-category', {
         method: 'POST',
         body: data,
       }).then(async (res) => {
         if (!res.ok) {
-          const errData = await res.json().catch(() => ({ message: 'Server returned an unreadable error.' }));
-          throw new Error(errData.message || 'Failed to add category. Please check your inputs.');
+          const errData = await res.json().catch(() => ({ message: 'Server error' }));
+          throw new Error(errData.message || 'Failed to add category.');
         }
         return res.json();
       });
 
       await toast.promise(responsePromise, {
-        loading: 'Adding category...',
+        loading: 'Adding category to database...',
         success: () => {
           setFormData(initialFormState);
           setImageFiles([]);
           return 'Category added successfully!';
         },
-        error: (err) => `Error: ${err.message}`,
+        error: (err) => `${err.message}`,
       });
 
     } catch (error) {
       console.error('Submission error:', error);
-      // toast.error(`Submission failed: ${error.message}`); // Already handled by toast.promise error or compression error
     } finally {
       setIsSubmitting(false);
       setUploadingCategory(false);
     }
   };
 
-  // Determine the loader message
   const loaderMessage = useMemo(() => {
     if (compressionProgress) {
       return `Compressing images: ${compressionProgress.current} of ${compressionProgress.total}`;
@@ -182,16 +199,9 @@ function AddCategoryForm() {
   return (
     <div className="bg-gray-100 min-h-screen p-4 sm:p-8">
       <LoaderOverlay show={isSubmitting} message={loaderMessage} />
-      <Toaster position="top-right" />
+      <Toaster position="top-right" reverseOrder={false} />
 
       <div className="max-w-md mx-auto">
-        <div className="flex items-center gap-4 mb-6">
-          <a href="/manager_dashboard" className="text-gray-600 hover:text-black">
-        
-          </a>
-          {/* H2 title was empty in the original, can be added here if needed */}
-        </div>
-
         <div className="bg-white p-6 rounded-xl shadow-lg">
           <h2 className="text-3xl font-bold text-center mb-6 text-[#6f42c1]">
             Add New Category
@@ -204,23 +214,24 @@ function AddCategoryForm() {
                 type="text"
                 name="name"
                 id="categoryName"
+                placeholder="Enter category name (min 3 chars)"
                 value={formData.name}
                 onChange={handleChange}
-                required
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 outline-none"
               />
             </div>
 
             <div>
-              <label htmlFor="categoryPosition" className="block mb-1 font-medium text-gray-700">Position</label>
+              <label htmlFor="categoryPosition" className="block mb-1 font-medium text-gray-700">Position (Number only)</label>
               <input
-                type="number"
+                type="text" // 'text' used with regex to prevent symbols like 'e', '+', '-'
+                inputMode="numeric"
                 name="position"
                 id="categoryPosition"
+                placeholder="e.g. 1"
                 value={formData.position}
                 onChange={handleChange}
-                required
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 outline-none"
               />
             </div>
 
@@ -232,7 +243,9 @@ function AddCategoryForm() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-[#6f42c1] text-white font-bold py-3 rounded-md hover:bg-[#6f42c1] disabled:bg-[#6f42c1] transition-colors cursor-pointer"
+              className={`w-full text-white font-bold py-3 rounded-md transition-all ${
+                isSubmitting ? 'bg-purple-400 cursor-not-allowed' : 'bg-[#6f42c1] hover:bg-purple-700'
+              }`}
             >
               {isSubmitting ? 'Processing...' : 'Add Category'}
             </button>

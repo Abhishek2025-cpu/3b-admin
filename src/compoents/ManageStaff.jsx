@@ -49,7 +49,7 @@ const AadharImageModal = ({ imageUrl, isOpen, onClose }) => {
   if (!isOpen) return null;
   return (
     <div
-      className="fixed inset-0 z-[70] flex justify-center items-center p-4 pointer-events-none"
+      className="fixed inset-0 z-[70] flex justify-center items-start p-4 pt-24 pointer-events-none bg-black/50" // items-start और pt-24 जोड़ा
       onClick={onClose}
     >
       <div
@@ -59,11 +59,11 @@ const AadharImageModal = ({ imageUrl, isOpen, onClose }) => {
         <img
           src={imageUrl}
           alt="Display Card"
-          className="max-w-[90vw] max-h-[85vh] rounded-lg shadow-2xl border-4 border-white"
+          className="max-w-[90vw] max-h-[75vh] rounded-lg shadow-2xl border-4 border-white" // max-h थोड़ा कम किया ताकि नीचे से न कटे
         />
         <button
           onClick={onClose}
-          className="absolute -top-5 -right-5 bg-white text-black rounded-full w-10 h-10 font-bold text-2xl flex items-center justify-center leading-none shadow-lg hover:scale-110 transition-transform"
+          className="absolute top-3 right-3 bg-white text-black rounded-full w-10 h-10 font-bold text-2xl flex items-center justify-center leading-none shadow-lg hover:bg-gray-200 transition-colors"
         >
           &times;
         </button>

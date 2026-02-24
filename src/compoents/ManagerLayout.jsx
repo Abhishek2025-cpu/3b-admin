@@ -1,5 +1,3 @@
-// src/pages/manager/ManagerLayout.jsx
-
 import React, { useState } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
@@ -14,11 +12,11 @@ const styles = {
   },
   mainContent: {
     flexGrow: 1,
-    overflowY: 'auto', // Allows content to scroll independently
+    overflowY: 'auto',
   },
   overlay: {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-    backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 1999, // Below sidebar, above content
+    backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 1999,
     opacity: 0, transition: 'opacity 0.3s',
     pointerEvents: 'none',
   },
@@ -30,6 +28,8 @@ const styles = {
 
 function ManagerLayout() {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  // 🔹 Step 1: Nayi state add karein
+  const [searchQuery, setSearchQuery] = useState('');
 
   const toggleSidebar = () => {
     setSidebarOpen(!isSidebarOpen);
@@ -37,16 +37,21 @@ function ManagerLayout() {
 
   return (
     <div style={styles.managerLayout}>
-      {/* The overlay will cover the content when the sidebar is open */}
       <div 
         style={{...styles.overlay, ...(isSidebarOpen ? styles.overlayVisible : {})}} 
         onClick={toggleSidebar}
       ></div>
       
-      <Sidebar isOpen={isSidebarOpen} onClose={toggleSidebar} />
+      {/* 🔹 Step 2: Sidebar ko searchQuery pass karein */}
+      <Sidebar isOpen={isSidebarOpen} onClose={toggleSidebar} searchQuery={searchQuery} />
       
       <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-        <Header onMenuClick={toggleSidebar} />
+        {/* 🔹 Step 3: Header ko searchQuery aur setSearchQuery dono pass karein */}
+        <Header 
+          onMenuClick={toggleSidebar} 
+          searchQuery={searchQuery} 
+          setSearchQuery={setSearchQuery} 
+        />
         <main style={styles.mainContent}>
          <Outlet /> 
         </main>
