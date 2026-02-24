@@ -67,7 +67,7 @@ function AddStaffForm() {
   // Form State
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
-  const [role, setRole] = useState(''); // Changed from roles array to single role string
+  const [role, setRole] = useState(''); 
   const [dob, setDob] = useState('');
   const [adharNumber, setAdharNumber] = useState('');
 
