@@ -61,7 +61,7 @@ const PrintablePageLayout = ({ item, box }) => {
 
     return (
        // Is line ko dhundiye aur replace kijiye:
-<div className="border-[4px] border-purple-800 p-4 bg-white w-[100mm] h-[150mm] relative font-sans text-black mx-auto print:mx-0 print:w-[100mm] print:h-[150mm] overflow-hidden flex flex-col">
+<div className="border-[4px] border-purple-800 p-4 bg-white w-[100mm] h-[148mm] relative font-sans text-black mx-auto print:mx-0 print:w-[100mm] print:h-[148mm] overflow-hidden flex flex-col box-border">
             <div className="flex h-full">
                 
                 {/* LEFT SECTION (70%) */}
@@ -148,62 +148,43 @@ const PrintModal = ({ isOpen, onClose, item, box }) => {
     <>
 <style>{`
   @media print {
-
     @page {
       size: 100mm 150mm;
-      margin: 0;
+      margin: 0 !important;
     }
-
     html, body {
-      width: 100mm;
-      height: 150mm;
       margin: 0 !important;
       padding: 0 !important;
-      overflow: hidden !important;
+      height: 150mm !important;
+      width: 100mm !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
-
     body * {
       visibility: hidden !important;
     }
-
-    #printable-area, 
-    #printable-area * {
+    #printable-area, #printable-area * {
       visibility: visible !important;
     }
-
     #printable-area {
-      position: fixed !important;
-      left: 0;
-      top: 0;
+      position: absolute !important;
+      left: 0 !important;
+      top: 0 !important;
       width: 100mm !important;
       height: 150mm !important;
-      overflow: hidden !important;
-
-      page-break-before: always;
-      page-break-after: always;
-      page-break-inside: avoid;
-      break-inside: avoid;
+      margin: 0 !important;
+      padding: 0 !important;
+      display: flex !important;
+      justify-content: center !important;
+      align-items: flex-start !important;
     }
-
-    .label-page {
-      width: 100mm;
-      height: 150mm;
-      page-break-after: always;
-      break-after: page;
-    }
-
-    .label-page:last-child {
-      page-break-after: auto;
-    }
-
-    img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-    }
-
     .no-print {
       display: none !important;
+    }
+    /* Shadow aur gray background hatao print par */
+    .preview-wrapper {
+      background: white !important;
+      padding: 0 !important;
     }
   }
 `}</style>
@@ -218,7 +199,7 @@ const PrintModal = ({ isOpen, onClose, item, box }) => {
   {/* Wrapper jo screen par aur print par dono jagah center karega */}
   <div 
     id="printable-area" 
-    className="preview-wrapper overflow-y-auto p-8 bg-gray-200 flex justify-center items-start min-h-[400px]" 
+    className="preview-wrapper overflow-y-auto p-8 bg-gray-200 flex justify-center items-start" 
     style={{ maxHeight: 'calc(100vh - 200px)' }} 
   >
     {/* Sticker Container */}
@@ -284,45 +265,52 @@ const PrintAllBoxesModal = ({ isOpen, onClose, item }) => {
 
     return ( <> 
 <style>{`
-      @media print {
-        @page {
-          size: 100mm 150mm;
-          margin: 0;
-        }
-        body {
-          margin: 0;
-          padding: 0;
-          visibility: hidden !important;
-        }
-        #printable-all-boxes-area, 
-        #printable-all-boxes-area *,
-        .printable-page,
-        .printable-page * {
-            visibility: visible !important;
-            -webkit-print-color-adjust: exact !important;
-        }
+  @media print {
+    @page {
+      size: 100mm 150mm;
+      margin: 0;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      visibility: hidden !important;
+    }
+    /* Modal ke main container ko full screen karo print par */
+    #printable-all-boxes-area, 
+    #printable-all-boxes-area * {
+        visibility: visible !important;
+        -webkit-print-color-adjust: exact !important;
+    }
 
-        #printable-all-boxes-area {
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100mm !important;
-            display: block !important;
-        }
+    #printable-all-boxes-area {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100mm !important;
+        height: 150mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: block !important;
+        overflow: visible !important;
+    }
 
-        .printable-page { 
-            width: 100mm !important;
-            height: 150mm !important;
-            display: block !important;
-            break-after: page !important; /* Forcefully naye page par bhejega */
-            page-break-after: always !important; /* Purane browsers ke liye */
-            margin: 0 !important;
-            padding: 0 !important;
-            border: none !important;
-        }
-        .no-print { display: none !important; }
-      }
-    `}</style>
+    .printable-page { 
+        width: 100mm !important;
+        height: 150mm !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-sizing: border-box !important;
+    }
+    
+    .no-print { display: none !important; }
+  }
+`}</style>
 
     <GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl" zIndex="z-[10010]">
         <div className="p-4 border-b flex justify-between items-center no-print bg-white">

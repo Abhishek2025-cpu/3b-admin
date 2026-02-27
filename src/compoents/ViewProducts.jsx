@@ -523,7 +523,7 @@ function ViewProducts() {
   };
 
   // --- UPDATED HORIZONTAL PRINT LOGIC (100mm x 50mm) ---
-  const handlePrintSticker = () => {
+const handlePrintSticker = () => {
     if (!qrCodeUrl) return toast.error("QR not found");
     
     const printWindow = window.open('', '_blank');
@@ -541,31 +541,28 @@ function ViewProducts() {
               margin: 0;
               padding: 0;
               font-family: 'Arial', sans-serif;
-              display: flex;
-              align-items: center;
-              justify-content: center;
               width: 100mm;
               height: 50mm;
-              box-sizing: border-box;
-              background-color: #fff;
+              overflow: hidden; /* Extra page rokne ke liye */
             }
             .container {
               display: flex;
-              width: 100%;
-              height: 100%;
+              width: 100mm;
+              height: 50mm;
               align-items: center;
-              padding: 5mm;
-              gap: 8mm;
+              padding: 4mm;
+              box-sizing: border-box;
+              gap: 5mm;
             }
             .qr-side {
-              flex: 0 0 40mm;
+              flex: 0 0 38mm;
               display: flex;
               align-items: center;
               justify-content: center;
             }
             .qr-code {
-              width: 40mm;
-              height: 40mm;
+              width: 38mm;
+              height: 38mm;
               object-fit: contain;
             }
             .info-side {
@@ -573,36 +570,34 @@ function ViewProducts() {
               display: flex;
               flex-direction: column;
               justify-content: center;
-              text-align: left;
             }
             .label {
-              font-size: 10pt;
+              font-size: 8pt;
               font-weight: bold;
               color: #666;
               text-transform: uppercase;
-              letter-spacing: 1px;
-              margin-bottom: 2mm;
+              margin-bottom: 0mm;
             }
             .model-name {
-              font-size: 38pt;
+              font-size: 32pt; /* Thoda chota kiya taaki space bache */
               font-weight: 900;
               color: #000;
               margin: 0;
-              line-height: 1;
+              line-height: 1.1;
             }
             .pcs {
-              font-size: 14pt;
+              font-size: 13pt;
               font-weight: bold;
               color: #333;
-              margin-top: 3mm;
+              margin-top: 1mm;
             }
             .website {
-              font-size: 8pt;
+              font-size: 7.5pt;
               font-weight: bold;
               color: #6A3E9D;
-              margin-top: 4mm;
-              border-top: 0.2mm solid #eee;
-              padding-top: 2mm;
+              margin-top: 2mm;
+              border-top: 0.1mm solid #eee;
+              padding-top: 1mm;
               width: 100%;
             }
           </style>
@@ -619,7 +614,6 @@ function ViewProducts() {
               <div class="website">www.3bprofilespvtltd.com</div>
             </div>
           </div>
-          
           <script>
             window.onload = function() {
               window.print();
