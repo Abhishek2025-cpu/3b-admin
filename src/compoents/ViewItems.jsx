@@ -40,11 +40,11 @@ const UpdateBoxesModal = ({ isOpen, onClose, item, onUpdateSubmit }) => {
 
 const PrintablePageLayout = ({ item, box }) => {
     console.log("Label Rendered");
-  
+
     const profileCodes = [
-    ...(item.operators || []).map(op => op.roleEid),
-    ...(item.helpers || []).map(h => h.roleEid)
-].filter(Boolean).join(', ');
+        ...(item.operators || []).map(op => op.roleEid),
+        ...(item.helpers || []).map(h => h.roleEid)
+    ].filter(Boolean).join(', ');
 
     // 2. Qty per Box
     const qtyPerBox = item.noOfSticks || "N/A";
@@ -55,10 +55,16 @@ const PrintablePageLayout = ({ item, box }) => {
         : item.productImageUrl;
 
     return (
-        <div className="border-[4px] border-purple-800 p-4 bg-white 
-                  w-[100mm] h-[150mm] relative font-sans text-black 
-                  mx-auto print:mx-0 print:w-[100mm] print:h-[150mm] 
-                  overflow-hidden flex flex-col box-border">
+        <div className="
+border-[4px] border-purple-800 
+p-4 bg-white 
+w-[152.4mm] 
+h-[108mm] 
+relative font-sans text-black 
+mx-auto 
+overflow-hidden 
+flex flex-col 
+box-border">
             <div className="flex h-full">
 
                 {/* LEFT SECTION (70%) */}
@@ -136,10 +142,10 @@ const PrintablePageLayout = ({ item, box }) => {
 
 const PrintModal = ({ isOpen, onClose, item, box }) => {
     const handlePrint = () => {
-  setTimeout(() => {
-    window.print();
-  }, 300);
-};
+        setTimeout(() => {
+            window.print();
+        }, 300);
+    };
     if (!isOpen || !item || !box) return null;
 
     return (
@@ -147,37 +153,45 @@ const PrintModal = ({ isOpen, onClose, item, box }) => {
             <style>{`
 @media print {
 
-html, body {
-  height: 150mm !important;
-  overflow: hidden !important;
-}
+  @page {
+    size: 152.4mm 108mm;
+    margin: 0;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 108mm;
+    overflow: hidden;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
 
   #printable-area,
   #printable-area * {
     visibility: visible !important;
   }
 
-#printable-area {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100mm !important;
-  height: 150mm !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-
-}
+  #printable-area {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 152.4mm !important;
+    height: 108mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
 
   .no-print {
     display: none !important;
   }
-
-  @page {
-    size: 100mm 150mm;
-    margin: 0;
-  }
-
 }
 `}</style>
 
@@ -187,13 +201,11 @@ html, body {
                     <button onClick={onClose} className="text-gray-400 hover:text-red-600 text-4xl font-light p-2">&times;</button>
                 </div>
 
-               <div
-    id="printable-area"
-    className="bg-white flex justify-center items-center p-4 print:p-0 overflow-auto"
->
-                    <div className="bg-white shadow-2xl print:shadow-none">
-                        <PrintablePageLayout item={item} box={box} />
-                    </div>
+                <div
+                    id="printable-area"
+                    className="bg-white flex justify-center items-center p-4 print:p-0 overflow-auto"
+                >
+                    <PrintablePageLayout item={item} box={box} />
                 </div>
 
                 <div className="no-print p-4 bg-gray-50 flex justify-end gap-3 border-t flex-shrink-0">
