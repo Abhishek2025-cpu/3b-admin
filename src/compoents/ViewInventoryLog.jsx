@@ -1,62 +1,68 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faPenToSquare, faTrash, faTimes, faChevronLeft, faChevronRight, 
   faFilter, faArrowRightFromBracket, faArrowRightToBracket, 
   faUser, faBuilding, faBoxOpen, faSyncAlt, faIndianRupeeSign, 
-  faHashtag, faSave, faImage, faPlusCircle
+  faHashtag, faSave, faImage, faPlusCircle, faHistory, faLayerGroup
 } from '@fortawesome/free-solid-svg-icons';
 
 // --- Reusable Modal Component ---
 const Modal = ({ isOpen, onClose, children, title, maxWidth = "max-w-2xl" }) => {
-  if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 flex justify-center items-center z-[110] p-4 bg-slate-900/60 backdrop-blur-sm transition-all">
-      <div className={`bg-white rounded-[2rem] shadow-2xl relative ${maxWidth} w-full border border-slate-200 flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200`}>
-        <div className="p-5 border-b flex justify-between items-center bg-slate-50/50 rounded-t-[2rem]">
-          <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-3">
-            <span className="w-1.5 h-5 bg-indigo-600 rounded-full"></span> {title}
-          </h2>
-          <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-rose-500 transition-all">
-            <FontAwesomeIcon icon={faTimes} />
-          </button>
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 flex justify-center items-center z-[110] p-4 overflow-y-auto">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-md"
+          />
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0, y: 30 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 30 }}
+            className={`bg-white rounded-[2.5rem] shadow-2xl relative ${maxWidth} w-full border border-white/20 flex flex-col max-h-[90vh] overflow-hidden z-[111]`}
+          >
+            <div className="p-7 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
+              <h2 className="text-2xl font-black text-slate-800 flex items-center gap-3">
+                <div className="w-2.5 h-8 bg-gradient-to-b from-indigo-500 to-purple-600 rounded-full"></div>
+                {title}
+              </h2>
+              <button onClick={onClose} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-500 transition-all duration-300">
+                <FontAwesomeIcon icon={faTimes} size="lg" />
+              </button>
+            </div>
+            <div className="p-8 overflow-y-auto">{children}</div>
+          </motion.div>
         </div>
-        <div className="p-8 overflow-y-auto">{children}</div>
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 };
 
-// --- Main View Component ---
 function ViewProducts() {
   const [movements, setMovements] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 8;
 
-  // Modal States
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Edit Form State
   const [editFormData, setEditFormData] = useState({
-    _id: '',
-    productName: '',
-    filledBy: '',
-    toClient: '',
-    toCompany: '',
-    direction: '',
-    qtyByClient: 0,
-    mrpPerBox: 0,
-    productImages: [] 
+    _id: '', productName: '', filledBy: '', toClient: '', toCompany: '',
+    direction: '', qtyByClient: 0, mrpPerBox: 0, productImages: [] 
   });
   const [newImages, setNewImages] = useState([]); 
 
-  // --- API CALL: FETCH DATA ---
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -64,7 +70,7 @@ function ViewProducts() {
       const data = await res.json();
       if (data.success) setMovements(data.movements || []);
     } catch (err) {
-      toast.error("Failed to load movement data");
+      toast.error("Failed to load records");
     } finally {
       setIsLoading(false);
     }
@@ -72,13 +78,11 @@ function ViewProducts() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // --- DETAIL MODAL LOGIC ---
   const handleRowClick = (item) => {
     setSelectedItem(item);
     setIsDetailsOpen(true);
   };
 
-  // --- EDIT PRE-FILL LOGIC ---
   const handleEditClick = (e, item) => {
     e.stopPropagation(); 
     setEditFormData({
@@ -96,24 +100,15 @@ function ViewProducts() {
     setIsEditOpen(true);
   };
 
-  // --- API CALL: UPDATE (PUT) ---
   const handleUpdate = async (e) => {
     e.preventDefault();
     setIsUpdating(true);
-    
     try {
       const formData = new FormData();
-      formData.append('productName', editFormData.productName);
-      formData.append('filledBy', editFormData.filledBy);
-      formData.append('toClient', editFormData.toClient || '');
-      formData.append('toCompany', editFormData.toCompany || '');
-      formData.append('qtyByClient', editFormData.qtyByClient);
-      formData.append('mrpPerBox', editFormData.mrpPerBox);
-      formData.append('direction', editFormData.direction);
-      
-      newImages.forEach(file => {
-        formData.append('productImages', file);
+      Object.keys(editFormData).forEach(key => {
+        if (key !== 'productImages') formData.append(key, editFormData[key]);
       });
+      newImages.forEach(file => formData.append('productImages', file));
 
       const res = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/inventory/update/${editFormData._id}`, {
         method: 'PUT',
@@ -122,37 +117,25 @@ function ViewProducts() {
 
       const data = await res.json();
       if (data.success) {
-        toast.success("Transaction Updated Successfully!");
+        toast.success("Log updated successfully");
         setIsEditOpen(false);
         fetchData();
-      } else {
-        toast.error(data.message || "Update failed");
       }
     } catch (err) {
-      toast.error("Connection Error during update");
+      toast.error("Update failed");
     } finally {
       setIsUpdating(false);
     }
   };
 
-
   const handleDelete = async (e, id) => {
     e.stopPropagation();
-    if(window.confirm("Are you sure you want to delete this log permanently?")) {
+    if(window.confirm("Confirm permanent deletion?")) {
       try {
-        const res = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/inventory/delete/${id}`, {
-          method: 'DELETE'
-        });
+        const res = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/inventory/delete/${id}`, { method: 'DELETE' });
         const data = await res.json();
-        if(data.success) {
-          toast.success("Log Deleted Successfully");
-          fetchData();
-        } else {
-          toast.error("Failed to delete");
-        }
-      } catch (err) {
-        toast.error("Error connecting to server");
-      }
+        if(data.success) { toast.success("Record deleted"); fetchData(); }
+      } catch (err) { toast.error("Error deleting"); }
     }
   };
 
@@ -171,202 +154,222 @@ function ViewProducts() {
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
-  const formatDate = (dateStr) => {
-    const date = new Date(dateStr);
-    return (
-      <div className="flex flex-col">
-        <span className="text-slate-700 font-medium">{date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-        <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">{date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
-      </div>
-    );
-  };
-
   if (isLoading) return (
     <div className="flex flex-col justify-center items-center h-screen bg-slate-50">
-      <div className="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
-      <p className="text-slate-500 font-medium">Refreshing Inventory Logs...</p>
+      <motion.div 
+        animate={{ rotate: 360 }} 
+        transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+        className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full mb-6"
+      />
+      <p className="text-slate-500 font-bold tracking-widest uppercase text-sm">Loading Workspace...</p>
     </div>
   );
 
   return (
-    <div className="p-4 md:p-8 bg-[#f8fafc] min-h-screen font-sans antialiased text-slate-900">
+    <div className="p-6 md:p-12 bg-[#f8fafc] min-h-screen font-sans antialiased text-slate-900">
       <Toaster position="top-right" />
 
-      <div className="max-w-[1600px] mx-auto">
+      <div className="max-w-[1500px] mx-auto space-y-12">
         
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-lg shadow-inner"><FontAwesomeIcon icon={faSyncAlt} /></div>
-            <div><p className="text-slate-400 text-xs font-medium uppercase">Total Movements</p><h3 className="text-xl font-semibold text-slate-800">{movements.length}</h3></div>
+        {/* --- DYNAMIC HEADER --- */}
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+          <div>
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }} 
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-3 mb-3"
+            >
+              <div className="p-2.5 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-200">
+                <FontAwesomeIcon icon={faLayerGroup} className="text-white text-base" />
+              </div>
+              <span className="text-sm font-black text-indigo-600 uppercase tracking-[0.2em]">Live Inventory System</span>
+            </motion.div>
+            <motion.h1 
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }}
+              className="text-5xl md:text-6xl font-black text-slate-900 tracking-tight leading-none"
+            >
+              Stock <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Analytics</span>
+            </motion.h1>
           </div>
-          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-lg shadow-inner"><FontAwesomeIcon icon={faArrowRightToBracket} /></div>
-            <div><p className="text-slate-400 text-xs font-medium uppercase">Total Inbound</p><h3 className="text-xl font-semibold text-slate-800">{movements.filter(m => m.direction === 'In').length}</h3></div>
-          </div>
-          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center text-lg shadow-inner"><FontAwesomeIcon icon={faArrowRightFromBracket} /></div>
-            <div><p className="text-slate-400 text-xs font-medium uppercase">Total Outbound</p><h3 className="text-xl font-semibold text-slate-800">{movements.filter(m => m.direction === 'Out').length}</h3></div>
-          </div>
+
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-wrap items-center gap-4">
+            <div className="relative group min-w-[320px]">
+              <FontAwesomeIcon icon={faFilter} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors text-lg" />
+              <input 
+                type="text" placeholder="Search product or client..." 
+                className="pl-14 pr-6 py-5 rounded-[1.5rem] bg-white border-2 border-slate-100 shadow-sm focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-500 outline-none transition-all w-full font-semibold text-base"
+                value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}}
+              />
+            </div>
+            <button onClick={fetchData} className="w-16 h-16 bg-white border-2 border-slate-100 text-slate-600 rounded-[1.5rem] hover:bg-slate-50 transition-all shadow-sm flex items-center justify-center active:scale-95">
+              <FontAwesomeIcon icon={faSyncAlt} className={`text-xl ${isLoading ? 'animate-spin' : ''}`} />
+            </button>
+          </motion.div>
+        </header>
+
+        {/* --- STATS GRID --- */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[
+            { label: 'Total Logs Found', val: movements.length, icon: faHistory, color: 'indigo' },
+            { label: 'Inbound Movements', val: movements.filter(m => m.direction === 'In').length, icon: faArrowRightToBracket, color: 'emerald' },
+            { label: 'Outbound Movements', val: movements.filter(m => m.direction === 'Out').length, icon: faArrowRightFromBracket, color: 'rose' }
+          ].map((stat, i) => (
+            <motion.div 
+              key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+              whileHover={{ y: -8 }}
+              className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/40 flex items-center gap-6"
+            >
+              <div className={`w-16 h-16 bg-${stat.color}-50 text-${stat.color}-600 rounded-[1.5rem] flex items-center justify-center text-2xl shadow-inner`}>
+                <FontAwesomeIcon icon={stat.icon} />
+              </div>
+              <div>
+                <p className="text-slate-400 text-xs font-black uppercase tracking-widest mb-1">{stat.label}</p>
+                <h3 className="text-3xl font-black text-slate-800">{stat.val}</h3>
+              </div>
+            </motion.div>
+          ))}
         </div>
 
-        {/* Table Main Section */}
-        <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
-          <div className="p-6 border-b border-slate-50 flex flex-col lg:flex-row justify-between items-center gap-6">
-            <h1 className="text-xl font-semibold text-slate-800 flex items-center gap-3">
-              <span className="w-1.5 h-6 bg-indigo-600 rounded-full"></span> Inventory Log
-            </h1>
-            <div className="flex gap-4 w-full lg:w-auto">
-              <div className="relative flex-grow">
-                <FontAwesomeIcon icon={faFilter} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                <input 
-                  type="text" placeholder="Search product, client..." 
-                  className="w-full sm:w-72 pl-11 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all font-medium text-sm"
-                  value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}}
-                />
-              </div>
-              <button onClick={fetchData} className="w-12 h-12 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-md flex items-center justify-center">
-                <FontAwesomeIcon icon={faSyncAlt} className={isLoading ? 'animate-spin' : ''} />
-              </button>
-            </div>
-          </div>
-
+        {/* --- TABLE AREA --- */}
+        <motion.div 
+          initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-[3rem] shadow-2xl shadow-slate-200/50 border border-slate-50 overflow-hidden"
+        >
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-separate border-spacing-0">
               <thead>
-                <tr className="bg-slate-50/50 text-slate-500 text-xs font-medium uppercase tracking-wide border-b border-slate-100">
-                  <th className="px-8 py-4">Sr.</th>
-                  <th className="px-6 py-4">Timestamp</th>
-                  <th className="px-6 py-4">Product</th>
-                  <th className="px-6 py-4">Destination</th>
-                  <th className="px-6 py-4 text-center">Flow</th>
-                  <th className="px-6 py-4">Quantity</th>
-                  <th className="px-6 py-4">MRP / Box</th>
-                  <th className="px-8 py-4 text-right">Actions</th>
+                <tr className="bg-slate-50/50 text-slate-500 text-xs font-black uppercase tracking-[0.2em]">
+                  <th className="px-10 py-7 border-b border-slate-100">Sr. No</th>
+                  <th className="px-6 py-7 border-b border-slate-100">Date & Time</th>
+                  <th className="px-6 py-7 border-b border-slate-100">Product Specification</th>
+                  <th className="px-6 py-7 border-b border-slate-100">Destination</th>
+                  <th className="px-6 py-7 border-b border-slate-100 text-center">Flow</th>
+                  <th className="px-6 py-7 border-b border-slate-100">Volume</th>
+                  <th className="px-10 py-7 border-b border-slate-100 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {currentItems.map((item, idx) => (
-                  <tr key={item._id} onClick={() => handleRowClick(item)} className="hover:bg-indigo-50/30 transition-colors group cursor-pointer">
-                    <td className="px-8 py-5 text-sm text-slate-400 font-medium">{String(((currentPage - 1) * itemsPerPage) + idx + 1).padStart(2, '0')}</td>
-                    <td className="px-6 py-5">{formatDate(item.createdAt)}</td>
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden border border-slate-200">
-                          {item.productImages?.[0]?.url ? (
-                            <img src={item.productImages[0].url} className="w-full h-full object-cover" alt="p" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-300 text-xs">
-                              <FontAwesomeIcon icon={faBoxOpen} />
-                            </div>
-                          )}
+                <AnimatePresence mode='popLayout'>
+                  {currentItems.map((item, idx) => (
+                    <motion.tr 
+                      layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      key={item._id} onClick={() => handleRowClick(item)} 
+                      className="hover:bg-indigo-50/40 transition-all cursor-pointer group"
+                    >
+                      <td className="px-10 py-6 text-sm text-slate-400 font-bold">#{String(((currentPage - 1) * itemsPerPage) + idx + 1).padStart(2, '0')}</td>
+                      <td className="px-6 py-6">
+                        <div className="flex flex-col">
+                          <span className="text-slate-800 font-black text-base">{new Date(item.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                          <span className="text-xs text-slate-400 uppercase font-bold tracking-wider">{new Date(item.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
-                        <span className="font-semibold text-slate-800 text-sm tracking-tight leading-none">{item.productName}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                       <span className="text-xs font-semibold text-slate-700 uppercase">{item.toCompany || item.toClient || 'Self-Store'}</span>
-                       <div className="text-[10px] text-slate-400 font-medium flex items-center gap-1 uppercase mt-1">
-                         <FontAwesomeIcon icon={item.toCompany ? faBuilding : faUser} className="text-[8px]" /> {item.toCompany ? 'Company' : 'Individual'}
-                       </div>
-                    </td>
-                    <td className="px-6 py-5 text-center">
-                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-wide ${item.direction === 'Out' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
-                        {item.direction}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5 font-semibold text-slate-800 text-sm">{item.qtyByClient} <span className="text-[10px] text-slate-400 font-normal">Pcs</span></td>
-                    <td className="px-6 py-5 font-medium text-slate-600 text-sm">₹{item.mrpPerBox?.toLocaleString()}</td>
-                    <td className="px-8 py-5 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button onClick={(e) => handleEditClick(e, item)} className="w-9 h-9 flex items-center justify-center rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all">
-                          <FontAwesomeIcon icon={faPenToSquare} className="text-xs" />
-                        </button>
-                        <button 
-                          onClick={(e) => handleDelete(e, item._id)}
-                          className="w-9 h-9 flex items-center justify-center rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition-all"
-                        >
-                          <FontAwesomeIcon icon={faTrash} className="text-xs" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-6 py-6">
+                        <div className="flex items-center gap-5">
+                          <div className="w-14 h-14 rounded-2xl bg-slate-100 overflow-hidden border-2 border-white shadow-md group-hover:scale-110 transition-transform">
+                            {item.productImages?.[0]?.url ? (
+                              <img src={item.productImages[0].url} className="w-full h-full object-cover" alt="" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50 text-xl"><FontAwesomeIcon icon={faBoxOpen} /></div>
+                            )}
+                          </div>
+                          <span className="font-black text-slate-800 text-base tracking-tight">{item.productName}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-6">
+                         <div className="flex flex-col">
+                           <span className="text-sm font-black text-slate-700 uppercase leading-tight">{item.toCompany || item.toClient || 'Self Store'}</span>
+                           <span className="text-[11px] text-indigo-500 font-black uppercase mt-1.5 tracking-wider">
+                             <FontAwesomeIcon icon={item.toCompany ? faBuilding : faUser} className="mr-1.5" />
+                             {item.toCompany ? 'Commercial' : 'Individual'}
+                           </span>
+                         </div>
+                      </td>
+                      <td className="px-6 py-6 text-center">
+                        <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest ${item.direction === 'Out' ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                          <div className={`w-1.5 h-1.5 rounded-full ${item.direction === 'Out' ? 'bg-rose-600' : 'bg-emerald-600'}`}></div>
+                          {item.direction}
+                        </span>
+                      </td>
+                      <td className="px-6 py-6">
+                        <div className="text-base font-black text-slate-900">{item.qtyByClient} <span className="text-xs text-slate-400 font-bold uppercase">Units</span></div>
+                        <div className="text-xs text-slate-400 font-bold mt-0.5">₹{item.mrpPerBox?.toLocaleString()} / unit</div>
+                      </td>
+                      <td className="px-10 py-6 text-right">
+                        <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-0 translate-x-4">
+                          <button onClick={(e) => handleEditClick(e, item)} className="w-11 h-11 flex items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
+                            <FontAwesomeIcon icon={faPenToSquare} className="text-sm" />
+                          </button>
+                          <button onClick={(e) => handleDelete(e, item._id)} className="w-11 h-11 flex items-center justify-center rounded-xl bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm">
+                            <FontAwesomeIcon icon={faTrash} className="text-sm" />
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
               </tbody>
             </table>
           </div>
 
-          {/* Pagination */}
-          <div className="p-6 border-t flex flex-col sm:flex-row justify-between items-center gap-6">
-            <p className="text-xs font-medium text-slate-400 uppercase">Showing {currentItems.length} of {filteredData.length} entries</p>
-            <div className="flex gap-1.5">
+          {/* --- LARGE PAGINATION --- */}
+          <div className="p-10 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-8 bg-slate-50/20">
+            <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Showing {currentItems.length} of {filteredData.length} entries</p>
+            <div className="flex gap-3">
               {Array.from({ length: totalPages }, (_, i) => (
                 <button 
-                  key={i} 
-                  onClick={() => setCurrentPage(i + 1)} 
-                  className={`w-9 h-9 rounded-lg font-semibold text-xs transition-all ${currentPage === i + 1 ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 text-slate-400 border border-slate-200 hover:bg-slate-100'}`}
+                  key={i} onClick={() => setCurrentPage(i + 1)} 
+                  className={`w-12 h-12 rounded-2xl font-black text-sm transition-all shadow-sm ${currentPage === i + 1 ? 'bg-indigo-600 text-white shadow-indigo-200 scale-110' : 'bg-white text-slate-400 border-2 border-slate-100 hover:border-indigo-400 hover:text-indigo-600'}`}
                 >
                   {i + 1}
                 </button>
               ))}
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* --- DETAILS MODAL --- */}
-      <Modal isOpen={isDetailsOpen} onClose={() => setIsDetailsOpen(false)} title="Transaction Summary">
+      <Modal isOpen={isDetailsOpen} onClose={() => setIsDetailsOpen(false)} title="Log Details" maxWidth="max-w-xl">
         {selectedItem && (
-          <div className="space-y-6">
-            <div className="flex items-center gap-6 p-6 bg-slate-50 rounded-3xl border border-slate-100">
-              <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-sm border border-white">
+          <div className="space-y-10">
+            <div className="relative group overflow-hidden rounded-[2.5rem] aspect-[16/10] bg-slate-100 border-4 border-white shadow-2xl">
                 {selectedItem.productImages?.[0]?.url ? (
-                  <img src={selectedItem.productImages[0].url} className="w-full h-full object-cover" alt="p" />
+                  <img src={selectedItem.productImages[0].url} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="" />
                 ) : (
-                  <div className="w-full h-full bg-slate-200 flex items-center justify-center text-slate-400">
-                    <FontAwesomeIcon icon={faBoxOpen} size="lg" />
-                  </div>
+                  <div className="w-full h-full flex items-center justify-center text-slate-300"><FontAwesomeIcon icon={faBoxOpen} size="4x" /></div>
                 )}
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold text-slate-800 tracking-tight">{selectedItem.productName}</h3>
-                <p className="text-xs font-medium text-indigo-500 uppercase tracking-wide mt-1">Inventory Record</p>
-              </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent flex items-end p-10">
+                   <div>
+                     <span className="px-3 py-1 bg-indigo-500 text-[10px] font-black text-white uppercase rounded-lg mb-3 inline-block tracking-[0.2em]">Product Item</span>
+                     <h3 className="text-3xl font-black text-white leading-tight">{selectedItem.productName}</h3>
+                   </div>
+                </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-               <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-                 <p className="text-[10px] font-medium text-slate-400 uppercase mb-1">Quantity Moved</p>
-                 <p className="text-lg font-semibold text-slate-800">{selectedItem.qtyByClient} Pcs</p>
-               </div>
-               <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-                 <p className="text-[10px] font-medium text-slate-400 uppercase mb-1">MRP / Box</p>
-                 <p className="text-lg font-semibold text-slate-800">₹{selectedItem.mrpPerBox?.toLocaleString()}</p>
-               </div>
-               <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-                 <p className="text-[10px] font-medium text-slate-400 uppercase mb-1">Flow Type</p>
-                 <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-semibold uppercase ${selectedItem.direction === 'Out' ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                   {selectedItem.direction}
-                 </span>
-               </div>
-               <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-                 <p className="text-[10px] font-medium text-slate-400 uppercase mb-1">Filled By</p>
-                 <p className="text-sm font-semibold text-slate-800 uppercase">{selectedItem.filledBy}</p>
-               </div>
+            <div className="grid grid-cols-2 gap-5">
+               {[
+                 { label: 'Volume Moved', val: `${selectedItem.qtyByClient} Pcs`, color: 'slate' },
+                 { label: 'Price Value', val: `₹${selectedItem.mrpPerBox?.toLocaleString()}`, color: 'slate' },
+                 { label: 'Flow Direction', val: selectedItem.direction, color: selectedItem.direction === 'In' ? 'emerald' : 'rose' },
+                 { label: 'Responsible', val: selectedItem.filledBy, color: 'indigo' }
+               ].map((box, i) => (
+                 <div key={i} className="p-6 bg-slate-50 border-2 border-slate-100 rounded-[2rem]">
+                   <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">{box.label}</p>
+                   <p className={`text-xl font-black text-${box.color}-600 uppercase`}>{box.val}</p>
+                 </div>
+               ))}
             </div>
 
-            <div className="p-6 bg-slate-900 rounded-3xl text-white space-y-4">
-               <div className="flex justify-between items-center opacity-80">
-                 <span className="text-xs font-medium uppercase">Client Name</span>
-                 <span className="text-sm font-semibold">{selectedItem.toClient || '---'}</span>
+            <div className="p-10 bg-slate-900 rounded-[2.5rem] text-white space-y-6 relative overflow-hidden">
+               <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl"></div>
+               <div className="flex justify-between items-center relative z-10">
+                 <span className="text-xs font-black uppercase text-slate-500 tracking-widest">Entity / Client</span>
+                 <span className="text-lg font-black">{selectedItem.toClient || selectedItem.toCompany || '---'}</span>
                </div>
-               <div className="flex justify-between items-center opacity-80">
-                 <span className="text-xs font-medium uppercase">Company Name</span>
-                 <span className="text-sm font-semibold">{selectedItem.toCompany || '---'}</span>
-               </div>
-               <div className="pt-4 border-t border-white/10 flex justify-between items-center">
-                  <span className="text-xs font-medium uppercase opacity-60">Timestamp</span>
-                  <span className="text-xs font-medium">{new Date(selectedItem.createdAt).toLocaleString()}</span>
+               <div className="flex justify-between items-center border-t border-white/10 pt-6 relative z-10">
+                 <span className="text-xs font-black uppercase text-slate-500 tracking-widest">System Timestamp</span>
+                 <span className="text-sm font-black text-slate-300">{new Date(selectedItem.createdAt).toLocaleString()}</span>
                </div>
             </div>
           </div>
@@ -374,89 +377,72 @@ function ViewProducts() {
       </Modal>
 
       {/* --- EDIT MODAL --- */}
-      <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} title="Modify Movement">
-        <form onSubmit={handleUpdate} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-500 ml-1">Product Name</label>
+      <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} title="Edit Logistics Log">
+        <form onSubmit={handleUpdate} className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-3">
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-2">Product Name</label>
               <div className="relative">
-                <FontAwesomeIcon icon={faBoxOpen} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                <input type="text" className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:border-indigo-500 transition-all" value={editFormData.productName} onChange={(e)=>setEditFormData({...editFormData, productName: e.target.value})} required />
+                <FontAwesomeIcon icon={faBoxOpen} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 text-lg" />
+                <input type="text" className="w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl font-black text-base outline-none focus:border-indigo-500 focus:bg-white transition-all" value={editFormData.productName} onChange={(e)=>setEditFormData({...editFormData, productName: e.target.value})} required />
               </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-500 ml-1">Handler Name</label>
+            <div className="space-y-3">
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-2">Handler Name</label>
               <div className="relative">
-                <FontAwesomeIcon icon={faUser} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                <input type="text" className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:border-indigo-500 transition-all" value={editFormData.filledBy} onChange={(e)=>setEditFormData({...editFormData, filledBy: e.target.value})} required />
+                <FontAwesomeIcon icon={faUser} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 text-lg" />
+                <input type="text" className="w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl font-black text-base outline-none focus:border-indigo-500 focus:bg-white transition-all" value={editFormData.filledBy} onChange={(e)=>setEditFormData({...editFormData, filledBy: e.target.value})} required />
               </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-500 ml-1">Client (Target)</label>
-              <input type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:border-indigo-500 transition-all" value={editFormData.toClient || ''} onChange={(e)=>setEditFormData({...editFormData, toClient: e.target.value})} />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-500 ml-1">Company (Target)</label>
-              <input type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:border-indigo-500 transition-all" value={editFormData.toCompany || ''} onChange={(e)=>setEditFormData({...editFormData, toCompany: e.target.value})} />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-500 ml-1">Moved Qty</label>
+            <div className="space-y-3">
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-2">Movement Quantity</label>
               <div className="relative">
-                <FontAwesomeIcon icon={faHashtag} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                <input type="number" className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:border-indigo-500 transition-all" value={editFormData.qtyByClient} onChange={(e)=>setEditFormData({...editFormData, qtyByClient: e.target.value})} required />
+                <FontAwesomeIcon icon={faHashtag} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 text-lg" />
+                <input type="number" className="w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl font-black text-base outline-none focus:border-indigo-500 focus:bg-white transition-all" value={editFormData.qtyByClient} onChange={(e)=>setEditFormData({...editFormData, qtyByClient: e.target.value})} required />
               </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-500 ml-1">Price Per Box</label>
+            <div className="space-y-3">
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-2">Price Value (₹)</label>
               <div className="relative">
-                <FontAwesomeIcon icon={faIndianRupeeSign} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                <input type="number" className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:border-indigo-500 transition-all" value={editFormData.mrpPerBox} onChange={(e)=>setEditFormData({...editFormData, mrpPerBox: e.target.value})} required />
+                <FontAwesomeIcon icon={faIndianRupeeSign} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 text-lg" />
+                <input type="number" className="w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl font-black text-base outline-none focus:border-indigo-500 focus:bg-white transition-all" value={editFormData.mrpPerBox} onChange={(e)=>setEditFormData({...editFormData, mrpPerBox: e.target.value})} required />
               </div>
             </div>
           </div>
 
-          {/* IMAGE UPDATE AREA */}
-          <div className="space-y-3">
-            <label className="text-xs font-medium text-slate-500 ml-1 flex items-center gap-2">
-              <FontAwesomeIcon icon={faImage} /> Gallery & Uploads
+          <div className="space-y-5 pt-4">
+            <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-2 flex items-center gap-3">
+              <FontAwesomeIcon icon={faImage} className="text-indigo-500 text-lg" /> Product Media Gallery
             </label>
-            <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 p-4 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-5 p-8 bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
                {editFormData.productImages.map((img, i) => (
-                 <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 shadow-sm group">
-                   <img src={img.url} className="w-full h-full object-cover" alt="existing" />
-                   <div className="absolute inset-0 bg-indigo-600/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <span className="text-[8px] text-white font-semibold uppercase">Stored</span>
+                 <div key={i} className="relative aspect-square rounded-[1.5rem] overflow-hidden shadow-lg group border-2 border-white">
+                   <img src={img.url} className="w-full h-full object-cover" alt="" />
+                   <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                      <span className="text-xs text-white font-black uppercase tracking-tighter">Existing</span>
                    </div>
                  </div>
                ))}
-               
                {newImages.map((file, i) => (
-                 <div key={i} className="relative aspect-square rounded-xl overflow-hidden border-2 border-indigo-400 shadow-sm">
-                   <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="new" />
-                   <button 
-                    type="button"
-                    onClick={() => setNewImages(prev => prev.filter((_, idx) => idx !== i))}
-                    className="absolute top-1 right-1 w-5 h-5 bg-rose-500 text-white rounded-full text-[10px] flex items-center justify-center shadow-lg"
-                   >
-                     <FontAwesomeIcon icon={faTimes} />
-                   </button>
+                 <div key={i} className="relative aspect-square rounded-[1.5rem] overflow-hidden border-4 border-indigo-500 shadow-2xl scale-95">
+                   <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="" />
+                   <button type="button" onClick={() => setNewImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 w-7 h-7 bg-rose-500 text-white rounded-full text-xs shadow-xl flex items-center justify-center"><FontAwesomeIcon icon={faTimes} /></button>
                  </div>
                ))}
-
-               <label className="aspect-square rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-400 transition-all cursor-pointer bg-white">
-                  <FontAwesomeIcon icon={faPlusCircle} className="text-lg mb-1" />
-                  <span className="text-[9px] font-semibold uppercase">Upload</span>
+               <label className="aspect-square rounded-[1.5rem] border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-400 hover:bg-white transition-all cursor-pointer">
+                  <FontAwesomeIcon icon={faPlusCircle} className="text-2xl mb-2" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Add Files</span>
                   <input type="file" multiple className="hidden" accept="image/*" onChange={(e) => setNewImages([...newImages, ...Array.from(e.target.files)])} />
                </label>
             </div>
           </div>
 
-          <div className="flex gap-4 pt-2">
-            <button disabled={isUpdating} type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-3 active:scale-[0.98] disabled:opacity-50 text-sm">
-              <FontAwesomeIcon icon={isUpdating ? faSyncAlt : faSave} className={isUpdating ? 'animate-spin' : ''} />
-              {isUpdating ? 'Processing...' : 'Confirm Changes'}
+          <div className="flex gap-5 pt-8">
+            <button disabled={isUpdating} type="submit" className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-black py-5 rounded-[1.5rem] shadow-2xl shadow-indigo-200 transition-all flex items-center justify-center gap-4 active:scale-95 disabled:opacity-50 text-base tracking-widest uppercase">
+              {isUpdating ? <FontAwesomeIcon icon={faSyncAlt} className="animate-spin text-xl" /> : <FontAwesomeIcon icon={faSave} className="text-xl" />}
+              {isUpdating ? 'Saving Data...' : 'Confirm Update'}
             </button>
-            <button type="button" onClick={()=>setIsEditOpen(false)} className="px-8 bg-slate-100 text-slate-500 font-semibold rounded-2xl hover:bg-slate-200 transition-all text-sm">Discard</button>
+            <button type="button" onClick={()=>setIsEditOpen(false)} className="flex-1 bg-slate-100 text-slate-500 font-black rounded-[1.5rem] hover:bg-slate-200 transition-all text-base uppercase tracking-widest">Discard</button>
           </div>
         </form>
       </Modal>
