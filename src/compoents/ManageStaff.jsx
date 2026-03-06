@@ -825,10 +825,10 @@ function ManageStaff() {
                                 {expandedRowId === staff._id ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
                               </button>
                               
-                              {/* <div className="relative inline-flex items-center cursor-pointer group">
+                              <div className="relative inline-flex items-center cursor-pointer group">
                                 <input type="checkbox" checked={staff.status ?? false} onChange={() => handleOpenConfirmModal(staff)} className="sr-only peer" />
                                 <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-                              </div> */}
+                              </div>
 
                               <button onClick={() => handleOpenUpdateModal(staff)} className="text-blue-500 hover:text-blue-700 transition-colors bg-blue-50 p-2 rounded-lg hover:bg-blue-100">
                                 <FaPen size={14} />
