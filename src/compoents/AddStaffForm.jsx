@@ -1,104 +1,117 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { BsPersonPlusFill } from 'react-icons/bs';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  UserPlus, Camera, IdCard, Calendar, Phone, User, 
+  X, CheckCircle2, AlertCircle, Loader2, Briefcase 
+} from 'lucide-react';
 
-// Alert Component for displaying feedback
-const Alert = ({ message, type, show, onClose }) => {
-  if (!show) return null;
+// --- Premium Animated Toast ---
+const Toast = ({ message, type, show, onClose }) => (
+  <AnimatePresence>
+    {show && (
+      <motion.div
+        initial={{ opacity: 0, y: -50, x: '-50%' }}
+        animate={{ opacity: 1, y: 0, x: '-50%' }}
+        exit={{ opacity: 0, y: -20, x: '-50%' }}
+        className={`fixed top-6 left-1/2 z-[2000] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl min-w-[320px] border ${
+          type === 'success' 
+            ? 'bg-white/90 border-emerald-500 text-emerald-900 backdrop-blur-md' 
+            : 'bg-white/90 border-rose-500 text-rose-900 backdrop-blur-md'
+        }`}
+      >
+        {type === 'success' ? <CheckCircle2 className="text-emerald-500" /> : <AlertCircle className="text-rose-500" />}
+        <span className="font-medium">{message}</span>
+        <button onClick={onClose} className="ml-auto hover:bg-black/5 p-1 rounded-full transition-colors">
+          <X size={18} />
+        </button>
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
 
-  const alertStyles = {
-    success: 'bg-green-100 border-green-400 text-green-800',
-    danger: 'bg-red-100 border-red-400 text-red-800',
-  };
-
-  return (
-    <div
-      className={`fixed top-5 left-1/2 -translate-x-1/2 min-w-[300px] p-4 border rounded-md shadow-lg flex justify-between items-center transition-opacity duration-500 ease-in-out ${alertStyles[type] || alertStyles.danger} ${show ? 'opacity-100' : 'opacity-0'}`}
-      style={{ zIndex: 1050 }}
-      role="alert"
-    >
-      <span>{message}</span>
-      <button type="button" className="ml-4 font-bold" onClick={onClose} aria-label="Close">
-        ×
-      </button>
-    </div>
-  );
-};
-
-// Password Popup Component
+// --- Premium Password Popup ---
 const PasswordPopup = ({ credentials, show, onClose }) => {
   if (!show || !credentials) return null;
-
   const credentialsList = Array.isArray(credentials) ? credentials : [credentials];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-[1100] p-4">
-      <div className="bg-white p-6 rounded-xl shadow-2xl text-center max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <h3 className="text-2xl font-bold mb-2 text-gray-800">Registration Successful!</h3>
-        <p className="mb-4 text-gray-600">Staff member added. Here are the login details:</p>
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center z-[1100] p-4">
+      <motion.div 
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="bg-white p-8 rounded-[2rem] shadow-2xl max-w-md w-full border border-purple-100"
+      >
+        <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <CheckCircle2 size={32} className="text-purple-600" />
+        </div>
+        <h3 className="text-2xl font-bold text-center text-slate-800 mb-2">Registration Successful!</h3>
+        <p className="text-center text-slate-500 mb-6 italic text-sm">Please save these login credentials securely.</p>
 
-        <div className="space-y-3 mb-6">
+        <div className="space-y-4 mb-8">
           {credentialsList.map((cred, index) => (
-            <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-left">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-xs font-bold uppercase text-[#7853C2]">
-                  {cred.role || 'Staff'}
+            <motion.div 
+              key={index}
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: index * 0.1 }}
+              className="bg-gradient-to-br from-purple-50 to-indigo-50 p-5 rounded-2xl border border-purple-100 relative overflow-hidden group"
+            >
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-[10px] font-black uppercase tracking-widest text-purple-600 bg-purple-100 px-2 py-1 rounded-md">
+                  {cred.role || 'STAFF'}
                 </span>
-                <span className="text-xs text-gray-500">EID: {cred.eid}</span>
+                <span className="text-xs font-semibold text-slate-400">EID: {cred.eid}</span>
               </div>
-              <p className="text-xl font-mono font-bold tracking-wider text-gray-900 select-all">
+              <p className="text-3xl font-mono font-bold text-slate-800 tracking-tighter select-all cursor-pointer hover:text-purple-700 transition-colors">
                 {cred.password}
               </p>
-            </div>
+              <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                <IdCard size={40} />
+              </div>
+            </motion.div>
           ))}
         </div>
 
         <button
           onClick={onClose}
-          className="w-full bg-[#7853C2] text-white font-bold py-3 px-6 rounded-md hover:bg-[#6643b1] transition-colors duration-300"
+          className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2"
         >
           Done & Close
         </button>
-      </div>
+      </motion.div>
     </div>
   );
 };
 
 function AddStaffForm() {
-  // Form State
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
-  const [role, setRole] = useState(''); 
+  const [role, setRole] = useState('');
   const [dob, setDob] = useState('');
   const [adharNumber, setAdharNumber] = useState('');
-
-  // File States
+  const [otherRole, setOtherRole] = useState('');
+  
   const [adharImage, setAdharImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
-  const adharImageRef = useRef(null);
-
   const [profilePic, setProfilePic] = useState(null);
   const [profilePreview, setProfilePreview] = useState(null);
-  const profilePicRef = useRef(null);
 
-  // Role & Popup State
-  const [otherRole, setOtherRole] = useState('');
   const [showPasswordPopup, setShowPasswordPopup] = useState(false);
   const [generatedCredentials, setGeneratedCredentials] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [alertInfo, setAlertInfo] = useState({ show: false, message: '', type: 'success' });
 
+  const adharImageRef = useRef(null);
+  const profilePicRef = useRef(null);
+
   const roleOptions = ['Operator', 'Helper', 'Mixture', 'Other'];
 
   useEffect(() => {
     if (alertInfo.show) {
-      const timer = setTimeout(() => {
-        setAlertInfo({ ...alertInfo, show: false });
-      }, 4000);
+      const timer = setTimeout(() => setAlertInfo({ ...alertInfo, show: false }), 4000);
       return () => clearTimeout(timer);
     }
   }, [alertInfo]);
-
-  // --- Handlers ---
 
   const handleProfilePicChange = (e) => {
     const file = e.target.files[0];
@@ -106,12 +119,6 @@ function AddStaffForm() {
       setProfilePic(file);
       setProfilePreview(URL.createObjectURL(file));
     }
-  };
-
-  const removeProfilePic = () => {
-    setProfilePic(null);
-    setProfilePreview(null);
-    if (profilePicRef.current) profilePicRef.current.value = "";
   };
 
   const handleImageChange = (e) => {
@@ -122,45 +129,19 @@ function AddStaffForm() {
     }
   };
 
-  const handleRemovePreview = () => {
-    setAdharImage(null);
-    setPreviewUrl(null);
-    if (adharImageRef.current) adharImageRef.current.value = '';
-  };
-
-  const handleMobileChange = (e) => {
-    // Only allow digits and max 10 characters
-    const value = e.target.value.replace(/\D/g, '');
-    if (value.length <= 10) {
-      setMobile(value);
-    }
-  };
-
   const resetForm = () => {
-    setName('');
-    setMobile('');
-    setRole('');
-    setDob('');
-    setAdharNumber('');
-    setOtherRole('');
-    handleRemovePreview();
-    removeProfilePic();
+    setName(''); setMobile(''); setRole(''); setDob(''); setAdharNumber(''); setOtherRole('');
+    setAdharImage(null); setPreviewUrl(null); setProfilePic(null); setProfilePreview(null);
+    if (adharImageRef.current) adharImageRef.current.value = '';
+    if (profilePicRef.current) profilePicRef.current.value = '';
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Validation
     if (!name || !mobile || !role || !adharImage || (role === 'Other' && !otherRole)) {
       setAlertInfo({ show: true, message: 'Please fill in all required fields.', type: 'danger' });
       return;
     }
-
-    if (mobile.length !== 10) {
-      setAlertInfo({ show: true, message: 'Please enter a valid 10-digit mobile number.', type: 'danger' });
-      return;
-    }
-
     setIsLoading(true);
 
     const formData = new FormData();
@@ -170,210 +151,236 @@ function AddStaffForm() {
     if (adharNumber) formData.append('adharNumber', adharNumber);
     if (adharImage) formData.append('adharImage', adharImage);
     if (profilePic) formData.append('profilePic', profilePic);
-
-    // Final role value
-    const finalRoleValue = (role === 'Other' ? otherRole : role);
-    formData.append('role', finalRoleValue);
+    formData.append('role', role);
+    if (role === 'Other') formData.append('otherRoles', otherRole);
 
     try {
       const res = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/staff/add-employees', {
         method: 'POST',
         body: formData,
       });
-
       const result = await res.json();
-
       if (res.ok) {
-        const finalCreds = result.credentials
-          ? (Array.isArray(result.credentials) ? result.credentials : [result.credentials])
-          : [];
-        setGeneratedCredentials(finalCreds);
+        setGeneratedCredentials(result.credentials ? (Array.isArray(result.credentials) ? result.credentials : [result.credentials]) : []);
         setShowPasswordPopup(true);
       } else {
-        setAlertInfo({ show: true, message: result.message || 'Submission failed.', type: 'danger' });
+        setAlertInfo({ show: true, message: result.message || 'Something went wrong!', type: 'danger' });
       }
     } catch (error) {
-      setAlertInfo({ show: true, message: 'Network error. Try again.', type: 'danger' });
+      setAlertInfo({ show: true, message: 'Network error. Please try again later.', type: 'danger' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleClosePasswordPopup = () => {
-    const addedRole = role === 'Other' ? otherRole : role;
-    const addedName = name; // Store name before reset
-    
-    setShowPasswordPopup(false);
-    setGeneratedCredentials([]);
-    setAlertInfo({ show: true, message: '✅ Staff added successfully!', type: 'success' });
-
-    const activity = {
-      text: `Staff "${addedName}" added as ${addedRole}`,
-      time: "Just now"
-    };
-
-    window.dispatchEvent(new CustomEvent("recent-activity", { detail: activity }));
-    const existingActivities = JSON.parse(sessionStorage.getItem("activities") || "[]");
-    sessionStorage.setItem("activities", JSON.stringify([activity, ...existingActivities]));
-
-    resetForm();
-  };
-
   return (
-    <div className="bg-gray-100 min-h-screen p-5 font-sans">
-      <Alert
-        message={alertInfo.message}
-        type={alertInfo.type}
-        show={alertInfo.show}
-        onClose={() => setAlertInfo({ ...alertInfo, show: false })}
-      />
+    <div className="min-h-screen bg-[#F8FAFC] py-12 px-4 sm:px-6 lg:px-8 font-sans selection:bg-purple-100 selection:text-purple-900">
+      <Toast {...alertInfo} onClose={() => setAlertInfo({ ...alertInfo, show: false })} />
+      <PasswordPopup show={showPasswordPopup} credentials={generatedCredentials} onClose={() => {
+        setShowPasswordPopup(false);
+        setAlertInfo({ show: true, message: 'Staff member added successfully!', type: 'success' });
+        resetForm();
+      }} />
 
-      <PasswordPopup
-        show={showPasswordPopup}
-        credentials={generatedCredentials}
-        onClose={handleClosePasswordPopup}
-      />
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="max-w-3xl mx-auto"
+      >
+        <div className="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-slate-100">
+          
+          {/* Header Section */}
+          <div className="bg-slate-900 px-8 py-10 text-white relative overflow-hidden">
+            <div className="relative z-10">
+              <h1 className="text-3xl font-bold flex items-center gap-3">
+                <UserPlus className="text-purple-400" size={32} />
+                Add New Staff Member
+              </h1>
+              <p className="text-slate-400 mt-2">Fill in the details below to register a new employee.</p>
+            </div>
+            {/* Design Elements */}
+            <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-purple-600/20 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-[-20%] left-[-10%] w-48 h-48 bg-indigo-600/20 rounded-full blur-3xl"></div>
+          </div>
 
-      <div className="bg-[#f5f5f5] p-8 rounded-xl shadow-lg max-w-2xl mx-auto mt-5">
-        <h4 className="text-2xl font-semibold text-center mb-6 flex items-center justify-center gap-2">
-          <BsPersonPlusFill /> Add Staff Member
-        </h4>
-
-        <form onSubmit={handleSubmit} noValidate>
-
-          {/* Profile Image */}
-          <div className="mb-6 text-center sm:text-left">
-            <label className="block text-gray-700 font-medium mb-2 text-left">Profile Image</label>
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <input
-                type="file"
-                ref={profilePicRef}
-                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[#e9e4f5] file:text-[#7853C2] hover:file:bg-[#d8cff0]"
-                accept="image/*"
-                onChange={handleProfilePicChange}
-              />
-              {profilePreview && (
-                <div className="relative flex-shrink-0">
-                  <img src={profilePreview} alt="DP" className="w-16 h-16 object-cover rounded-full border-2 border-[#7853C2]" />
-                  <button type="button" onClick={removeProfilePic} className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
+          <form onSubmit={handleSubmit} className="p-8 sm:p-12 space-y-8 bg-white">
+            
+            {/* Profile Picture Section */}
+            <div className="flex flex-col items-center sm:flex-row gap-8 pb-8 border-b border-slate-100">
+              <div className="relative group">
+                <div className="w-32 h-32 rounded-3xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden transition-all group-hover:border-purple-400">
+                  {profilePreview ? (
+                    <img src={profilePreview} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <Camera className="text-slate-300" size={40} />
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2">Full Name*</label>
-            <input
-              type="text"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7853C2] outline-none"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter full name"
-              required
-            />
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2">Mobile No*</label>
-            <input
-              type="tel"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7853C2] outline-none"
-              value={mobile}
-              onChange={handleMobileChange}
-              placeholder="10 digit mobile number"
-              maxLength="10"
-              required
-            />
-          </div>
-
-          {/* Single Role Selection */}
-          <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2">Role*</label>
-            <select
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7853C2] bg-white outline-none"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              required
-            >
-              <option value="" disabled>Select a role...</option>
-              {roleOptions.map(opt => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-          </div>
-
-          {role === 'Other' && (
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">Specify Other Role*</label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7853C2] outline-none"
-                placeholder="Enter specific role"
-                value={otherRole}
-                onChange={(e) => setOtherRole(e.target.value)}
-                required
-              />
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-gray-700 font-medium mb-2">Date of Birth</label>
-              <input
-                type="date"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7853C2] outline-none"
-                value={dob}
-                onChange={(e) => setDob(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-gray-700 font-medium mb-2">Aadhar Number</label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7853C2] outline-none"
-                value={adharNumber}
-                onChange={(e) => setAdharNumber(e.target.value)}
-                placeholder="12 digit Aadhar number"
-              />
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <label className="block text-gray-700 font-medium mb-2">Aadhar Image*</label>
-            <input
-              type="file"
-              ref={adharImageRef}
-              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[#e9e4f5] file:text-[#7853C2] hover:file:bg-[#d8cff0]"
-              accept="image/*"
-              onChange={handleImageChange}
-            />
-            {previewUrl && (
-              <div className="relative inline-block mt-4">
-                <img src={previewUrl} alt="Aadhar" className="w-[120px] h-auto rounded-md border shadow-sm" />
-                <button type="button" onClick={handleRemovePreview} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center border-2 border-white text-xs">×</button>
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  ref={profilePicRef} 
+                  onChange={handleProfilePicChange} 
+                  accept="image/*"
+                />
+                <button 
+                  type="button"
+                  onClick={() => profilePicRef.current.click()}
+                  className="absolute -bottom-3 -right-3 bg-purple-600 text-white p-2.5 rounded-xl shadow-lg hover:bg-purple-700 transition-transform active:scale-90"
+                >
+                  <Camera size={18} />
+                </button>
               </div>
-            )}
-          </div>
+              <div className="text-center sm:text-left">
+                <h3 className="font-bold text-slate-800 text-lg">Profile Photo</h3>
+                <p className="text-sm text-slate-500 max-w-[200px] mt-1">Upload a clear face photo of the staff member (Optional).</p>
+                {profilePreview && (
+                  <button onClick={() => {setProfilePic(null); setProfilePreview(null)}} className="text-xs text-rose-500 font-semibold mt-2 hover:underline">Remove Photo</button>
+                )}
+              </div>
+            </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-[#7853C2] text-white font-bold py-3 px-4 rounded-md hover:bg-[#6643b1] transition-all duration-300 flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed shadow-md"
-          >
-            {isLoading ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Adding Staff...
-              </>
-            ) : (
-              'Save Staff Member'
-            )}
-          </button>
-        </form>
-      </div>
+            {/* Input Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Full Name */}
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 ml-1">Full Name *</label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <input
+                    type="text"
+                    placeholder="Enter full name"
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all placeholder:text-slate-400 font-medium"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Mobile Number */}
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 ml-1">Mobile Number *</label>
+                <div className="relative">
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <input
+                    type="tel"
+                    placeholder="10 digit mobile number"
+                    maxLength="10"
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all placeholder:text-slate-400 font-medium"
+                    value={mobile}
+                    onChange={(e) => setMobile(e.target.value.replace(/\D/g, ''))}
+                  />
+                </div>
+              </div>
+
+              {/* Role Selection */}
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 ml-1">Designation / Role *</label>
+                <div className="relative">
+                  <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <select
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all appearance-none font-medium text-slate-700"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                  >
+                    <option value="" disabled>Select Role</option>
+                    {roleOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* Other Role Specification */}
+              {role === 'Other' && (
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 ml-1">Specify Role *</label>
+                  <input
+                    type="text"
+                    placeholder="E.g. Supervisor"
+                    className="w-full px-4 py-4 bg-purple-50/50 border border-purple-100 rounded-2xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all font-medium"
+                    value={otherRole}
+                    onChange={(e) => setOtherRole(e.target.value)}
+                  />
+                </motion.div>
+              )}
+
+              {/* Date of Birth */}
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 ml-1">Date of Birth</label>
+                <div className="relative">
+                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <input
+                    type="date"
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all font-medium text-slate-700"
+                    value={dob}
+                    onChange={(e) => setDob(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Aadhar Number */}
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 ml-1">Aadhar Number</label>
+                <div className="relative">
+                  <IdCard className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <input
+                    type="text"
+                    placeholder="12 digit Aadhar number"
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all placeholder:text-slate-400 font-medium"
+                    value={adharNumber}
+                    onChange={(e) => setAdharNumber(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Document Upload Section */}
+            <div className="space-y-3">
+              <label className="text-sm font-bold text-slate-700 ml-1">Aadhar Card Document *</label>
+              <div 
+                className={`relative group border-2 border-dashed rounded-[2rem] p-8 text-center transition-all cursor-pointer ${
+                  previewUrl ? 'border-purple-500 bg-purple-50/30' : 'border-slate-200 bg-slate-50 hover:bg-slate-100/50'
+                }`}
+                onClick={() => adharImageRef.current.click()}
+              >
+                <input type="file" ref={adharImageRef} className="hidden" accept="image/*" onChange={handleImageChange} />
+                
+                {previewUrl ? (
+                  <div className="relative inline-block group">
+                    <img src={previewUrl} alt="Aadhar Preview" className="max-h-[180px] rounded-xl shadow-lg border-2 border-white" />
+                    <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white font-bold text-sm">Change Document</div>
+                  </div>
+                ) : (
+                  <div className="py-4">
+                    <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                      <IdCard className="text-purple-600" size={28} />
+                    </div>
+                    <p className="font-bold text-slate-700">Upload Aadhar Image</p>
+                    <p className="text-xs text-slate-400 mt-1">PNG, JPG, or JPEG format (Max 5MB)</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Form Action Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-[1.5rem] font-black text-lg shadow-[0_10px_30px_rgba(124,58,237,0.3)] hover:shadow-[0_15px_40px_rgba(124,58,237,0.4)] transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="animate-spin" size={24} />
+                  Processing...
+                </>
+              ) : (
+                'Register Staff Member'
+              )}
+            </button>
+          </form>
+        </div>
+        
+        {/* Footer */}
+        <p className="text-center text-slate-400 text-sm mt-8 font-medium">Secure Staff Management Portal • Version 2.0.4</p>
+      </motion.div>
     </div>
   );
 }
