@@ -21,6 +21,7 @@
     "axios": "^1.13.4",
     "browser-image-compression": "^2.0.2",
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.35.0",
     "html2canvas": "^1.4.1",
     "html5-qrcode": "^2.3.8",
     "install": "^0.13.0",
