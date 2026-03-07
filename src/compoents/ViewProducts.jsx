@@ -1,30 +1,33 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faQrcode, 
-  faPenToSquare, 
-  faTrash, 
-  faTimes, 
-  faChevronLeft, 
-  faChevronRight, 
-  faFilter, 
+import {
+  faQrcode,
+  faPenToSquare,
+  faTrash,
+  faTimes,
+  faChevronLeft,
+  faChevronRight,
+  faFilter,
   faExclamationTriangle,
   faDownload,
-  faPrint 
+  faPrint,
+  faPlus,
+  faSearch,
+  faBoxOpen
 } from '@fortawesome/free-solid-svg-icons';
 import imageCompression from 'browser-image-compression';
 
-// --- Shared Constants ---
-const inputClass = "w-full p-2 mt-1 border border-gray-300 rounded-xl focus:border-[#6A3E9D] focus:ring-1 focus:ring-[#6A3E9D] focus:outline-none transition text-sm";
-const fileInputClass = "block w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-violet-50 file:text-[#6A3E9D] hover:file:bg-violet-100";
+// --- Shared Premium Constants ---
+const inputClass = "w-full p-3 mt-1 bg-gray-50 border border-gray-200 rounded-xl focus:border-[#6A3E9D] focus:bg-white focus:ring-4 focus:ring-[#6A3E9D]/15 focus:outline-none transition-all duration-300 text-sm font-medium text-gray-700 shadow-sm";
+const fileInputClass = "block w-full text-xs text-gray-500 file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-50 file:text-[#6A3E9D] hover:file:bg-[#6A3E9D] hover:file:text-white file:transition-all file:duration-300 file:cursor-pointer cursor-pointer";
 
 // --- Reusable Components ---
 const Modal = ({ isOpen, onClose, children, maxWidth = "max-w-lg" }) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 flex justify-center items-start pt-28 z-50 p-4 overflow-y-auto bg-black/20 backdrop-blur-sm">
-      <div className={`bg-white rounded-2xl shadow-2xl relative ${maxWidth} w-full border flex flex-col max-h-[calc(100vh-8rem)] animate-in fade-in zoom-in duration-200`}>
+    <div className="fixed inset-0 flex justify-center items-center z-[100] p-4 bg-black/40 backdrop-blur-md transition-opacity duration-300">
+      <div className={`bg-white rounded-3xl shadow-2xl relative ${maxWidth} w-full border border-white/20 flex flex-col max-h-[90vh] transform scale-100 opacity-100 transition-all duration-300 overflow-hidden`}>
         {children}
       </div>
     </div>
@@ -34,18 +37,19 @@ const Modal = ({ isOpen, onClose, children, maxWidth = "max-w-lg" }) => {
 const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, productName }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-md">
-      <div className="p-6 text-center">
-        <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <FontAwesomeIcon icon={faExclamationTriangle} size="xl" />
+      <div className="p-8 text-center">
+        <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-5 shadow-inner border border-red-100">
+          <FontAwesomeIcon icon={faExclamationTriangle} size="2xl" className="animate-pulse" />
         </div>
-        <h3 className="text-xl font-bold text-gray-800">Confirm Delete</h3>
-        <p className="text-gray-500 mt-2 text-sm">
-          Are you sure you want to delete <span className="font-bold text-gray-800">"{productName || 'this product'}"</span>? 
-          This action cannot be undone.
+        <h3 className="text-2xl font-black text-gray-800 tracking-tight">Confirm Deletion</h3>
+        <p className="text-gray-500 mt-3 text-sm leading-relaxed">
+          Are you completely sure you want to delete <br/>
+          <span className="font-bold text-[#6A3E9D] bg-purple-50 px-2 py-1 rounded-md inline-block mt-1">"{productName || 'this product'}"</span>? <br/>
+          This action is permanent and cannot be undone.
         </p>
-        <div className="flex gap-3 mt-6 justify-center">
-          <button onClick={onClose} className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition">Cancel</button>
-          <button onClick={onConfirm} className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium shadow-lg shadow-red-200 transition">Delete Now</button>
+        <div className="flex gap-4 mt-8 justify-center">
+          <button onClick={onClose} className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition-all duration-300 w-full">Cancel</button>
+          <button onClick={onConfirm} className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-500/30 hover:shadow-red-500/50 hover:-translate-y-1 transition-all duration-300 w-full">Delete Now</button>
         </div>
       </div>
     </Modal>
@@ -63,9 +67,11 @@ const ImageThumb = memo(({ file, onRemove, isUrl = false }) => {
   }, [file, isUrl]);
 
   return (
-    <div className="relative w-24 h-24 border border-gray-300 rounded-lg overflow-hidden shadow-sm group">
-      {preview && <img src={preview} alt="thumb" className="w-full h-full object-cover" />}
-      <button type="button" onClick={onRemove} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">×</button>
+    <div className="relative w-24 h-24 border-2 border-gray-100 rounded-xl overflow-hidden shadow-sm group hover:shadow-md hover:border-purple-200 transition-all duration-300">
+      {preview && <img src={preview} alt="thumb" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />}
+      <button type="button" onClick={onRemove} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all duration-300 shadow-md">
+        <FontAwesomeIcon icon={faTimes} />
+      </button>
     </div>
   );
 });
@@ -114,96 +120,107 @@ function AddProductModal({ isOpen, onClose, onProductAdded, categories = [], dim
     const submissionData = new FormData();
     Object.entries(formData).forEach(([k, v]) => submissionData.append(k, v));
     submissionData.append("description", desc);
-    
+
     const dimIds = selectedDimensions.map(d => d._id || d).filter(Boolean);
     submissionData.append("dimensions", dimIds.join(","));
 
     colorImages.forEach(f => submissionData.append("colorImages", f, f.name));
     productImages.forEach(f => submissionData.append("images", f, f.name));
 
+    const toastId = toast.loading("Saving Product...");
     try {
       const res = await fetch("https://threebapi-1067354145699.asia-south1.run.app/api/products/add", { method: "POST", body: submissionData });
-      if (res.ok) { onProductAdded(); onClose(); toast.success("Added!"); }
-    } catch (err) { toast.error("Error adding product"); }
+      if (res.ok) { onProductAdded(); onClose(); toast.success("Product Added Successfully!", { id: toastId }); }
+      else { toast.error("Failed to add product", { id: toastId }); }
+    } catch (err) { toast.error("Error adding product", { id: toastId }); }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-3xl">
-      <div className="p-6 border-b flex justify-between items-center">
-        <h3 className="text-xl font-bold">Add New Product</h3>
-        <button onClick={onClose} className="text-gray-400 text-2xl">×</button>
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl">
+      <div className="p-6 bg-gradient-to-r from-gray-50 to-white border-b flex justify-between items-center">
+        <h3 className="text-2xl font-black text-gray-800 tracking-tight flex items-center gap-3">
+          <div className="bg-[#6A3E9D] text-white p-2 rounded-lg text-sm shadow-md"><FontAwesomeIcon icon={faPlus} /></div>
+          Add New Product
+        </h3>
+        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-red-500 hover:text-white rounded-full transition-all duration-300 text-gray-500">
+          <FontAwesomeIcon icon={faTimes} />
+        </button>
       </div>
-      <div className="overflow-y-auto px-6 py-6 space-y-4">
-        <form id="add-form" onSubmit={handleFormSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="overflow-y-auto px-8 py-6 space-y-6 custom-scrollbar">
+        <form id="add-form" onSubmit={handleFormSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div>
-              <label className="text-xs font-bold text-gray-500">CATEGORY</label>
-              <select name="categoryId" value={formData.categoryId} onChange={e => setFormData({...formData, categoryId: e.target.value})} className={inputClass}>
+              <label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase">Category</label>
+              <select name="categoryId" value={formData.categoryId} onChange={e => setFormData({ ...formData, categoryId: e.target.value })} className={inputClass}>
                 <option value="">Select Category</option>
                 {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs font-bold text-gray-500">MODEL NUMBER *</label>
-              <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className={inputClass} required />
+              <label className="text-[11px] tracking-wider font-bold text-[#6A3E9D] uppercase">Model Number *</label>
+              <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className={inputClass} placeholder="e.g. F-101" required />
             </div>
             <div>
-              <label className="text-xs font-bold text-gray-500">POSITION</label>
-              <input type="number" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})} className={inputClass} />
+              <label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase">Position</label>
+              <input type="number" value={formData.position} onChange={e => setFormData({ ...formData, position: e.target.value })} className={inputClass} />
             </div>
           </div>
-          <div>
-            <label className="text-xs font-bold text-gray-500">DESCRIPTION BOXES</label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
+
+          <div className="bg-purple-50/50 p-5 rounded-2xl border border-purple-100">
+            <label className="text-[11px] tracking-wider font-bold text-[#6A3E9D] uppercase mb-2 block">Description Boxes</label>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               {descriptionParts.slice(0, visibleBoxes).map((p, i) => (
-                <input key={i} value={p} onChange={e => { const np = [...descriptionParts]; np[i] = e.target.value.slice(0, 20); setDescriptionParts(np); }} className="w-full h-9 text-center border rounded-lg text-sm" />
+                <input key={i} value={p} onChange={e => { const np = [...descriptionParts]; np[i] = e.target.value.slice(0, 20); setDescriptionParts(np); }} className="w-full h-10 text-center border-gray-200 rounded-xl text-sm focus:border-[#6A3E9D] focus:ring-2 focus:ring-[#6A3E9D]/20 transition-all outline-none" placeholder={`Box ${i+1}`} />
               ))}
             </div>
-            {visibleBoxes < 20 && <button type="button" onClick={() => setVisibleBoxes(v => Math.min(v + 4, 20))} className="text-blue-600 text-xs mt-2">+ Add More</button>}
+            {visibleBoxes < 20 && <button type="button" onClick={() => setVisibleBoxes(v => Math.min(v + 5, 20))} className="mt-4 px-4 py-2 bg-white border border-purple-200 text-[#6A3E9D] rounded-lg text-xs font-bold hover:bg-[#6A3E9D] hover:text-white transition-all duration-300 shadow-sm">+ Add More Boxes</button>}
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div><label className="text-xs font-bold">STOCK QTY</label><input type="number" value={formData.quantity} onChange={e => setFormData({...formData, quantity: e.target.value})} className={inputClass} /></div>
-            <div><label className="text-xs font-bold">PRICE/PC</label><input type="number" value={formData.pricePerPiece} onChange={e => setFormData({...formData, pricePerPiece: e.target.value})} className={inputClass} /></div>
-            <div><label className="text-xs font-bold">PCS/BOX</label><input type="number" value={formData.totalPiecesPerBox} onChange={e => setFormData({...formData, totalPiecesPerBox: e.target.value})} className={inputClass} /></div>
-            <div><label className="text-xs font-bold">DISCOUNT %</label><input type="number" value={formData.discountPercentage} onChange={e => setFormData({...formData, discountPercentage: e.target.value})} className={inputClass} /></div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+            <div><label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase">Stock Qty</label><input type="number" value={formData.quantity} onChange={e => setFormData({ ...formData, quantity: e.target.value })} className={inputClass} /></div>
+            <div><label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase">Price / PC</label><input type="number" value={formData.pricePerPiece} onChange={e => setFormData({ ...formData, pricePerPiece: e.target.value })} className={inputClass} /></div>
+            <div><label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase">PCS / Box</label><input type="number" value={formData.totalPiecesPerBox} onChange={e => setFormData({ ...formData, totalPiecesPerBox: e.target.value })} className={inputClass} /></div>
+            <div><label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase">Discount %</label><input type="number" value={formData.discountPercentage} onChange={e => setFormData({ ...formData, discountPercentage: e.target.value })} className={inputClass} /></div>
           </div>
+
           <div>
-            <label className="text-xs font-bold">DIMENSIONS *</label>
-            <div className="flex gap-2">
-              <select onChange={e => { const d = dimensions.find(x => x._id === e.target.value); if(d && !selectedDimensions.find(s => (s._id || s) === d._id)) { setSelectedDimensions([...selectedDimensions, d]); } e.target.value=""; }} className={inputClass}>
-                <option value="">Select Dimension</option>
+            <label className="text-[11px] tracking-wider font-bold text-[#6A3E9D] uppercase block mb-1">Dimensions *</label>
+            <div className="flex gap-3">
+              <select onChange={e => { const d = dimensions.find(x => x._id === e.target.value); if (d && !selectedDimensions.find(s => (s._id || s) === d._id)) { setSelectedDimensions([...selectedDimensions, d]); } e.target.value = ""; }} className={inputClass}>
+                <option value="">Select Existing</option>
                 {dimensions.map(d => <option key={d._id} value={d._id}>{d.value}</option>)}
               </select>
-              <input type="text" value={newDimensionInput} onChange={e => setNewDimensionInput(e.target.value)} className={inputClass} placeholder="New..." />
-              <button type="button" onClick={handleAddNewDimension} className="bg-gray-600 text-white px-4 rounded-lg">Add</button>
+              <input type="text" value={newDimensionInput} onChange={e => setNewDimensionInput(e.target.value)} className={inputClass} placeholder="Or type new..." />
+              <button type="button" onClick={handleAddNewDimension} className="mt-1 bg-gray-800 hover:bg-black text-white px-6 rounded-xl font-bold transition-all shadow-md">Add</button>
             </div>
-            <div className="mt-2 flex flex-wrap gap-1">
+            <div className="mt-3 flex flex-wrap gap-2">
               {selectedDimensions.map(d => (
-                <span key={d._id || d} className="bg-purple-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1">
+                <span key={d._id || d} className="bg-gradient-to-r from-[#6A3E9D] to-[#8B5CF6] text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-sm animate-in fade-in zoom-in duration-300">
                   {d.value || d}
-                  <button type="button" onClick={() => setSelectedDimensions(selectedDimensions.filter(item => (item._id || item) !== (d._id || d)))} className="ml-1 hover:text-red-200">×</button>
+                  <button type="button" onClick={() => setSelectedDimensions(selectedDimensions.filter(item => (item._id || item) !== (d._id || d)))} className="hover:text-red-300 bg-black/20 rounded-full w-4 h-4 flex items-center justify-center transition-colors">×</button>
                 </span>
               ))}
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="text-xs font-bold">COLOR IMAGES</label>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
+            <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+              <label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase">Color Images</label>
               <input type="file" multiple onChange={e => handleFileChange(e, setColorImages)} className={fileInputClass} />
-              <div className="flex flex-wrap gap-2 mt-2">{colorImages.map((f, i) => <ImageThumb key={i} file={f} onRemove={() => setColorImages(p => p.filter((_, idx) => idx !== i))} />)}</div>
+              <div className="flex flex-wrap gap-3 mt-3">{colorImages.map((f, i) => <ImageThumb key={i} file={f} onRemove={() => setColorImages(p => p.filter((_, idx) => idx !== i))} />)}</div>
             </div>
-            <div>
-              <label className="text-xs font-bold">PRODUCT IMAGES *</label>
+            <div className="bg-purple-50/30 p-4 rounded-2xl border border-purple-100">
+              <label className="text-[11px] tracking-wider font-bold text-[#6A3E9D] uppercase">Product Images *</label>
               <input type="file" multiple onChange={e => handleFileChange(e, setProductImages)} className={fileInputClass} />
-              <div className="flex flex-wrap gap-2 mt-2">{productImages.map((f, i) => <ImageThumb key={i} file={f} onRemove={() => setProductImages(p => p.filter((_, idx) => idx !== i))} />)}</div>
+              <div className="flex flex-wrap gap-3 mt-3">{productImages.map((f, i) => <ImageThumb key={i} file={f} onRemove={() => setProductImages(p => p.filter((_, idx) => idx !== i))} />)}</div>
             </div>
           </div>
         </form>
       </div>
-      <div className="p-4 bg-gray-50 border-t flex justify-end gap-3">
-        <button onClick={onClose} className="px-6 py-2 bg-gray-200 rounded-lg">Cancel</button>
-        <button type="submit" form="add-form" disabled={isCompressing} className={`px-6 py-2 bg-[#6A3E9D] text-white rounded-lg flex items-center gap-2 ${isCompressing ? 'opacity-70' : ''}`}>
-          {isCompressing ? "Saving..." : "Save Product"}
+      <div className="p-5 bg-gray-50 border-t flex justify-end gap-3 rounded-b-3xl">
+        <button onClick={onClose} className="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-100 transition-all duration-300">Cancel</button>
+        <button type="submit" form="add-form" disabled={isCompressing} className={`px-8 py-2.5 bg-gradient-to-r from-[#6A3E9D] to-[#8B5CF6] text-white rounded-xl font-bold shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 ${isCompressing ? 'opacity-70 cursor-not-allowed transform-none' : ''}`}>
+          {isCompressing ? "Processing..." : "Save Product"}
         </button>
       </div>
     </Modal>
@@ -224,15 +241,15 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
 
   useEffect(() => {
     if (product && isOpen) {
-      setFormData({ 
-        categoryId: product.categoryId?._id || product.categoryId || "", 
-        name: product.name || "", 
-        about: product.about || "", 
-        pricePerPiece: product.pricePerPiece || "", 
-        totalPiecesPerBox: product.totalPiecesPerBox || "", 
-        discountPercentage: product.discountPercentage || 0, 
-        quantity: product.quantity || "", 
-        position: product.position || 0 
+      setFormData({
+        categoryId: product.categoryId?._id || product.categoryId || "",
+        name: product.name || "",
+        about: product.about || "",
+        pricePerPiece: product.pricePerPiece || "",
+        totalPiecesPerBox: product.totalPiecesPerBox || "",
+        discountPercentage: product.discountPercentage || 0,
+        quantity: product.quantity || "",
+        position: product.position || 0
       });
 
       setExistingImages(product.images || []);
@@ -241,14 +258,14 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
 
       setNewImages([]);
       setNewColorImages([]);
-      
+
       setSelectedDimensions(product.dimensions || []);
-      
+
       const parts = Array(20).fill("");
       const descStr = product.description || "";
-      descStr.split(" ").forEach((word, i) => { if(i < 20) parts[i] = word; });
+      descStr.split(" ").forEach((word, i) => { if (i < 20) parts[i] = word; });
       setDescriptionParts(parts);
-      
+
       const filledCount = parts.filter(p => p !== "").length;
       setVisibleBoxes(Math.max(4, Math.ceil(filledCount / 4) * 4));
     }
@@ -264,14 +281,14 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
       setter(prev => [...prev, ...compressed]);
       toast.success("Compressed!");
     } catch (err) {
-        toast.error("Compression failed");
+      toast.error("Compression failed");
     } finally { setIsCompressing(false); }
   };
 
   const deleteExistingImage = async (img, isColor = false) => {
     if (!window.confirm("Remove this image?")) return;
     const cleanId = img.id?.includes("/") ? img.id.split("/").pop() : img.id;
-    if(!cleanId) return toast.error("Invalid Image ID");
+    if (!cleanId) return toast.error("Invalid Image ID");
 
     try {
       const res = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/products/products/${product._id}/images/${cleanId}`, { method: "DELETE" });
@@ -287,15 +304,15 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
     e.preventDefault();
     const data = new FormData();
     data.append("description", descriptionParts.filter(p => p?.trim()).join(" ").trim());
-    
+
     const dimIds = selectedDimensions
-        .map(d => (typeof d === 'object' && d !== null ? d._id : d))
-        .filter(id => id && id !== "undefined");
-    
+      .map(d => (typeof d === 'object' && d !== null ? d._id : d))
+      .filter(id => id && id !== "undefined");
+
     data.append("dimensions", dimIds.join(","));
 
     Object.entries(formData).forEach(([k, v]) => {
-        if(v !== null && v !== undefined) data.append(k, v);
+      if (v !== null && v !== undefined) data.append(k, v);
     });
 
     newImages.forEach(f => data.append("images", f, f.name));
@@ -304,10 +321,10 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
     const tid = toast.loading("Updating product...");
     try {
       const res = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/products/update/${product._id}`, { method: "PUT", body: data });
-      if (res.ok) { 
+      if (res.ok) {
         toast.success("Updated Successfully!", { id: tid });
-        onUpdateSuccess(); 
-        onClose(); 
+        onUpdateSuccess();
+        onClose();
       } else {
         toast.error("Update failed", { id: tid });
       }
@@ -317,90 +334,98 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
   if (!isOpen) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-3xl">
-      <div className="p-6 border-b flex justify-between items-center font-bold text-xl">
-        <span>Update Product</span>
-        <button onClick={onClose} className="text-gray-400">×</button>
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl">
+      <div className="p-6 bg-gradient-to-r from-blue-50 to-white border-b flex justify-between items-center">
+         <h3 className="text-2xl font-black text-gray-800 tracking-tight flex items-center gap-3">
+          <div className="bg-blue-600 text-white p-2 rounded-lg text-sm shadow-md"><FontAwesomeIcon icon={faPenToSquare} /></div>
+          Update Product
+        </h3>
+        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-red-500 hover:text-white rounded-full transition-all duration-300 text-gray-500">
+          <FontAwesomeIcon icon={faTimes} />
+        </button>
       </div>
-      <div className="p-6 overflow-y-auto space-y-4">
-        <form id="update-form" onSubmit={handleFormSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="p-8 overflow-y-auto space-y-6 max-h-[75vh] custom-scrollbar">
+        <form id="update-form" onSubmit={handleFormSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div>
-              <label className="text-xs font-bold text-gray-500 uppercase">Category</label>
-              <select value={formData.categoryId} onChange={e => setFormData({...formData, categoryId: e.target.value})} className={inputClass}>
+              <label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase">Category</label>
+              <select value={formData.categoryId} onChange={e => setFormData({ ...formData, categoryId: e.target.value })} className={inputClass}>
                 <option value="">Select Category</option>
                 {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
               </select>
             </div>
-            <div><label className="text-xs font-bold text-gray-500 uppercase">Model</label><input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className={inputClass} /></div>
-            <div><label className="text-xs font-bold text-gray-500 uppercase">Position</label><input type="number" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})} className={inputClass} /></div>
+            <div><label className="text-[11px] tracking-wider font-bold text-[#6A3E9D] uppercase">Model Number</label><input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className={inputClass} /></div>
+            <div><label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase">Position</label><input type="number" value={formData.position} onChange={e => setFormData({ ...formData, position: e.target.value })} className={inputClass} /></div>
           </div>
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase">Description</label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
+          
+          <div className="bg-blue-50/30 p-5 rounded-2xl border border-blue-100">
+            <label className="text-[11px] tracking-wider font-bold text-blue-600 uppercase mb-2 block">Description Boxes</label>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               {descriptionParts.slice(0, visibleBoxes).map((p, i) => (
-                <input key={i} value={p} onChange={e => { const u = [...descriptionParts]; u[i] = e.target.value; setDescriptionParts(u); }} className="w-full h-9 border rounded-lg text-center text-sm" />
+                <input key={i} value={p} onChange={e => { const u = [...descriptionParts]; u[i] = e.target.value; setDescriptionParts(u); }} className="w-full h-10 border-gray-200 rounded-xl text-center text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all" />
               ))}
             </div>
-            {visibleBoxes < 20 && <button type="button" onClick={() => setVisibleBoxes(v => v + 4)} className="text-blue-600 text-xs mt-2">+ Add More</button>}
+            {visibleBoxes < 20 && <button type="button" onClick={() => setVisibleBoxes(v => v + 5)} className="mt-4 px-4 py-2 bg-white border border-blue-200 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition-all duration-300 shadow-sm">+ Add More</button>}
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div><label className="text-xs font-bold text-gray-500 uppercase">Stock</label><input type="number" value={formData.quantity} onChange={e => setFormData({...formData, quantity: e.target.value})} className={inputClass} /></div>
-            <div><label className="text-xs font-bold text-gray-500 uppercase">Price</label><input type="number" value={formData.pricePerPiece} onChange={e => setFormData({...formData, pricePerPiece: e.target.value})} className={inputClass} /></div>
-            <div><label className="text-xs font-bold text-gray-500 uppercase">Pcs/Box</label><input type="number" value={formData.totalPiecesPerBox} onChange={e => setFormData({...formData, totalPiecesPerBox: e.target.value})} className={inputClass} /></div>
-            <div><label className="text-xs font-bold text-gray-500 uppercase">Discount%</label><input type="number" value={formData.discountPercentage} onChange={e => setFormData({...formData, discountPercentage: e.target.value})} className={inputClass} /></div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+            <div><label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase">Stock Qty</label><input type="number" value={formData.quantity} onChange={e => setFormData({ ...formData, quantity: e.target.value })} className={inputClass} /></div>
+            <div><label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase">Price</label><input type="number" value={formData.pricePerPiece} onChange={e => setFormData({ ...formData, pricePerPiece: e.target.value })} className={inputClass} /></div>
+            <div><label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase">Pcs/Box</label><input type="number" value={formData.totalPiecesPerBox} onChange={e => setFormData({ ...formData, totalPiecesPerBox: e.target.value })} className={inputClass} /></div>
+            <div><label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase">Discount %</label><input type="number" value={formData.discountPercentage} onChange={e => setFormData({ ...formData, discountPercentage: e.target.value })} className={inputClass} /></div>
           </div>
+
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase">Dimensions</label>
-            <div className="flex gap-2 mt-1">
-              <select onChange={e => { 
-                const d = dimensions.find(x => x._id === e.target.value); 
-                if(d && !selectedDimensions.find(s => (s._id || s) === d._id)) {
-                   setSelectedDimensions([...selectedDimensions, d]);
+            <label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase block mb-1">Dimensions</label>
+            <div className="flex gap-3">
+              <select onChange={e => {
+                const d = dimensions.find(x => x._id === e.target.value);
+                if (d && !selectedDimensions.find(s => (s._id || s) === d._id)) {
+                  setSelectedDimensions([...selectedDimensions, d]);
                 }
-                e.target.value=""; 
+                e.target.value = "";
               }} className={inputClass}>
                 <option value="">Select Existing</option>
                 {dimensions.map(d => <option key={d._id} value={d._id}>{d.value}</option>)}
               </select>
               <input type="text" value={newDimensionInput} onChange={e => setNewDimensionInput(e.target.value)} className={inputClass} placeholder="New..." />
-              <button type="button" onClick={handleAddNewDimension} className="bg-gray-600 text-white px-4 rounded-lg">Add</button>
+              <button type="button" onClick={handleAddNewDimension} className="mt-1 bg-gray-800 hover:bg-black text-white px-6 rounded-xl font-bold transition-all shadow-md">Add</button>
             </div>
-            <div className="mt-2 flex flex-wrap gap-1">
+            <div className="mt-3 flex flex-wrap gap-2">
               {selectedDimensions.map((d, i) => (
-                <span key={d?._id || i} className="bg-purple-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1">
-                    {d?.value || d}
-                    <button type="button" onClick={() => setSelectedDimensions(selectedDimensions.filter((_, idx) => idx !== i))} className="hover:text-red-200 ml-1">×</button>
+                <span key={d?._id || i} className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-sm animate-in fade-in zoom-in">
+                  {d?.value || d}
+                  <button type="button" onClick={() => setSelectedDimensions(selectedDimensions.filter((_, idx) => idx !== i))} className="hover:text-red-200 bg-black/20 rounded-full w-4 h-4 flex items-center justify-center transition-colors">×</button>
                 </span>
               ))}
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div>
-                <label className="text-xs font-bold text-gray-500 uppercase">Product Images (Existing)</label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                    {existingImages.map((img, i) => <ImageThumb key={i} file={img.url} isUrl={true} onRemove={() => deleteExistingImage(img)} />)}
-                    {newImages.map((f, i) => <ImageThumb key={i} file={f} onRemove={() => setNewImages(prev => prev.filter((_, idx) => idx !== i))} />)}
-                </div>
-                <input type="file" multiple onChange={e => handleFileChange(e, setNewImages)} className="mt-3 block text-xs" />
+          <div className="space-y-6 border-t pt-6">
+            <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100">
+              <label className="text-[11px] tracking-wider font-bold text-[#6A3E9D] uppercase block mb-3">Product Images (Existing & New)</label>
+              <div className="flex flex-wrap gap-3">
+                {existingImages.map((img, i) => <ImageThumb key={`ex-${i}`} file={img.url} isUrl={true} onRemove={() => deleteExistingImage(img)} />)}
+                {newImages.map((f, i) => <ImageThumb key={`new-${i}`} file={f} onRemove={() => setNewImages(prev => prev.filter((_, idx) => idx !== i))} />)}
+              </div>
+              <input type="file" multiple onChange={e => handleFileChange(e, setNewImages)} className={`${fileInputClass} mt-4`} />
             </div>
 
-            <div>
-                <label className="text-xs font-bold text-gray-500 uppercase">Color Images (Existing)</label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                    {existingColorImages.map((img, i) => <ImageThumb key={i} file={img.url} isUrl={true} onRemove={() => deleteExistingImage(img, true)} />)}
-                    {newColorImages.map((f, i) => <ImageThumb key={i} file={f} onRemove={() => setNewColorImages(prev => prev.filter((_, idx) => idx !== i))} />)}
-                </div>
-                <input type="file" multiple onChange={e => handleFileChange(e, setNewColorImages)} className="mt-3 block text-xs" />
+            <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100">
+              <label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase block mb-3">Color Images (Existing & New)</label>
+              <div className="flex flex-wrap gap-3">
+                {existingColorImages.map((img, i) => <ImageThumb key={`exc-${i}`} file={img.url} isUrl={true} onRemove={() => deleteExistingImage(img, true)} />)}
+                {newColorImages.map((f, i) => <ImageThumb key={`newc-${i}`} file={f} onRemove={() => setNewColorImages(prev => prev.filter((_, idx) => idx !== i))} />)}
+              </div>
+              <input type="file" multiple onChange={e => handleFileChange(e, setNewColorImages)} className={`${fileInputClass} mt-4`} />
             </div>
           </div>
         </form>
       </div>
-      <div className="p-4 bg-gray-50 border-t flex justify-end gap-2">
-        <button onClick={onClose} className="px-6 py-2 bg-gray-200 rounded-lg">Cancel</button>
-        <button type="submit" form="update-form" disabled={isCompressing} className="px-6 py-2 bg-[#6A3E9D] text-white rounded-lg">
-           {isCompressing ? "Processing..." : "Update Changes"}
+      <div className="p-5 bg-gray-50 border-t flex justify-end gap-3 rounded-b-3xl">
+        <button onClick={onClose} className="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-100 transition-all duration-300">Cancel</button>
+        <button type="submit" form="update-form" disabled={isCompressing} className="px-8 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-1 transition-all duration-300 flex items-center gap-2">
+          {isCompressing ? "Processing..." : "Update Changes"}
         </button>
       </div>
     </Modal>
@@ -415,18 +440,18 @@ function ViewProducts() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
-  
+
   // --- PAGINATION STATE ---
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 10;
   const [totalPages, setTotalPages] = useState(1);
-  const [totalProductCount, setTotalProductCount] = useState(0); 
+  const [totalProductCount, setTotalProductCount] = useState(0);
 
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isSliderOpen, setIsSliderOpen] = useState(false);
   const [sliderImages, setSliderImages] = useState([]);
-  
+
   // --- QR State ---
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [qrProductName, setQrProductName] = useState('');
@@ -447,8 +472,8 @@ function ViewProducts() {
     setIsLoading(true);
     try {
       const [catRes, dimRes] = await Promise.all([
-          fetch(`${PRODUCTS_API.replace('/api/products', '/api/categories')}/all-category`).then(r => r.json().catch(() => ({categories: []}))),
-          fetch(`${DIMENSIONS_API}/get-dimensions`).then(r => r.json().catch(() => []))
+        fetch(`${PRODUCTS_API.replace('/api/products', '/api/categories')}/all-category`).then(r => r.json().catch(() => ({ categories: [] }))),
+        fetch(`${DIMENSIONS_API}/get-dimensions`).then(r => r.json().catch(() => []))
       ]);
 
       setCategoryList(catRes.categories || []);
@@ -461,7 +486,7 @@ function ViewProducts() {
         const data = await prodRes.json();
         setProducts(data.products || []);
         setTotalPages(data.totalPages || 1);
-        setTotalProductCount(data.totalProducts  || 0); 
+        setTotalProductCount(data.totalProducts || 0);
         setCurrentPage(page);
       } else {
         const errorData = await prodRes.json().catch(() => ({}));
@@ -471,20 +496,20 @@ function ViewProducts() {
         setTotalProductCount(0);
       }
 
-    } catch (e) { 
-      toast.error("Fetch failed or API is down"); 
+    } catch (e) {
+      toast.error("Fetch failed or API is down");
       console.error(e);
-    } finally { 
-      setIsLoading(false); 
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
-  useEffect(() => { 
-    fetchData(currentPage); 
+  useEffect(() => {
+    fetchData(currentPage);
   }, [fetchData]);
 
   useEffect(() => {
-    setCurrentPage(1); 
+    setCurrentPage(1);
   }, [searchTerm, filterCategory]);
 
   const handleAddNewDim = async () => {
@@ -494,10 +519,10 @@ function ViewProducts() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ value: newDimInput })
       });
-      if(res.ok) {
-        setNewDimInput(''); 
+      if (res.ok) {
+        setNewDimInput('');
         const dRes = await fetch(`${DIMENSIONS_API}/get-dimensions`);
-        if(dRes.ok) setDimensionList(await dRes.json());
+        if (dRes.ok) setDimensionList(await dRes.json());
         toast.success("Dimension Added");
       }
     } catch (e) { toast.error("Failed to add dimension"); }
@@ -510,7 +535,7 @@ function ViewProducts() {
       const res = await fetch(`${PRODUCTS_API}/delete/${productToDelete._id}`, { method: 'DELETE' });
       if (res.ok) {
         toast.success("Product deleted successfully", { id: tid });
-        fetchData(currentPage); 
+        fetchData(currentPage);
       } else {
         toast.error("Failed to delete", { id: tid });
       }
@@ -522,12 +547,12 @@ function ViewProducts() {
     }
   };
 
-  // --- UPDATED HORIZONTAL PRINT LOGIC (100mm x 50mm) ---
-const handlePrintSticker = () => {
+  // --- HORIZONTAL PRINT LOGIC (100mm x 50mm) ---
+  const handlePrintSticker = () => {
     if (!qrCodeUrl) return toast.error("QR not found");
-    
+
     const printWindow = window.open('', '_blank');
-    
+
     printWindow.document.write(`
       <html>
         <head>
@@ -543,7 +568,7 @@ const handlePrintSticker = () => {
               font-family: 'Arial', sans-serif;
               width: 100mm;
               height: 50mm;
-              overflow: hidden; /* Extra page rokne ke liye */
+              overflow: hidden; 
             }
             .container {
               display: flex;
@@ -579,7 +604,7 @@ const handlePrintSticker = () => {
               margin-bottom: 0mm;
             }
             .model-name {
-              font-size: 32pt; /* Thoda chota kiya taaki space bache */
+              font-size: 32pt; 
               font-weight: 900;
               color: #000;
               margin: 0;
@@ -646,7 +671,7 @@ const handlePrintSticker = () => {
       const link = document.createElement('a');
       link.href = qrCodeUrl;
       link.target = '_blank';
-      link.download = `${qrProductName.replace(/\s+/g, '_')}_QR.png`; 
+      link.download = `${qrProductName.replace(/\s+/g, '_')}_QR.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -665,14 +690,14 @@ const handlePrintSticker = () => {
       .sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
   }, [products, searchTerm, filterCategory]);
 
-  const paginated = filteredProducts; 
+  const paginated = filteredProducts;
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
-        fetchData(page);
+      fetchData(page);
     }
   };
-  
+
   const getPageNumbers = () => {
     const pages = [];
     if (totalPages <= 5) {
@@ -684,176 +709,255 @@ const handlePrintSticker = () => {
       if (currentPage < totalPages - 2) pages.push('...');
       pages.push(totalPages - 1, totalPages);
     }
-    return [...new Set(pages)].filter(p => p !== 0); 
+    return [...new Set(pages)].filter(p => p !== 0);
   };
 
   if (isLoading) return (
     <div className="fixed inset-0 flex flex-col items-center justify-center bg-white z-[60]">
-        <div className="w-12 h-12 border-4 border-[#6A3E9D] border-t-transparent rounded-full animate-spin"></div>
-        <p className="mt-4 font-bold text-[#6A3E9D]">Loading Product Warehouse...</p>
+      <div className="w-16 h-16 border-4 border-gray-100 border-t-[#6A3E9D] rounded-full animate-spin shadow-lg"></div>
+      <p className="mt-5 font-black text-xl text-[#6A3E9D] tracking-widest animate-pulse">LOADING WAREHOUSE...</p>
     </div>
   );
 
   return (
-    <div className="p-4 md:p-8 space-y-6 mt-8">
-      <Toaster position="top-right" />
-      <div className="bg-white shadow-xl rounded-2xl p-6 md:p-8">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Product Warehouse ({totalProductCount})</h2>
-          <button onClick={() => setIsAddOpen(true)} className="bg-[#6A3E9D] text-white py-2 px-6 rounded-lg font-semibold hover:bg-[#5a3486] transition">+ Add Product</button>
-        </div>
-
-        <div className="mb-6 flex flex-col md:flex-row gap-4">
-          <div className="relative flex-grow">
-            <input type="text" placeholder="Search frame, model or details..." className="w-full pl-10 pr-4 py-2 border rounded-xl" value={searchTerm} onChange={e => { setSearchTerm(e.target.value); }} />
-            <FontAwesomeIcon icon={faFilter} className="absolute left-3 top-3 text-gray-400" />
+    <div className="p-4 md:p-8 space-y-8 mt-8 bg-gray-50/50 min-h-screen">
+      <Toaster position="top-right" toastOptions={{ className: 'font-bold rounded-xl shadow-lg' }} />
+      
+      {/* KHATARNAK HEADING BANNER */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-[#4A1D7A] via-[#6A3E9D] to-[#8B5CF6] p-8 md:p-10 rounded-3xl shadow-2xl text-white flex flex-col md:flex-row justify-between items-center gap-6 group">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -mr-20 -mt-20 group-hover:scale-150 transition-transform duration-1000"></div>
+        <div className="absolute bottom-0 left-0 w-40 h-40 bg-purple-400 opacity-20 rounded-full blur-2xl -ml-10 -mb-10 group-hover:scale-150 transition-transform duration-1000"></div>
+        
+        <div className="relative z-10 flex items-center gap-6">
+          <div className="w-16 h-16 bg-white/20 backdrop-blur-lg rounded-2xl flex items-center justify-center shadow-inner border border-white/30">
+            <FontAwesomeIcon icon={faBoxOpen} size="2xl" className="text-white drop-shadow-md" />
           </div>
-          <select className="p-2 border rounded-xl text-sm" value={filterCategory} onChange={(e) => { setFilterCategory(e.target.value); }}>
-            <option value="">All Categories</option>
-            {categoryList.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
-          </select>
+          <div>
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight drop-shadow-lg">
+              Product Vault
+            </h2>
+            <p className="text-purple-100 mt-2 font-medium tracking-wide flex items-center gap-2 text-sm md:text-base">
+              <span className="bg-white/20 px-3 py-1 rounded-full text-white shadow-sm border border-white/10">{totalProductCount} Items</span>
+              Managing your premium inventory
+            </p>
+          </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <button onClick={() => setIsAddOpen(true)} className="relative z-10 bg-white text-[#6A3E9D] py-3.5 px-8 rounded-2xl font-black text-lg hover:bg-gray-50 transition-all duration-300 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgba(255,255,255,0.3)] hover:-translate-y-1 active:scale-95 flex items-center gap-3 group/btn">
+          <div className="bg-purple-100 rounded-full w-8 h-8 flex items-center justify-center group-hover/btn:rotate-90 transition-transform duration-300 text-[#6A3E9D]">
+            <FontAwesomeIcon icon={faPlus} />
+          </div>
+          Add New Product
+        </button>
+      </div>
+
+      <div className="bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-3xl p-6 md:p-8 border border-gray-100">
+        
+        {/* Filters & Search */}
+        <div className="mb-8 flex flex-col md:flex-row gap-5">
+          <div className="relative flex-grow group">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#6A3E9D] transition-colors">
+              <FontAwesomeIcon icon={faSearch} />
+            </div>
+            <input type="text" placeholder="Search by model, frame, or description..." className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:border-[#6A3E9D] focus:bg-white focus:ring-4 focus:ring-[#6A3E9D]/10 focus:outline-none transition-all duration-300 font-medium text-gray-700 placeholder-gray-400" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+          </div>
+          <div className="relative min-w-[200px] group">
+             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#6A3E9D] transition-colors z-10">
+              <FontAwesomeIcon icon={faFilter} />
+            </div>
+            <select className="w-full pl-11 pr-10 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:border-[#6A3E9D] focus:bg-white focus:ring-4 focus:ring-[#6A3E9D]/10 focus:outline-none transition-all duration-300 font-bold text-gray-700 appearance-none cursor-pointer" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
+              <option value="">All Categories</option>
+              {categoryList.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Premium Table */}
+        <div className="overflow-x-auto rounded-2xl border border-gray-100">
           <table className="w-full text-sm text-left border-collapse">
-            <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
+            <thead className="bg-gray-50/80 text-gray-500 text-xs tracking-wider uppercase font-black border-b border-gray-100">
               <tr>
-                <th className="px-4 py-3">Sr.</th>
-                <th className="px-4 py-3">Preview</th>
-                <th className="px-4 py-3">Frame</th>
-                <th className="px-4 py-3 text-center">Pos</th>
-                <th className="px-4 py-3">Dimensions</th>
-                <th className="px-4 py-3">Price</th>
-                <th className="px-4 py-3">Qty</th>
-                <th className="px-4 py-3 text-center">Actions</th>
+                <th className="px-6 py-5 rounded-tl-2xl">#</th>
+                <th className="px-6 py-5">Product Preview</th>
+                <th className="px-6 py-5">Frame Details</th>
+                <th className="px-6 py-5 text-center">Pos</th>
+                <th className="px-6 py-5">Dimensions</th>
+                <th className="px-6 py-5">Price</th>
+                <th className="px-6 py-5">Stock</th>
+                <th className="px-6 py-5 text-center rounded-tr-2xl">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-50">
               {paginated.length > 0 ? paginated.map((product, idx) => (
-                <tr key={product._id} className="border-b hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-4">{((currentPage-1)*productsPerPage) + idx + 1}</td>
-                  <td className="px-4 py-4">
-                    <img src={product.images?.[0]?.url || 'https://via.placeholder.com/50'} onClick={() => { if(product.images?.length) { setSliderImages(product.images.map(i => i.url)); setIsSliderOpen(true); } }} className="w-12 h-12 object-cover rounded shadow-sm cursor-pointer" alt="p" />
+                <tr key={product._id} className="group hover:bg-purple-50/40 transition-colors duration-300 bg-white">
+                  <td className="px-6 py-4 font-bold text-gray-400">{((currentPage - 1) * productsPerPage) + idx + 1}</td>
+                  <td className="px-6 py-4">
+                    {/* BADA IMAGE WITH ANIMATION */}
+                    <div className="relative w-20 h-20 rounded-2xl overflow-hidden shadow-sm border-2 border-transparent group-hover:border-[#6A3E9D]/30 group-hover:shadow-md transition-all duration-300">
+                      <img
+                        src={product.images?.[1]?.url || product.images?.[0]?.url || 'https://via.placeholder.com/100'}
+                        onClick={() => { if (product.images?.length) { setSliderImages(product.images.map(i => i.url)); setIsSliderOpen(true); } }}
+                        className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500 cursor-pointer"
+                        alt="product"
+                      />
+                    </div>
                   </td>
-                  <td className="px-4 py-4 font-bold">{product.name}</td>
-                  <td className="px-4 py-4 text-center text-purple-600 font-bold">{product.position ?? "—"}</td>
-                  <td className="px-4 py-4">
-                    {product.dimensions?.filter(Boolean).map(d => d.value || d).join(', ') || "—"}
+                  <td className="px-6 py-4">
+                    <p className="font-black text-lg text-gray-800 tracking-tight">{product.name}</p>
+                    <p className="text-xs text-gray-400 mt-1 font-medium">{product.categoryId?.name || 'Uncategorized'}</p>
                   </td>
-                  <td className="px-4 py-4 font-semibold">₹{product.pricePerPiece}</td>
-                  <td className="px-4 py-4">{product.quantity}</td>
-                  <td className="px-4 py-4 text-center space-x-3 whitespace-nowrap">
-                    <button title="View QR" onClick={() => { setQrCodeUrl(product.qrCodeUrl); setQrProductName(product.name); setQrPcsPerBox(product.totalPiecesPerBox); setQrOpen(true); }} className="p-2 hover:bg-gray-100 rounded-full transition"><FontAwesomeIcon icon={faQrcode} className="text-gray-400 hover:text-black" /></button>
-                    <button title="Edit" onClick={() => { setSelectedProduct(product); setIsUpdateOpen(true); }} className="p-2 hover:bg-blue-50 rounded-full transition"><FontAwesomeIcon icon={faPenToSquare} className="text-blue-500 hover:text-blue-700" /></button>
-                    <button title="Delete" onClick={() => { setProductToDelete(product); setIsDeleteOpen(true); }} className="p-2 hover:bg-red-50 rounded-full transition"><FontAwesomeIcon icon={faTrash} className="text-red-500" /></button>
+                  <td className="px-6 py-4 text-center">
+                    <span className="bg-purple-100 text-[#6A3E9D] py-1 px-3 rounded-lg font-black text-xs">{product.position ?? "—"}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-wrap gap-1">
+                      {product.dimensions?.filter(Boolean).map((d, i) => (
+                         <span key={i} className="bg-gray-100 text-gray-600 px-2 py-1 rounded-md text-[10px] font-bold tracking-wider">{d.value || d}</span>
+                      )) || "—"}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 font-black text-gray-800 text-base">₹{product.pricePerPiece}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-3 py-1 rounded-lg font-bold text-xs ${product.quantity > 50 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                      {product.quantity} In Stock
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                     <div className="flex items-center justify-center gap-3">
+                        <button title="View QR" onClick={() => { setQrCodeUrl(product.qrCodeUrl); setQrProductName(product.name); setQrPcsPerBox(product.totalPiecesPerBox); setQrOpen(true); }} className="w-10 h-10 flex items-center justify-center bg-gray-50 text-gray-500 hover:bg-[#6A3E9D] hover:text-white rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+                          <FontAwesomeIcon icon={faQrcode} />
+                        </button>
+                        <button title="Edit Product" onClick={() => { setSelectedProduct(product); setIsUpdateOpen(true); }} className="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-500 hover:bg-blue-600 hover:text-white rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+                          <FontAwesomeIcon icon={faPenToSquare} />
+                        </button>
+                        <button title="Delete Product" onClick={() => { setProductToDelete(product); setIsDeleteOpen(true); }} className="w-10 h-10 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+                          <FontAwesomeIcon icon={faTrash} />
+                        </button>
+                     </div>
                   </td>
                 </tr>
               )) : (
-                <tr><td colSpan="8" className="p-10 text-center text-gray-400">No products found matching your criteria.</td></tr>
+                <tr><td colSpan="8" className="p-16 text-center text-gray-400 font-medium">No products found matching your search criteria. Try a different term.</td></tr>
               )}
             </tbody>
           </table>
         </div>
 
+        {/* Premium Pagination */}
         {totalPages > 1 && (
-            <div className="mt-8 flex justify-center items-center gap-3 py-2">
-                <button 
-                  disabled={currentPage === 1}
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  className={`px-4 py-2 border rounded-xl transition flex items-center gap-2 font-medium ${currentPage === 1 ? 'opacity-40 cursor-not-allowed bg-gray-50' : 'hover:bg-gray-50 text-[#6A3E9D]'}`}
-                >
-                  <FontAwesomeIcon icon={faChevronLeft} size="sm" /> Prev
-                </button>
-                <div className="flex gap-2">
+          <div className="mt-8 flex justify-between items-center bg-gray-50 p-4 rounded-2xl border border-gray-100">
+             <p className="text-sm text-gray-500 font-medium hidden md:block">Showing Page <span className="font-bold text-gray-800">{currentPage}</span> of <span className="font-bold text-gray-800">{totalPages}</span></p>
+             <div className="flex items-center gap-2 w-full md:w-auto justify-center">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => handlePageChange(currentPage - 1)}
+                className={`px-4 py-2 rounded-xl transition-all duration-300 flex items-center gap-2 font-bold text-sm ${currentPage === 1 ? 'opacity-40 cursor-not-allowed text-gray-400 bg-transparent' : 'bg-white hover:bg-[#6A3E9D] hover:text-white text-[#6A3E9D] shadow-sm hover:shadow-md border border-gray-200 hover:border-transparent'}`}
+              >
+                <FontAwesomeIcon icon={faChevronLeft} size="xs" /> Prev
+              </button>
+              <div className="flex gap-1.5">
                 {getPageNumbers().map((page, i) => (
-                    <button 
-                      key={i} 
-                      disabled={page === '...'}
-                      onClick={() => handlePageChange(page)} 
-                      className={`w-10 h-10 border rounded-xl transition font-bold flex items-center justify-center 
-                        ${page === '...' ? 'border-none bg-transparent cursor-default' : 
-                          currentPage === page ? 'bg-[#6A3E9D] text-white shadow-lg' : 'bg-white hover:bg-gray-50 text-gray-600'}`}
-                    >
-                      {page}
-                    </button>
+                  <button
+                    key={i}
+                    disabled={page === '...'}
+                    onClick={() => handlePageChange(page)}
+                    className={`w-10 h-10 rounded-xl transition-all duration-300 font-black text-sm flex items-center justify-center 
+                          ${page === '...' ? 'bg-transparent text-gray-400 cursor-default' :
+                        currentPage === page ? 'bg-gradient-to-r from-[#6A3E9D] to-[#8B5CF6] text-white shadow-lg shadow-purple-500/30 scale-110' : 'bg-white hover:bg-gray-100 text-gray-600 border border-gray-200'}`}
+                  >
+                    {page}
+                  </button>
                 ))}
-                </div>
-                <button 
-                  disabled={currentPage === totalPages}
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  className={`px-4 py-2 border rounded-xl transition flex items-center gap-2 font-medium ${currentPage === totalPages ? 'opacity-40 cursor-not-allowed bg-gray-50' : 'hover:bg-gray-50 text-[#6A3E9D]'}`}
-                >
-                  Next <FontAwesomeIcon icon={faChevronRight} size="sm" />
-                </button>
+              </div>
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => handlePageChange(currentPage + 1)}
+                className={`px-4 py-2 rounded-xl transition-all duration-300 flex items-center gap-2 font-bold text-sm ${currentPage === totalPages ? 'opacity-40 cursor-not-allowed text-gray-400 bg-transparent' : 'bg-white hover:bg-[#6A3E9D] hover:text-white text-[#6A3E9D] shadow-sm hover:shadow-md border border-gray-200 hover:border-transparent'}`}
+              >
+                Next <FontAwesomeIcon icon={faChevronRight} size="xs" />
+              </button>
             </div>
+          </div>
         )}
       </div>
 
       <DeleteConfirmModal isOpen={isDeleteOpen} onClose={() => { setIsDeleteOpen(false); setProductToDelete(null); }} onConfirm={handleConfirmDelete} productName={productToDelete?.name || ""} />
       <ImageSliderModal isOpen={isSliderOpen} onClose={() => setIsSliderOpen(false)} images={sliderImages} />
-      
+
+      {/* QR MODAL - Highly Styled */}
       <Modal isOpen={isQrOpen} onClose={() => setQrOpen(false)}>
-        <div className="p-8 flex flex-col items-center text-center">
-            <h3 className="font-bold text-xl mb-2 text-gray-800">Product QR Code</h3>
+        <div className="p-8 flex flex-col items-center text-center relative overflow-hidden">
+          <div className="absolute top-0 w-full h-32 bg-gradient-to-b from-purple-50 to-transparent"></div>
+          
+          <h3 className="font-black text-2xl mb-6 text-gray-800 tracking-tight relative z-10">Smart QR Tag</h3>
+
+          <div className="relative z-10 bg-white p-5 rounded-3xl border-2 border-dashed border-[#6A3E9D]/30 mb-6 shadow-xl shadow-purple-100 group hover:border-[#6A3E9D] transition-colors duration-300">
+            {qrCodeUrl ? (
+              <img src={qrCodeUrl} className="w-64 h-64 object-contain transform group-hover:scale-105 transition-transform duration-500" alt="QR" />
+            ) : (
+              <div className="w-64 h-64 bg-gray-50 flex flex-col items-center justify-center rounded-2xl gap-3">
+                <FontAwesomeIcon icon={faQrcode} className="text-gray-300 text-5xl" />
+                <span className="text-gray-400 text-sm font-bold tracking-widest uppercase">No QR Generated</span>
+              </div>
+            )}
             
-            <div className="bg-white p-4 rounded-xl border-2 border-dashed border-gray-200 mb-4 shadow-sm">
-                {qrCodeUrl ? (
-                    <img src={qrCodeUrl} className="w-56 h-56 object-contain" alt="QR" />
-                ) : (
-                    <div className="w-56 h-56 bg-gray-50 flex items-center justify-center rounded-lg">
-                        <span className="text-gray-400 text-sm">No QR Available</span>
-                    </div>
-                )}
-            </div>
+            {/* Corner accents */}
+            <div className="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-[#6A3E9D] rounded-tl-xl -mt-1 -ml-1"></div>
+            <div className="absolute top-0 right-0 w-4 h-4 border-t-4 border-r-4 border-[#6A3E9D] rounded-tr-xl -mt-1 -mr-1"></div>
+            <div className="absolute bottom-0 left-0 w-4 h-4 border-b-4 border-l-4 border-[#6A3E9D] rounded-bl-xl -mb-1 -ml-1"></div>
+            <div className="absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 border-[#6A3E9D] rounded-br-xl -mb-1 -mr-1"></div>
+          </div>
 
-            <div className="mb-6">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Model / Frame</p>
-                <h2 className="text-2xl font-black text-[#6A3E9D] tracking-tight leading-none">
-                    {qrProductName || "Unknown Product"}
-                </h2>
-                <p className="text-xs text-gray-500 mt-1">{qrPcsPerBox ? `${qrPcsPerBox} Pcs/Box` : ''}</p>
+          <div className="mb-8 relative z-10">
+            <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Model / Frame Details</p>
+            <h2 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#4A1D7A] to-[#8B5CF6] tracking-tight leading-none drop-shadow-sm">
+              {qrProductName || "Unknown Product"}
+            </h2>
+            <div className="mt-3 inline-block bg-gray-100 px-4 py-1.5 rounded-full border border-gray-200">
+              <p className="text-sm font-bold text-gray-600 tracking-wide">{qrPcsPerBox ? `${qrPcsPerBox} PCS / BOX` : 'No Box Quantity'}</p>
             </div>
+          </div>
 
-            <div className="flex flex-col gap-2 w-full">
-                <div className="flex gap-2 w-full">
-                    <button 
-                        onClick={handlePrintSticker} 
-                        disabled={!qrCodeUrl}
-                        className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-100 transition flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                        <FontAwesomeIcon icon={faPrint} /> Print Sticker
-                    </button>
-                    <button 
-                        onClick={handleDownloadQr} 
-                        disabled={!qrCodeUrl}
-                        className="flex-1 py-3 bg-[#6A3E9D] hover:bg-[#5a3486] text-white rounded-xl font-bold shadow-lg shadow-purple-100 transition flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                        <FontAwesomeIcon icon={faDownload} /> Download
-                    </button>
-                </div>
-                <button 
-                    onClick={() => setQrOpen(false)} 
-                    className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition"
-                >
-                    Close
-                </button>
+          <div className="flex flex-col gap-3 w-full relative z-10">
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={handlePrintSticker}
+                disabled={!qrCodeUrl}
+                className="flex-1 py-3.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-2xl font-black shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:transform-none"
+              >
+                <FontAwesomeIcon icon={faPrint} /> Print Sticker
+              </button>
+              <button
+                onClick={handleDownloadQr}
+                disabled={!qrCodeUrl}
+                className="flex-1 py-3.5 bg-gradient-to-r from-[#6A3E9D] to-[#8B5CF6] hover:from-[#5a3486] hover:to-[#6A3E9D] text-white rounded-2xl font-black shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:transform-none"
+              >
+                <FontAwesomeIcon icon={faDownload} /> Download PNG
+              </button>
             </div>
+            <button
+              onClick={() => setQrOpen(false)}
+              className="w-full py-3.5 bg-white border-2 border-gray-100 hover:bg-gray-50 text-gray-700 rounded-2xl font-black transition-all duration-300"
+            >
+              Close Window
+            </button>
+          </div>
         </div>
       </Modal>
 
       <AddProductModal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} onProductAdded={() => fetchData(1)} categories={categoryList} dimensions={dimensionList} handleAddNewDimension={handleAddNewDim} newDimensionInput={newDimInput} setNewDimensionInput={setNewDimInput} />
-      
+
       {selectedProduct && (
-        <UpdateProductModal 
-            isOpen={isUpdateOpen} 
-            onClose={() => {setIsUpdateOpen(false); setSelectedProduct(null);}} 
-            onUpdateSuccess={() => fetchData(currentPage)} 
-            product={selectedProduct} 
-            categories={categoryList} 
-            dimensions={dimensionList} 
-            handleAddNewDimension={handleAddNewDim} 
-            newDimensionInput={newDimInput} 
-            setNewDimensionInput={setNewDimInput} 
+        <UpdateProductModal
+          isOpen={isUpdateOpen}
+          onClose={() => { setIsUpdateOpen(false); setSelectedProduct(null); }}
+          onUpdateSuccess={() => fetchData(currentPage)}
+          product={selectedProduct}
+          categories={categoryList}
+          dimensions={dimensionList}
+          handleAddNewDimension={handleAddNewDim}
+          newDimensionInput={newDimInput}
+          setNewDimensionInput={setNewDimInput}
         />
       )}
     </div>
@@ -862,8 +966,8 @@ const handlePrintSticker = () => {
 
 // --- Slider Component ---
 const ImageSliderModal = ({ isOpen, onClose, images }) => {
-  const [idx, setIdx] = useState(0); 
-  useEffect(() => { 
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
     if (isOpen) {
       setIdx(0);
       document.body.style.overflow = 'hidden';
@@ -876,31 +980,34 @@ const ImageSliderModal = ({ isOpen, onClose, images }) => {
 
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center overflow-hidden transition-all">
-      <div className="absolute inset-0 bg-white/5 backdrop-blur-md animate-in fade-in duration-500" onClick={onClose}></div>
-      <button onClick={onClose} className="absolute top-8 right-8 z-[100000] bg-black/10 hover:bg-red-500 hover:rotate-90 text-black w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 backdrop-blur-xl border border-black/5 shadow-lg">
-        <FontAwesomeIcon icon={faTimes} size="lg" />
+      <div className="absolute inset-0 bg-black/90 backdrop-blur-xl animate-in fade-in duration-500" onClick={onClose}></div>
+      
+      <button onClick={onClose} className="absolute top-8 right-8 z-[100000] bg-white/10 hover:bg-red-500 hover:rotate-90 text-white w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 backdrop-blur-xl border border-white/20 shadow-2xl">
+        <FontAwesomeIcon icon={faTimes} size="xl" />
       </button>
 
-      <div className="relative w-full max-w-5xl px-4 flex items-center justify-center">
-        <button onClick={() => setIdx(i => i === 0 ? images.length-1 : i-1)} className="absolute left-0 md:left-5 text-gray-800/20 hover:text-[#6A3E9D] hover:scale-125 transition-all z-50 p-4">
+      <div className="relative w-full max-w-6xl px-4 flex items-center justify-center">
+        <button onClick={() => setIdx(i => i === 0 ? images.length - 1 : i - 1)} className="absolute left-2 md:left-10 text-white/50 hover:text-white hover:scale-125 transition-all z-50 p-4 bg-black/20 hover:bg-black/50 rounded-full backdrop-blur-md">
           <FontAwesomeIcon icon={faChevronLeft} size="2xl" />
         </button>
-        <div className="relative flex items-center justify-center">
-          <img key={idx} src={images[idx]} className="max-w-full max-h-[82vh] object-contain rounded-2xl drop-shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-2 duration-500 ease-out" alt="Product" />
-          <div className="absolute -z-10 w-full h-full bg-black/5 blur-3xl rounded-full"></div>
+        
+        <div className="relative flex items-center justify-center w-full h-[85vh]">
+          <img key={idx} src={images[idx]} className="max-w-full max-h-full object-contain rounded-2xl drop-shadow-2xl animate-in zoom-in slide-in-from-bottom-5 duration-500 ease-out" alt="Product View" />
+          <div className="absolute -z-10 w-2/3 h-2/3 bg-[#6A3E9D]/20 blur-[100px] rounded-full mix-blend-screen"></div>
         </div>
-        <button onClick={() => setIdx(i => i === images.length-1 ? 0 : i+1)} className="absolute right-0 md:right-5 text-gray-800/20 hover:text-[#6A3E9D] hover:scale-125 transition-all z-50 p-4">
+
+        <button onClick={() => setIdx(i => i === images.length - 1 ? 0 : i + 1)} className="absolute right-2 md:right-10 text-white/50 hover:text-white hover:scale-125 transition-all z-50 p-4 bg-black/20 hover:bg-black/50 rounded-full backdrop-blur-md">
           <FontAwesomeIcon icon={faChevronRight} size="2xl" />
         </button>
       </div>
 
       <div className="absolute bottom-10 flex flex-col items-center gap-4 animate-in slide-in-from-bottom-5 duration-700">
-        <div className="flex gap-2 items-center bg-white/20 backdrop-blur-md px-4 py-2 rounded-full border border-white/30 shadow-sm">
-           {images.map((_, i) => (
-             <div key={i} className={`h-1.5 transition-all duration-500 rounded-full ${i === idx ? 'w-8 bg-[#6A3E9D]' : 'w-2 bg-gray-400'}`} />
-           ))}
+        <div className="flex gap-2.5 items-center bg-white/10 backdrop-blur-xl px-5 py-3 rounded-full border border-white/20 shadow-2xl">
+          {images.map((_, i) => (
+            <div key={i} className={`h-2 transition-all duration-500 rounded-full cursor-pointer hover:bg-white ${i === idx ? 'w-10 bg-[#8B5CF6] shadow-[0_0_10px_rgba(139,92,246,0.8)]' : 'w-2 bg-white/40'}`} onClick={() => setIdx(i)} />
+          ))}
         </div>
-        <span className="text-[#6A3E9D] font-black text-[10px] tracking-[0.3em] uppercase opacity-60">{idx + 1} <span className="mx-1 text-gray-300">/</span> {images.length}</span>
+        <span className="text-white font-black text-[12px] tracking-[0.4em] uppercase bg-black/30 px-4 py-1.5 rounded-full border border-white/10">{idx + 1} <span className="mx-2 text-white/30">/</span> {images.length}</span>
       </div>
     </div>
   );

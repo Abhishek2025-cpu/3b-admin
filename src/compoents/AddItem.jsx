@@ -169,7 +169,7 @@ function AddItem() {
   const handleItemChange = (e) => {
     const { value } = e.target;
     const selectedProduct = productDetailsMap.get(value);
-    const imageUrl = selectedProduct?.images?.[0]?.url || '';
+    const imageUrl = selectedProduct?.images?.[1]?.url || '';
     
     setFormData(prev => ({
       ...prev,
