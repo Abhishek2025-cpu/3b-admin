@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -47,8 +47,8 @@ const ImageModal = ({ isOpen, onClose, imageUrl }) => {
   );
 };
 
-// --- Updated Searchable Select Component ---
-const SearchableSelect = ({ label, options, value, onChange, placeholder }) => {
+// --- Updated Searchable Select Component with API Search ---
+const SearchableSelect = ({ label, options, value, onChange, placeholder, onSearch, isSearching }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const wrapperRef = useRef(null);
@@ -66,7 +66,16 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Filter options based on search
+  // Handle Search Input
+  const handleSearchChange = (e) => {
+    const val = e.target.value;
+    setSearchTerm(val);
+    if (onSearch) {
+        onSearch(val);
+    }
+  };
+
+  // Local filtering as a fallback + API results are already in options
   const filteredOptions = options.filter(opt =>
     opt.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -79,7 +88,6 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder }) => {
         {label}
       </label>
       
-      {/* Main Display Box */}
       <div 
         className={`relative flex items-center w-full p-3.5 border rounded-xl cursor-pointer transition-all duration-300 shadow-sm hover:border-indigo-400 ${isOpen ? 'ring-4 ring-indigo-500/10 border-indigo-500 bg-white' : 'border-gray-200 bg-gray-50'}`}
         onClick={() => {
@@ -97,28 +105,31 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder }) => {
         </div>
       </div>
 
-      {/* Dropdown Menu */}
       {isOpen && (
         <div className="absolute z-[100] w-full mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden animate-pop-in">
-          {/* Internal Search Bar */}
           <div className="p-2 bg-gray-50 border-b border-gray-100">
             <div className="relative">
                 <input
                     ref={inputRef}
                     type="text"
                     className="w-full p-2.5 pl-9 text-sm border border-gray-200 rounded-lg outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
-                    placeholder="Type to search..."
+                    placeholder="Search product..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onClick={(e) => e.stopPropagation()} // Prevents dropdown from closing
+                    onChange={handleSearchChange}
+                    onClick={(e) => e.stopPropagation()}
                 />
-                <svg className="absolute left-3 top-3 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                <div className="absolute left-3 top-3">
+                    {isSearching ? (
+                        <div className="h-4 w-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                        <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    )}
+                </div>
             </div>
           </div>
 
-          {/* Options List */}
           <ul className="max-h-60 overflow-y-auto py-1 custom-scrollbar">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((opt) => (
@@ -145,7 +156,7 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder }) => {
                 <svg className="h-8 w-8 mb-2 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                No matching products
+                No products found
               </li>
             )}
           </ul>
@@ -228,7 +239,9 @@ function AddItem() {
   const [productDetailsMap, setProductDetailsMap] = useState(new Map());
   const [imagePreview, setImagePreview] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const searchTimeoutRef = useRef(null);
 
   useEffect(() => {
     async function fetchStaff() {
@@ -253,19 +266,61 @@ function AddItem() {
       }
     }
 
-    async function fetchProducts() {
+    // Initial load for products
+    async function fetchInitialProducts() {
       try {
         const res = await fetch('https://threeb-1067354145699.asia-south1.run.app/api/products/all?all=true');
         const data = await res.json();
-        setProducts(data.products.map(p => ({ value: p.name, label: p.name })));
-        setProductDetailsMap(new Map(data.products.map(p => [p.name, p])));
+        const initialProducts = data.products || [];
+        setProducts(initialProducts.map(p => ({ value: p.name, label: p.name })));
+        setProductDetailsMap(new Map(initialProducts.map(p => [p.name, p])));
       } catch (err) {
-        toast.error('Failed to load product list.');
+        console.error('Failed to load initial products.');
       }
     }
 
     fetchStaff();
-    fetchProducts();
+    fetchInitialProducts();
+  }, []);
+
+  // --- API SEARCH LOGIC ---
+  const handleItemSearch = useCallback((searchTerm) => {
+    if (!searchTerm) return;
+
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+    searchTimeoutRef.current = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/products/search?name=${encodeURIComponent(searchTerm)}`);
+        const data = await res.json();
+        
+        // Data format check: data.products ya direct array ho sakta hai
+        const foundProducts = Array.isArray(data) ? data : (data.products || []);
+
+        if (foundProducts.length > 0) {
+            // New products ko existing products ke saath merge karna
+            setProducts(prev => {
+                const existingNames = new Set(prev.map(p => p.value));
+                const newItems = foundProducts
+                    .filter(p => !existingNames.has(p.name))
+                    .map(p => ({ value: p.name, label: p.name }));
+                return [...prev, ...newItems];
+            });
+
+            // Map update karna details ke liye
+            setProductDetailsMap(prev => {
+                const newMap = new Map(prev);
+                foundProducts.forEach(p => newMap.set(p.name, p));
+                return newMap;
+            });
+        }
+      } catch (err) {
+        console.error('Search API error:', err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500); // 500ms debounce delay
   }, []);
 
   const handleChange = (e) => {
@@ -275,7 +330,7 @@ function AddItem() {
 
   const handleItemSelect = (val) => {
     const selectedProduct = productDetailsMap.get(val);
-    const imageUrl = selectedProduct?.images?.[1]?.url || '';
+    const imageUrl = selectedProduct?.images?.[1]?.url || selectedProduct?.images?.[0]?.url || '';
     
     setFormData(prev => ({
       ...prev,
@@ -361,13 +416,15 @@ function AddItem() {
           <form onSubmit={handleSubmit} className="space-y-8">
             
             <div className="grid md:grid-cols-2 gap-x-8 gap-y-6">
-              {/* UPDATED SEARCHABLE ITEM SELECT */}
+              
               <SearchableSelect 
                 label="Select Item *"
                 options={products}
                 value={formData.itemNo}
                 onChange={handleItemSelect}
-                placeholder="Click to search product..."
+                onSearch={handleItemSearch}
+                isSearching={isSearching}
+                placeholder="Type to search (e.g. 3B 157)"
               />
 
               <TextInput 
