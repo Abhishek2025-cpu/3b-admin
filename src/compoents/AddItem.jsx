@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -47,7 +47,115 @@ const ImageModal = ({ isOpen, onClose, imageUrl }) => {
   );
 };
 
-// Beautiful Custom Select Component
+// --- Updated Searchable Select Component ---
+const SearchableSelect = ({ label, options, value, onChange, placeholder }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const wrapperRef = useRef(null);
+  const inputRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setIsOpen(false);
+        setSearchTerm('');
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Filter options based on search
+  const filteredOptions = options.filter(opt =>
+    opt.label.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const selectedOption = options.find(opt => opt.value === value);
+
+  return (
+    <div className="group relative" ref={wrapperRef}>
+      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 ml-1 group-focus-within:text-indigo-600 transition-colors">
+        {label}
+      </label>
+      
+      {/* Main Display Box */}
+      <div 
+        className={`relative flex items-center w-full p-3.5 border rounded-xl cursor-pointer transition-all duration-300 shadow-sm hover:border-indigo-400 ${isOpen ? 'ring-4 ring-indigo-500/10 border-indigo-500 bg-white' : 'border-gray-200 bg-gray-50'}`}
+        onClick={() => {
+            setIsOpen(!isOpen);
+            if(!isOpen) setTimeout(() => inputRef.current?.focus(), 100);
+        }}
+      >
+        <span className={`font-medium truncate pr-6 ${!value ? 'text-gray-400' : 'text-gray-700'}`}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <div className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+          <svg className={`h-5 w-5 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Dropdown Menu */}
+      {isOpen && (
+        <div className="absolute z-[100] w-full mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden animate-pop-in">
+          {/* Internal Search Bar */}
+          <div className="p-2 bg-gray-50 border-b border-gray-100">
+            <div className="relative">
+                <input
+                    ref={inputRef}
+                    type="text"
+                    className="w-full p-2.5 pl-9 text-sm border border-gray-200 rounded-lg outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                    placeholder="Type to search..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onClick={(e) => e.stopPropagation()} // Prevents dropdown from closing
+                />
+                <svg className="absolute left-3 top-3 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+          </div>
+
+          {/* Options List */}
+          <ul className="max-h-60 overflow-y-auto py-1 custom-scrollbar">
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((opt) => (
+                <li
+                  key={opt.value}
+                  className={`px-4 py-3 text-sm cursor-pointer transition-all flex items-center justify-between
+                    ${value === opt.value ? 'bg-indigo-600 text-white font-bold' : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-700'}`}
+                  onClick={() => {
+                    onChange(opt.value);
+                    setIsOpen(false);
+                    setSearchTerm('');
+                  }}
+                >
+                  <span>{opt.label}</span>
+                  {value === opt.value && (
+                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                  )}
+                </li>
+              ))
+            ) : (
+              <li className="px-4 py-8 text-sm text-gray-400 text-center flex flex-col items-center">
+                <svg className="h-8 w-8 mb-2 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                No matching products
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Beautiful Custom Select Component (Standard)
 const SelectInput = ({ name, value, onChange, options, placeholder, label }) => (
   <div className="group relative">
     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 ml-1 group-focus-within:text-indigo-600 transition-colors">
@@ -128,7 +236,6 @@ function AddItem() {
         const res = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/staff/get-employees');
         const data = await res.json();
         
-        // --- FIXED LOGIC: Mapping roles correctly based on Array format ---
         const processStaffByRole = (roleName) => {
           return data
             .filter(e => e.role && Array.isArray(e.role) && e.role.includes(roleName))
@@ -166,15 +273,13 @@ function AddItem() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleItemChange = (e) => {
-    const { value } = e.target;
-    const selectedProduct = productDetailsMap.get(value);
+  const handleItemSelect = (val) => {
+    const selectedProduct = productDetailsMap.get(val);
     const imageUrl = selectedProduct?.images?.[1]?.url || '';
     
     setFormData(prev => ({
       ...prev,
-      itemNo: value,
-      // Fixed: Making sure sticks per box updates when item changes
+      itemNo: val,
       noOfSticks: selectedProduct ? (selectedProduct.totalPiecesPerBox || '') : '',
       image: imageUrl, 
     }));
@@ -188,8 +293,6 @@ function AddItem() {
     
     setIsLoading(true);
     
-    // API Expects JSON or FormData? Assuming JSON based on fields
-    // If your API specifically needs FormData:
     const submissionData = new FormData();
     Object.keys(formData).forEach(key => submissionData.append(key, formData[key]));
 
@@ -207,7 +310,6 @@ function AddItem() {
           mixtureMachine: '', image: '',
         });
         setImagePreview('');
-        e.target.reset();
       } else {
         toast.error(data.error || 'Submission failed');
       }
@@ -222,15 +324,19 @@ function AddItem() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <style>{`
         @keyframes pop-in {
-          0% { transform: scale(0.9); opacity: 0; }
+          0% { transform: scale(0.95); opacity: 0; }
           100% { transform: scale(1); opacity: 1; }
         }
         @keyframes slide-up {
           0% { transform: translateY(20px); opacity: 0; }
           100% { transform: translateY(0); opacity: 1; }
         }
-        .animate-pop-in { animation: pop-in 0.3s ease-out forwards; }
+        .animate-pop-in { animation: pop-in 0.2s ease-out forwards; }
         .animate-slide-up { animation: slide-up 0.5s ease-out forwards; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #818cf8; }
       `}</style>
       
       <ToastContainer position="top-center" theme="colored" autoClose={3000} />
@@ -243,7 +349,6 @@ function AddItem() {
 
       <div className="bg-white shadow-[0_10px_60px_-15px_rgba(0,0,0,0.1)] rounded-3xl overflow-hidden w-full max-w-4xl border border-gray-100 animate-slide-up">
         
-        {/* Header Section */}
         <div className="relative bg-white px-8 pt-10 pb-6 text-center">
             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
             <h2 className="text-4xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 drop-shadow-sm">
@@ -255,15 +360,14 @@ function AddItem() {
         <div className="p-8 md:p-10 pt-2">
           <form onSubmit={handleSubmit} className="space-y-8">
             
-            {/* Form Grid */}
             <div className="grid md:grid-cols-2 gap-x-8 gap-y-6">
-              <SelectInput 
+              {/* UPDATED SEARCHABLE ITEM SELECT */}
+              <SearchableSelect 
                 label="Select Item *"
-                name="itemNo" 
-                value={formData.itemNo} 
-                onChange={handleItemChange} 
-                options={products} 
-                placeholder="Choose Product..." 
+                options={products}
+                value={formData.itemNo}
+                onChange={handleItemSelect}
+                placeholder="Click to search product..."
               />
 
               <TextInput 
@@ -352,7 +456,7 @@ function AddItem() {
               />
             </div>
             
-            {/* Image Preview Section */}
+            {/* Image Preview */}
             <div className="bg-gray-50/50 rounded-2xl p-4 border border-dashed border-gray-300">
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-3 ml-1">
                 Product Visualization
@@ -368,7 +472,6 @@ function AddItem() {
                     alt="Product" 
                     className="w-full h-64 object-contain p-4 transform group-hover:scale-105 transition-transform duration-500"
                   />
-                  {/* Overlay */}
                   <div className="absolute inset-0 bg-indigo-900/0 group-hover:bg-indigo-900/20 transition-all duration-300 flex items-center justify-center">
                      <span className="bg-white/95 backdrop-blur text-indigo-700 px-6 py-2.5 rounded-full text-sm font-bold shadow-lg transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 flex items-center gap-2">
                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

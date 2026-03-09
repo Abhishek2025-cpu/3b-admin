@@ -969,7 +969,7 @@ const ImageSliderModal = ({ isOpen, onClose, images }) => {
   const [idx, setIdx] = useState(0);
   useEffect(() => {
     if (isOpen) {
-      setIdx(0);
+      setIdx(images && images.length > 1 ? 1 : 0); 
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
