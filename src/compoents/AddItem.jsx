@@ -47,14 +47,13 @@ const ImageModal = ({ isOpen, onClose, imageUrl }) => {
   );
 };
 
-// --- Updated Searchable Select Component with API Search ---
+// --- Searchable Select Component (STRICT SORTING APPLIED HERE) ---
 const SearchableSelect = ({ label, options, value, onChange, placeholder, onSearch, isSearching }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const wrapperRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
@@ -66,19 +65,16 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, onSear
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Handle Search Input
   const handleSearchChange = (e) => {
     const val = e.target.value;
     setSearchTerm(val);
-    if (onSearch) {
-        onSearch(val);
-    }
+    if (onSearch) onSearch(val);
   };
 
-  // Local filtering as a fallback + API results are already in options
-  const filteredOptions = options.filter(opt =>
-    opt.label.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // --- HAR BAAR RENDER PE SORT HOGA (ASCENDING ORDER) ---
+  const displayedOptions = options
+    .filter(opt => opt.label.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: 'base' }));
 
   const selectedOption = options.find(opt => opt.value === value);
 
@@ -131,8 +127,8 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, onSear
           </div>
 
           <ul className="max-h-60 overflow-y-auto py-1 custom-scrollbar">
-            {filteredOptions.length > 0 ? (
-              filteredOptions.map((opt) => (
+            {displayedOptions.length > 0 ? (
+              displayedOptions.map((opt) => (
                 <li
                   key={opt.value}
                   className={`px-4 py-3 text-sm cursor-pointer transition-all flex items-center justify-between
@@ -166,7 +162,6 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, onSear
   );
 };
 
-// Beautiful Custom Select Component (Standard)
 const SelectInput = ({ name, value, onChange, options, placeholder, label }) => (
   <div className="group relative">
     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 ml-1 group-focus-within:text-indigo-600 transition-colors">
@@ -194,7 +189,6 @@ const SelectInput = ({ name, value, onChange, options, placeholder, label }) => 
   </div>
 );
 
-// Beautiful Custom Input Component
 const TextInput = ({ name, value, onChange, placeholder, label, readOnly = false, type = "text", min }) => (
   <div className="group">
     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 ml-1 group-focus-within:text-indigo-600 transition-colors">
@@ -266,7 +260,6 @@ function AddItem() {
       }
     }
 
-    // Initial load for products
     async function fetchInitialProducts() {
       try {
         const res = await fetch('https://threeb-1067354145699.asia-south1.run.app/api/products/all?all=true');
@@ -287,10 +280,8 @@ function AddItem() {
     fetchInitialProducts();
   }, []);
 
-  // --- API SEARCH LOGIC ---
   const handleItemSearch = useCallback((searchTerm) => {
     if (!searchTerm) return;
-
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
 
     searchTimeoutRef.current = setTimeout(async () => {
@@ -298,12 +289,9 @@ function AddItem() {
       try {
         const res = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/products/search?name=${encodeURIComponent(searchTerm)}`);
         const data = await res.json();
-        
-        // Data format check: data.products ya direct array ho sakta hai
         const foundProducts = Array.isArray(data) ? data : (data.products || []);
 
         if (foundProducts.length > 0) {
-            // New products ko existing products ke saath merge karna
             setProducts(prev => {
                 const existingNames = new Set(prev.map(p => p.value));
                 const newItems = foundProducts
@@ -314,7 +302,6 @@ function AddItem() {
 );
             });
 
-            // Map update karna details ke liye
             setProductDetailsMap(prev => {
                 const newMap = new Map(prev);
                 foundProducts.forEach(p => newMap.set(p.name, p));
@@ -326,7 +313,7 @@ function AddItem() {
       } finally {
         setIsSearching(false);
       }
-    }, 500); // 500ms debounce delay
+    }, 500);
   }, []);
 
   const handleChange = (e) => {
@@ -353,7 +340,6 @@ function AddItem() {
     if (!formData.itemNo) return toast.error('Select an item.');
     
     setIsLoading(true);
-    
     const submissionData = new FormData();
     Object.keys(formData).forEach(key => submissionData.append(key, formData[key]));
 
@@ -384,14 +370,8 @@ function AddItem() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <style>{`
-        @keyframes pop-in {
-          0% { transform: scale(0.95); opacity: 0; }
-          100% { transform: scale(1); opacity: 1; }
-        }
-        @keyframes slide-up {
-          0% { transform: translateY(20px); opacity: 0; }
-          100% { transform: translateY(0); opacity: 1; }
-        }
+        @keyframes pop-in { 0% { transform: scale(0.95); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes slide-up { 0% { transform: translateY(20px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
         .animate-pop-in { animation: pop-in 0.2s ease-out forwards; }
         .animate-slide-up { animation: slide-up 0.5s ease-out forwards; }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
@@ -420,7 +400,6 @@ function AddItem() {
 
         <div className="p-8 md:p-10 pt-2">
           <form onSubmit={handleSubmit} className="space-y-8">
-            
             <div className="grid md:grid-cols-2 gap-x-8 gap-y-6">
               
               <SearchableSelect 
@@ -433,153 +412,47 @@ function AddItem() {
                 placeholder="Type to search (e.g. 3B 157)"
               />
 
-              <TextInput 
-                label="Length"
-                name="length"
-                value={formData.length}
-                readOnly={true}
-              />
-
-              <TextInput 
-                label="Sticks per Box"
-                name="noOfSticks"
-                value={formData.noOfSticks}
-                readOnly={true}
-                placeholder="Sticks count"
-              />
-
-               <SelectInput 
-                label="Mixture Staff *"
-                name="mixtureId" 
-                value={formData.mixtureId} 
-                onChange={handleChange} 
-                options={mixtures} 
-                placeholder="Select Staff..." 
-              />
-
-              <SelectInput 
-                label="Helper Staff *"
-                name="helperId" 
-                value={formData.helperId} 
-                onChange={handleChange} 
-                options={helpers} 
-                placeholder="Select Staff..." 
-              />
-
-              <SelectInput 
-                label="Operator Staff *"
-                name="operatorId" 
-                value={formData.operatorId} 
-                onChange={handleChange} 
-                options={operators} 
-                placeholder="Select Staff..." 
-              />
-
+              <TextInput label="Length" name="length" value={formData.length} readOnly={true} />
+              <TextInput label="Sticks per Box" name="noOfSticks" value={formData.noOfSticks} readOnly={true} placeholder="Sticks count" />
+              <SelectInput label="Mixture Staff *" name="mixtureId" value={formData.mixtureId} onChange={handleChange} options={mixtures} placeholder="Select Staff..." />
+              <SelectInput label="Helper Staff *" name="helperId" value={formData.helperId} onChange={handleChange} options={helpers} placeholder="Select Staff..." />
+              <SelectInput label="Operator Staff *" name="operatorId" value={formData.operatorId} onChange={handleChange} options={operators} placeholder="Select Staff..." />
+              
               <SelectInput 
                 label="Shift *"
                 name="shift" 
                 value={formData.shift} 
                 onChange={handleChange} 
-                options={[
-                  {value: 'Day', label: 'Day Shift'},
-                  {value: 'Night', label: 'Night Shift'}
-                ]}
+                options={[{value: 'Day', label: 'Day Shift'}, {value: 'Night', label: 'Night Shift'}]}
                 placeholder="Select Shift..." 
               />
 
-              <TextInput 
-                label="Number of Boxes *"
-                name="noOfBoxes"
-                value={formData.noOfBoxes}
-                onChange={handleChange}
-                placeholder="0"
-                type="number"
-                min="1"
-              />
-
-              <SelectInput 
-                label="Machine Number *"
-                name="machineNumber" 
-                value={formData.machineNumber} 
-                onChange={handleChange} 
-                options={[...Array(9)].map((_, i) => ({ value: i+1, label: `Machine ${i+1}` }))}
-                placeholder="Select Machine..." 
-              />
-
-              <SelectInput 
-                label="Company *"
-                name="company" 
-                value={formData.company} 
-                onChange={handleChange} 
-                options={[
-                    {value: 'B', label: 'B'},
-                    {value: 'BI', label: 'BI'}
-                ]}
-                placeholder="Select Company..." 
-              />
+              <TextInput label="Number of Boxes *" name="noOfBoxes" value={formData.noOfBoxes} onChange={handleChange} placeholder="0" type="number" min="1" />
+              <SelectInput label="Machine Number *" name="machineNumber" value={formData.machineNumber} onChange={handleChange} options={[...Array(9)].map((_, i) => ({ value: i+1, label: `Machine ${i+1}` }))} placeholder="Select Machine..." />
+              <SelectInput label="Company *" name="company" value={formData.company} onChange={handleChange} options={[{value: 'B', label: 'B'}, {value: 'BI', label: 'BI'}]} placeholder="Select Company..." />
             </div>
             
-            {/* Image Preview */}
             <div className="bg-gray-50/50 rounded-2xl p-4 border border-dashed border-gray-300">
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-3 ml-1">
-                Product Visualization
-              </label>
-              
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-3 ml-1">Product Visualization</label>
               {imagePreview ? (
-                <div 
-                  className="relative group cursor-pointer overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300 bg-white" 
-                  onClick={() => setIsModalOpen(true)}
-                >
-                  <img 
-                    src={imagePreview} 
-                    alt="Product" 
-                    className="w-full h-64 object-contain p-4 transform group-hover:scale-105 transition-transform duration-500"
-                  />
+                <div className="relative group cursor-pointer overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300 bg-white" onClick={() => setIsModalOpen(true)}>
+                  <img src={imagePreview} alt="Product" className="w-full h-64 object-contain p-4 transform group-hover:scale-105 transition-transform duration-500" />
                   <div className="absolute inset-0 bg-indigo-900/0 group-hover:bg-indigo-900/20 transition-all duration-300 flex items-center justify-center">
                      <span className="bg-white/95 backdrop-blur text-indigo-700 px-6 py-2.5 rounded-full text-sm font-bold shadow-lg transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 flex items-center gap-2">
-                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                       </svg>
                        Click to Expand
                      </span>
                   </div>
                 </div>
               ) : (
                 <div className="flex flex-col justify-center items-center h-64 border-2 border-dashed border-gray-200 rounded-xl bg-white text-gray-400 group hover:bg-gray-50 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-2 text-gray-300 group-hover:text-gray-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
                   <p className="text-sm font-medium">Select a product to view image</p>
                 </div>
               )}
             </div>
 
-            {/* Submit Button */}
             <div className="pt-2">
-                <button 
-                type="submit" 
-                disabled={isLoading} 
-                className={`
-                    w-full py-4 px-6 rounded-xl font-bold text-lg text-white shadow-lg shadow-indigo-500/30
-                    transform transition-all duration-300
-                    flex items-center justify-center gap-3
-                    ${isLoading 
-                        ? 'bg-gray-400 cursor-not-allowed opacity-80' 
-                        : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 hover:-translate-y-1 hover:shadow-indigo-500/50 active:scale-[0.98]'
-                    }
-                `}
-                >
-                {isLoading ? (
-                    <><Spinner /> Processing Entry...</>
-                ) : (
-                    <>
-                    <span className="tracking-wide">SUBMIT ENTRY</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
-                    </>
-                )}
+                <button type="submit" disabled={isLoading} className={`w-full py-4 px-6 rounded-xl font-bold text-lg text-white shadow-lg shadow-indigo-500/30 transform transition-all duration-300 flex items-center justify-center gap-3 ${isLoading ? 'bg-gray-400 cursor-not-allowed opacity-80' : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 hover:-translate-y-1 hover:shadow-indigo-500/50 active:scale-[0.98]'}`}>
+                {isLoading ? <><Spinner /> Processing Entry...</> : <><span className="tracking-wide">SUBMIT ENTRY</span></>}
                 </button>
             </div>
           </form>
