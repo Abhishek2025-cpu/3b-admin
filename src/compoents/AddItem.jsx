@@ -272,7 +272,11 @@ function AddItem() {
         const res = await fetch('https://threeb-1067354145699.asia-south1.run.app/api/products/all?all=true');
         const data = await res.json();
         const initialProducts = data.products || [];
-        setProducts(initialProducts.map(p => ({ value: p.name, label: p.name })));
+        setProducts(
+  initialProducts
+    .map(p => ({ value: p.name, label: p.name }))
+    .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }))
+);
         setProductDetailsMap(new Map(initialProducts.map(p => [p.name, p])));
       } catch (err) {
         console.error('Failed to load initial products.');
@@ -305,7 +309,9 @@ function AddItem() {
                 const newItems = foundProducts
                     .filter(p => !existingNames.has(p.name))
                     .map(p => ({ value: p.name, label: p.name }));
-                return [...prev, ...newItems];
+                return [...prev, ...newItems].sort((a, b) =>
+  a.label.localeCompare(b.label, undefined, { numeric: true })
+);
             });
 
             // Map update karna details ke liye
