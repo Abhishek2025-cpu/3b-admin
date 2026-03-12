@@ -5,7 +5,8 @@ import {
   faFileInvoiceDollar, faTachometerAlt, faStickyNote, faPlusSquare, faList, 
   faUsers, faUserTie, faUserFriends, faComments, faUserPlus, faUsersCog, 
   faThLarge, faBoxOpen, faBox, faShoppingCart, faCog, faChevronDown, 
-  faGlobe, faUserShield, faUndo, faBell, faCogs, faTasks, faArchive, faBarcode 
+  faGlobe, faUserShield, faUndo, faBell, faCogs, faTasks, faArchive, faBarcode,
+  faTag // यहाँ faTag आइकॉन जोड़ा गया है
 } from '@fortawesome/free-solid-svg-icons';
 import profilePic from '../assets/3b.png';
 
@@ -97,6 +98,8 @@ function Sidebar({ isOpen, onClose, searchQuery = "" }) {
       </div>
       <ul style={styles.menuList}>
         {matches("Dashboard") && <LinkMenuItem icon={faTachometerAlt} text="Dashboard" to="/manager/dashboard" />}
+        
+        {/* Sticker Group */}
         {shouldShowGroup("Sticker", ["Add", "View"]) && (
           <>
             <DropdownMenuItem icon={faStickyNote} text="Sticker" isOpen={openMenus.sticker} onClick={(e) => toggleNested(e, 'sticker')} />
@@ -106,6 +109,8 @@ function Sidebar({ isOpen, onClose, searchQuery = "" }) {
             </ul>
           </>
         )}
+
+        {/* Machines Group */}
         {shouldShowGroup("Machines", ["Operator Table", "Mixture Table"]) && (
           <>
             <DropdownMenuItem icon={faCogs} text="Machines" isOpen={openMenus.machines} onClick={(e) => toggleNested(e, 'machines')} /> 
@@ -115,6 +120,8 @@ function Sidebar({ isOpen, onClose, searchQuery = "" }) {
             </ul>    
           </>
         )}
+
+        {/* Users Group */}
         {shouldShowGroup("Users", ["Clients", "View Clients", "Chats", "Staff", "Add Staff", "View Staff"]) && (
           <>
             <DropdownMenuItem icon={faUsers} text="Users" isOpen={openMenus.users} onClick={(e) => toggleNested(e, 'users')} />
@@ -140,6 +147,8 @@ function Sidebar({ isOpen, onClose, searchQuery = "" }) {
             </ul>
           </>
         )}
+
+        {/* Categories Group */}
         {shouldShowGroup("Categories", ["New Category", "All Categories", "Other Categories"]) && (
           <>
             <DropdownMenuItem icon={faThLarge} text="Categories" isOpen={openMenus.categories} onClick={(e) => toggleNested(e, 'categories')} />
@@ -150,6 +159,8 @@ function Sidebar({ isOpen, onClose, searchQuery = "" }) {
             </ul>
           </>
         )}
+
+        {/* Products Group */}
         {shouldShowGroup("Products", ["All Products", "Scan QR", "View Inventory", "Other Products", "Product Dimensions"]) && (
           <>
             <DropdownMenuItem icon={faBoxOpen} text="Products" isOpen={openMenus.products} onClick={(e) => toggleNested(e, 'products')} />
@@ -162,12 +173,17 @@ function Sidebar({ isOpen, onClose, searchQuery = "" }) {
             </ul>
           </>
         )}
+
         {matches("Orders") && <LinkMenuItem icon={faShoppingCart} text="Orders" to="/manager/orders" />}
         {matches("Billing") && <LinkMenuItem icon={faFileInvoiceDollar} text="Billing" to="/manager/billing" />}
         {matches("All Bills") && <LinkMenuItem icon={faFileInvoiceDollar} text="All Bills" to="/manager/get-bills" />}
         {matches("Order Returns") && <LinkMenuItem icon={faUndo} text="Order Returns" to="/manager/order-returns" />}
         {matches("Companies") && <LinkMenuItem icon={faGlobe} text="Companies" to="/manager/company" />}
         {userRole === 'admin' && matches("Admins") && <LinkMenuItem icon={faUserShield} text="Admins" to="/manager/admins" />}
+        
+        {/* --- Label Notification Option Added Here --- */}
+        {matches("Label Notification") && <LinkMenuItem icon={faTag} text="Label Notification" to="/manager/label-notifications" />}
+        
         {matches("Push Notifications") && <LinkMenuItem text="Push Notifications" to="/manager/notifications" icon={faBell} />}
         {matches("App Feedback") && <LinkMenuItem icon={faComments} text="App Feedback" to="/manager/feedback" />}
         {matches("Archive Clients") && <LinkMenuItem icon={faArchive} text="Archive Clients" to="/manager/archive-clients" />}

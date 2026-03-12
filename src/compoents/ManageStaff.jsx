@@ -13,6 +13,7 @@ import {
   FaSearch,
   FaPhoneAlt,
   FaCalendarAlt,
+  FaPrint                                                                                                                                
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
@@ -57,6 +58,33 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
 
 const AadharImageModal = ({ imageUrl, isOpen, onClose }) => {
   if (!isOpen) return null;
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print Document</title>
+          <style>
+            body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+            img { max-width: 100%; max-height: 100%; object-fit: contain; }
+            @page { size: auto; margin: 0mm; }
+          </style>
+        </head>
+        <body>
+          <img src="${imageUrl}" />
+          <script>
+            window.onload = function() {
+              window.print();
+              window.onafterprint = function() { window.close(); };
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   return (
     <div
       className="fixed inset-0 z-[70] flex justify-center items-center p-4 backdrop-blur-sm bg-black/60 transition-opacity"
@@ -71,6 +99,17 @@ const AadharImageModal = ({ imageUrl, isOpen, onClose }) => {
           alt="Display Card"
           className="max-w-[90vw] max-h-[85vh] rounded-xl object-contain"
         />
+        
+        {/* Print Button */}
+        <button
+          onClick={handlePrint}
+          className="absolute -top-4 right-10 bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors border border-white"
+          title="Print Image"
+        >
+          <FaPrint size={18} />
+        </button>
+
+        {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute -top-4 -right-4 bg-white text-red-500 rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-red-50 transition-colors border border-gray-100"

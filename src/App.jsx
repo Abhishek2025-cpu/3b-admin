@@ -36,6 +36,7 @@ import InventoryStock from './compoents/InventoryStock';
 import ViewInventoryLog from './compoents/ViewInventoryLog'; 
 import ScanQrPage from './ScanQrPage';
 import Settings from './compoents/Settings';
+import LabelNotifications from './compoents/LabelNotifications';
 
 
 const ProtectedRoute = () => {
@@ -57,6 +58,7 @@ function App() {
        
           <Route element={<ProtectedRoute />}>
             <Route path="/manager" element={<ManagerLayout />}>
+            <Route path="/manager/label-notifications" element={<LabelNotifications />} />
               <Route index element={<Dashboard />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="add-machine" element={<MachineManager />} />
