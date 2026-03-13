@@ -43,8 +43,8 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, productName }) => {
         </div>
         <h3 className="text-2xl font-black text-gray-800 tracking-tight">Confirm Deletion</h3>
         <p className="text-gray-500 mt-3 text-sm leading-relaxed">
-          Are you completely sure you want to delete <br/>
-          <span className="font-bold text-[#6A3E9D] bg-purple-50 px-2 py-1 rounded-md inline-block mt-1">"{productName || 'this product'}"</span>? <br/>
+          Are you completely sure you want to delete <br />
+          <span className="font-bold text-[#6A3E9D] bg-purple-50 px-2 py-1 rounded-md inline-block mt-1">"{productName || 'this product'}"</span>? <br />
           This action is permanent and cannot be undone.
         </p>
         <div className="flex gap-4 mt-8 justify-center">
@@ -170,7 +170,7 @@ function AddProductModal({ isOpen, onClose, onProductAdded, categories = [], dim
             <label className="text-[11px] tracking-wider font-bold text-[#6A3E9D] uppercase mb-2 block">Description Boxes</label>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               {descriptionParts.slice(0, visibleBoxes).map((p, i) => (
-                <input key={i} value={p} onChange={e => { const np = [...descriptionParts]; np[i] = e.target.value.slice(0, 20); setDescriptionParts(np); }} className="w-full h-10 text-center border-gray-200 rounded-xl text-sm focus:border-[#6A3E9D] focus:ring-2 focus:ring-[#6A3E9D]/20 transition-all outline-none" placeholder={`Box ${i+1}`} />
+                <input key={i} value={p} onChange={e => { const np = [...descriptionParts]; np[i] = e.target.value.slice(0, 20); setDescriptionParts(np); }} className="w-full h-10 text-center border-gray-200 rounded-xl text-sm focus:border-[#6A3E9D] focus:ring-2 focus:ring-[#6A3E9D]/20 transition-all outline-none" placeholder={`Box ${i + 1}`} />
               ))}
             </div>
             {visibleBoxes < 20 && <button type="button" onClick={() => setVisibleBoxes(v => Math.min(v + 5, 20))} className="mt-4 px-4 py-2 bg-white border border-purple-200 text-[#6A3E9D] rounded-lg text-xs font-bold hover:bg-[#6A3E9D] hover:text-white transition-all duration-300 shadow-sm">+ Add More Boxes</button>}
@@ -336,7 +336,7 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl">
       <div className="p-6 bg-gradient-to-r from-blue-50 to-white border-b flex justify-between items-center">
-         <h3 className="text-2xl font-black text-gray-800 tracking-tight flex items-center gap-3">
+        <h3 className="text-2xl font-black text-gray-800 tracking-tight flex items-center gap-3">
           <div className="bg-blue-600 text-white p-2 rounded-lg text-sm shadow-md"><FontAwesomeIcon icon={faPenToSquare} /></div>
           Update Product
         </h3>
@@ -357,7 +357,7 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
             <div><label className="text-[11px] tracking-wider font-bold text-[#6A3E9D] uppercase">Model Number</label><input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className={inputClass} /></div>
             <div><label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase">Position</label><input type="number" value={formData.position} onChange={e => setFormData({ ...formData, position: e.target.value })} className={inputClass} /></div>
           </div>
-          
+
           <div className="bg-blue-50/30 p-5 rounded-2xl border border-blue-100">
             <label className="text-[11px] tracking-wider font-bold text-blue-600 uppercase mb-2 block">Description Boxes</label>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -548,7 +548,7 @@ function ViewProducts() {
   };
 
   // --- HORIZONTAL PRINT LOGIC (100mm x 50mm) ---
-  const handlePrintSticker = () => {
+const handlePrintSticker = () => {
     if (!qrCodeUrl) return toast.error("QR not found");
 
     const printWindow = window.open('', '_blank');
@@ -565,78 +565,89 @@ function ViewProducts() {
             body {
               margin: 0;
               padding: 0;
-              font-family: 'Arial', sans-serif;
+              font-family: "Helvetica", Arial, sans-serif;
               width: 100mm;
               height: 50mm;
-              overflow: hidden; 
-            }
-            .container {
-              display: flex;
-              width: 100mm;
-              height: 50mm;
-              align-items: center;
-              padding: 4mm;
-              box-sizing: border-box;
-              gap: 5mm;
-            }
-            .qr-side {
-              flex: 0 0 38mm;
               display: flex;
               align-items: center;
               justify-content: center;
+              background-color: white;
             }
-            .qr-code {
-              width: 38mm;
-              height: 38mm;
+            .sticker-container {
+              width: 94mm;
+              height: 44mm;
+              display: flex;
+              flex-direction: row;
+              align-items: center;
+              padding: 2mm;
+              box-sizing: border-box;
+            }
+            /* Left Side: QR + Website */
+            .left-section {
+              width: 40%;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+            }
+            .qr-image {
+              width: 32mm;
+              height: 32mm;
               object-fit: contain;
             }
-            .info-side {
-              flex: 1;
+            .website-url {
+              font-size: 7pt;
+              font-weight: bold;
+              margin-top: 1mm;
+              color: #000;
+              text-align: center;
+              letter-spacing: -0.2px;
+            }
+            /* Right Side: Model Info */
+            .right-section {
+              width: 60%;
               display: flex;
               flex-direction: column;
               justify-content: center;
+              padding-left: 2mm;
+              text-align: center;
             }
-            .label {
-              font-size: 8pt;
-              font-weight: bold;
-              color: #666;
-              text-transform: uppercase;
-              margin-bottom: 0mm;
-            }
-            .model-name {
-              font-size: 32pt; 
-              font-weight: 900;
-              color: #000;
-              margin: 0;
-              line-height: 1.1;
-            }
-            .pcs {
-              font-size: 13pt;
-              font-weight: bold;
+            .label-model {
+              font-size: 14pt;
+              font-weight: 800;
+              margin-bottom: -2mm;
               color: #333;
-              margin-top: 1mm;
             }
-            .website {
-              font-size: 7.5pt;
-              font-weight: bold;
-              color: #6A3E9D;
-              margin-top: 2mm;
-              border-top: 0.1mm solid #eee;
-              padding-top: 1mm;
-              width: 100%;
+            .model-number {
+              font-size: 48pt; /* Ekdum bada font jaisa image mein hai */
+              font-weight: 900;
+              margin: 0;
+              padding: 0;
+              line-height: 1.1;
+              color: #000;
+              text-transform: uppercase;
+            }
+            .pcs-info {
+              font-size: 14pt;
+              font-weight: 700;
+              margin-top: -1mm;
+              color: #333;
             }
           </style>
         </head>
         <body>
-          <div class="container">
-            <div class="qr-side">
-              <img src="${qrCodeUrl}" class="qr-code" />
+          <div class="sticker-container">
+            <!-- Left Side -->
+            <div class="left-section">
+              <img src="${qrCodeUrl}" class="qr-image" />
+              <div class="website-url">www.3bprofilespvtltd.com</div>
             </div>
-            <div class="info-side">
-              <div class="label">MODEL NO.</div>
-              <div class="model-name">${qrProductName}</div>
-              <div class="pcs">${qrPcsPerBox || '0'} pcs/box</div>
-              <div class="website">www.3bprofilespvtltd.com</div>
+
+            <!-- Right Side -->
+            <div class="right-section">
+              <div class="label-model">MODEL NO.</div>
+              <div class="model-number">${qrProductName}</div>
+              <div class="pcs-info">${qrPcsPerBox || '0'} pcs/box</div>
             </div>
           </div>
           <script>
@@ -722,12 +733,12 @@ function ViewProducts() {
   return (
     <div className="p-4 md:p-8 space-y-8 mt-8 bg-gray-50/50 min-h-screen">
       <Toaster position="top-right" toastOptions={{ className: 'font-bold rounded-xl shadow-lg' }} />
-      
+
       {/* KHATARNAK HEADING BANNER */}
       <div className="relative overflow-hidden bg-gradient-to-r from-[#4A1D7A] via-[#6A3E9D] to-[#8B5CF6] p-8 md:p-10 rounded-3xl shadow-2xl text-white flex flex-col md:flex-row justify-between items-center gap-6 group">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -mr-20 -mt-20 group-hover:scale-150 transition-transform duration-1000"></div>
         <div className="absolute bottom-0 left-0 w-40 h-40 bg-purple-400 opacity-20 rounded-full blur-2xl -ml-10 -mb-10 group-hover:scale-150 transition-transform duration-1000"></div>
-        
+
         <div className="relative z-10 flex items-center gap-6">
           <div className="w-16 h-16 bg-white/20 backdrop-blur-lg rounded-2xl flex items-center justify-center shadow-inner border border-white/30">
             <FontAwesomeIcon icon={faBoxOpen} size="2xl" className="text-white drop-shadow-md" />
@@ -752,7 +763,7 @@ function ViewProducts() {
       </div>
 
       <div className="bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-3xl p-6 md:p-8 border border-gray-100">
-        
+
         {/* Filters & Search */}
         <div className="mb-8 flex flex-col md:flex-row gap-5">
           <div className="relative flex-grow group">
@@ -762,7 +773,7 @@ function ViewProducts() {
             <input type="text" placeholder="Search by model, frame, or description..." className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:border-[#6A3E9D] focus:bg-white focus:ring-4 focus:ring-[#6A3E9D]/10 focus:outline-none transition-all duration-300 font-medium text-gray-700 placeholder-gray-400" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
           </div>
           <div className="relative min-w-[200px] group">
-             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#6A3E9D] transition-colors z-10">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#6A3E9D] transition-colors z-10">
               <FontAwesomeIcon icon={faFilter} />
             </div>
             <select className="w-full pl-11 pr-10 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:border-[#6A3E9D] focus:bg-white focus:ring-4 focus:ring-[#6A3E9D]/10 focus:outline-none transition-all duration-300 font-bold text-gray-700 appearance-none cursor-pointer" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
@@ -812,7 +823,7 @@ function ViewProducts() {
                   <td className="px-6 py-4">
                     <div className="flex flex-wrap gap-1">
                       {product.dimensions?.filter(Boolean).map((d, i) => (
-                         <span key={i} className="bg-gray-100 text-gray-600 px-2 py-1 rounded-md text-[10px] font-bold tracking-wider">{d.value || d}</span>
+                        <span key={i} className="bg-gray-100 text-gray-600 px-2 py-1 rounded-md text-[10px] font-bold tracking-wider">{d.value || d}</span>
                       )) || "—"}
                     </div>
                   </td>
@@ -823,17 +834,17 @@ function ViewProducts() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                     <div className="flex items-center justify-center gap-3">
-                        <button title="View QR" onClick={() => { setQrCodeUrl(product.qrCodeUrl); setQrProductName(product.name); setQrPcsPerBox(product.totalPiecesPerBox); setQrOpen(true); }} className="w-10 h-10 flex items-center justify-center bg-gray-50 text-gray-500 hover:bg-[#6A3E9D] hover:text-white rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
-                          <FontAwesomeIcon icon={faQrcode} />
-                        </button>
-                        <button title="Edit Product" onClick={() => { setSelectedProduct(product); setIsUpdateOpen(true); }} className="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-500 hover:bg-blue-600 hover:text-white rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
-                          <FontAwesomeIcon icon={faPenToSquare} />
-                        </button>
-                        <button title="Delete Product" onClick={() => { setProductToDelete(product); setIsDeleteOpen(true); }} className="w-10 h-10 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
-                          <FontAwesomeIcon icon={faTrash} />
-                        </button>
-                     </div>
+                    <div className="flex items-center justify-center gap-3">
+                      <button title="View QR" onClick={() => { setQrCodeUrl(product.qrCodeUrl); setQrProductName(product.name); setQrPcsPerBox(product.totalPiecesPerBox); setQrOpen(true); }} className="w-10 h-10 flex items-center justify-center bg-gray-50 text-gray-500 hover:bg-[#6A3E9D] hover:text-white rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+                        <FontAwesomeIcon icon={faQrcode} />
+                      </button>
+                      <button title="Edit Product" onClick={() => { setSelectedProduct(product); setIsUpdateOpen(true); }} className="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-500 hover:bg-blue-600 hover:text-white rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+                        <FontAwesomeIcon icon={faPenToSquare} />
+                      </button>
+                      <button title="Delete Product" onClick={() => { setProductToDelete(product); setIsDeleteOpen(true); }} className="w-10 h-10 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               )) : (
@@ -846,8 +857,8 @@ function ViewProducts() {
         {/* Premium Pagination */}
         {totalPages > 1 && (
           <div className="mt-8 flex justify-between items-center bg-gray-50 p-4 rounded-2xl border border-gray-100">
-             <p className="text-sm text-gray-500 font-medium hidden md:block">Showing Page <span className="font-bold text-gray-800">{currentPage}</span> of <span className="font-bold text-gray-800">{totalPages}</span></p>
-             <div className="flex items-center gap-2 w-full md:w-auto justify-center">
+            <p className="text-sm text-gray-500 font-medium hidden md:block">Showing Page <span className="font-bold text-gray-800">{currentPage}</span> of <span className="font-bold text-gray-800">{totalPages}</span></p>
+            <div className="flex items-center gap-2 w-full md:w-auto justify-center">
               <button
                 disabled={currentPage === 1}
                 onClick={() => handlePageChange(currentPage - 1)}
@@ -888,7 +899,7 @@ function ViewProducts() {
       <Modal isOpen={isQrOpen} onClose={() => setQrOpen(false)}>
         <div className="p-8 flex flex-col items-center text-center relative overflow-hidden">
           <div className="absolute top-0 w-full h-32 bg-gradient-to-b from-purple-50 to-transparent"></div>
-          
+
           <h3 className="font-black text-2xl mb-6 text-gray-800 tracking-tight relative z-10">Smart QR Tag</h3>
 
           <div className="relative z-10 bg-white p-5 rounded-3xl border-2 border-dashed border-[#6A3E9D]/30 mb-6 shadow-xl shadow-purple-100 group hover:border-[#6A3E9D] transition-colors duration-300">
@@ -900,7 +911,7 @@ function ViewProducts() {
                 <span className="text-gray-400 text-sm font-bold tracking-widest uppercase">No QR Generated</span>
               </div>
             )}
-            
+
             {/* Corner accents */}
             <div className="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-[#6A3E9D] rounded-tl-xl -mt-1 -ml-1"></div>
             <div className="absolute top-0 right-0 w-4 h-4 border-t-4 border-r-4 border-[#6A3E9D] rounded-tr-xl -mt-1 -mr-1"></div>
@@ -969,7 +980,7 @@ const ImageSliderModal = ({ isOpen, onClose, images }) => {
   const [idx, setIdx] = useState(0);
   useEffect(() => {
     if (isOpen) {
-      setIdx(images && images.length > 1 ? 1 : 0); 
+      setIdx(images && images.length > 1 ? 1 : 0);
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -981,7 +992,7 @@ const ImageSliderModal = ({ isOpen, onClose, images }) => {
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center overflow-hidden transition-all">
       <div className="absolute inset-0 bg-black/90 backdrop-blur-xl animate-in fade-in duration-500" onClick={onClose}></div>
-      
+
       <button onClick={onClose} className="absolute top-8 right-8 z-[100000] bg-white/10 hover:bg-red-500 hover:rotate-90 text-white w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 backdrop-blur-xl border border-white/20 shadow-2xl">
         <FontAwesomeIcon icon={faTimes} size="xl" />
       </button>
@@ -990,7 +1001,7 @@ const ImageSliderModal = ({ isOpen, onClose, images }) => {
         <button onClick={() => setIdx(i => i === 0 ? images.length - 1 : i - 1)} className="absolute left-2 md:left-10 text-white/50 hover:text-white hover:scale-125 transition-all z-50 p-4 bg-black/20 hover:bg-black/50 rounded-full backdrop-blur-md">
           <FontAwesomeIcon icon={faChevronLeft} size="2xl" />
         </button>
-        
+
         <div className="relative flex items-center justify-center w-full h-[85vh]">
           <img key={idx} src={images[idx]} className="max-w-full max-h-full object-contain rounded-2xl drop-shadow-2xl animate-in zoom-in slide-in-from-bottom-5 duration-500 ease-out" alt="Product View" />
           <div className="absolute -z-10 w-2/3 h-2/3 bg-[#6A3E9D]/20 blur-[100px] rounded-full mix-blend-screen"></div>

@@ -220,36 +220,63 @@ const PrintModal = ({ isOpen, onClose, item, box }) => {
 };
 
 const PrintAllBoxesModal = ({ isOpen, onClose, item }) => {
-    const handlePrint = () => window.print();
+    const handlePrint = () => {
+        setTimeout(() => window.print(), 300);
+    };
     if (!isOpen || !item) return null;
 
     return (<>
         <style>{`
-      @media print {
-        @page { size: 100mm 150mm; margin: 0; }
-        #printable-all-boxes-area, #printable-all-boxes-area * { visibility: visible !important; }
-        #printable-all-boxes-area {
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100mm !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            display: block !important;
-        }
-        .printable-page { 
-            width: 100mm !important;
-            height: 150mm !important;
-            page-break-after: always !important;
-            break-after: page !important;
-            display: flex !important;
-            align-items: center;
-            justify-content: center;
-            border: none !important;
-        }
-        .no-print { display: none !important; }
-      }
-    `}</style>
+@media print {
+
+  @page {
+    size: 152.4mm 108mm;
+    margin: 0;
+  }
+
+html, body {
+  width: 152.4mm;
+  height: 108mm;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  #printable-all-boxes-area,
+  #printable-all-boxes-area * {
+    visibility: visible !important;
+  }
+
+  #printable-all-boxes-area {
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    width: 152.4mm !important;
+    overflow: visible !important;
+  }
+
+.printable-page {
+  width: 152.4mm;
+  height: 108mm;
+  overflow: hidden;
+  page-break-after: always;
+  break-after: page;
+}
+
+  .printable-page:last-child {
+    page-break-after: auto !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+}
+`}</style>
 
         <GenericModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl" zIndex="z-[10010]">
             <div className="p-4 border-b flex justify-between items-center no-print bg-white">
@@ -259,7 +286,9 @@ const PrintAllBoxesModal = ({ isOpen, onClose, item }) => {
 
             <div id="printable-all-boxes-area" className="p-4 overflow-y-auto max-h-[70vh] bg-gray-100 print:bg-white print:p-0">
                 {item.boxes?.map(box => (
-                    <div key={box._id} className="printable-page mb-8 border-b border-dashed border-gray-400 pb-8 print:mb-0 print:pb-0 print:border-0">
+                    <div
+                        key={box._id}
+                        className="printable-page border-b border-dashed border-gray-400 print:border-0">
                         <PrintablePageLayout item={item} box={box} />
                     </div>
                 ))}
