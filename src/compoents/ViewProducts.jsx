@@ -547,7 +547,7 @@ function ViewProducts() {
     }
   };
 
-  // --- HORIZONTAL PRINT LOGIC (100mm x 50mm) ---
+  
 const handlePrintSticker = () => {
     if (!qrCodeUrl) return toast.error("QR not found");
 
@@ -572,22 +572,28 @@ const handlePrintSticker = () => {
               align-items: center;
               justify-content: center;
               background-color: white;
+              overflow: hidden;
             }
-            .sticker-container {
-              width: 94mm;
-              height: 44mm;
-              display: flex;
-              flex-direction: row;
-              align-items: center;
-              padding: 2mm;
-              box-sizing: border-box;
-            }
-            /* Left Side: QR + Website */
-            .left-section {
-              width: 40%;
+            .sticker-wrapper {
+              width: 100mm;
+              height: 50mm;
               display: flex;
               flex-direction: column;
               align-items: center;
+              justify-content: center;
+              padding: 0 2mm;
+              box-sizing: border-box;
+            }
+            .top-content {
+              display: flex;
+              flex-direction: row;
+              align-items: center;
+              justify-content: space-between;
+              width: 100%;
+            }
+            .qr-side {
+              width: 30%; /* QR की चौड़ाई थोड़ी कम की */
+              display: flex;
               justify-content: center;
             }
             .qr-image {
@@ -595,60 +601,62 @@ const handlePrintSticker = () => {
               height: 32mm;
               object-fit: contain;
             }
-            .website-url {
-              font-size: 7pt;
-              font-weight: bold;
-              margin-top: 1mm;
-              color: #000;
-              text-align: center;
-              letter-spacing: -0.2px;
-            }
-            /* Right Side: Model Info */
-            .right-section {
-              width: 60%;
+            .info-side {
+              width: 70%; /* टेक्स्ट के लिए जगह बढ़ाई ताकि एक लाइन में आए */
               display: flex;
               flex-direction: column;
               justify-content: center;
-              padding-left: 2mm;
               text-align: center;
+              padding-left: 2mm;
             }
             .label-model {
-              font-size: 14pt;
+              font-size: 11pt;
               font-weight: 800;
-              margin-bottom: -2mm;
+              margin-bottom: 0;
               color: #333;
             }
             .model-number {
-              font-size: 48pt; /* Ekdum bada font jaisa image mein hai */
+              font-size: 38pt; /* साइज थोड़ा कम किया ताकि लम्बे नाम एक लाइन में आ सकें */
               font-weight: 900;
               margin: 0;
               padding: 0;
               line-height: 1.1;
               color: #000;
               text-transform: uppercase;
+              white-space: nowrap; /* ये लाइन उसे एक ही रो में रखेगी */
+              letter-spacing: -0.5px;
             }
             .pcs-info {
-              font-size: 14pt;
+              font-size: 13pt;
               font-weight: 700;
-              margin-top: -1mm;
+              margin-top: 1mm;
               color: #333;
+            }
+            .website-url {
+              width: 100%;
+              text-align: center;
+              font-size: 8.5pt;
+              font-weight: 900;
+              color: #000;
+              letter-spacing: 0.2px;
+              margin-top: -1mm;
+              padding-bottom: 2mm;
             }
           </style>
         </head>
         <body>
-          <div class="sticker-container">
-            <!-- Left Side -->
-            <div class="left-section">
-              <img src="${qrCodeUrl}" class="qr-image" />
-              <div class="website-url">www.3bprofilespvtltd.com</div>
+          <div class="sticker-wrapper">
+            <div class="top-content">
+              <div class="qr-side">
+                <img src="${qrCodeUrl}" class="qr-image" />
+              </div>
+              <div class="info-side">
+                <div class="label-model">MODEL NO.</div>
+                <div class="model-number">${qrProductName}</div>
+                <div class="pcs-info">${qrPcsPerBox || '0'} pcs/box</div>
+              </div>
             </div>
-
-            <!-- Right Side -->
-            <div class="right-section">
-              <div class="label-model">MODEL NO.</div>
-              <div class="model-number">${qrProductName}</div>
-              <div class="pcs-info">${qrPcsPerBox || '0'} pcs/box</div>
-            </div>
+            <div class="website-url">www.3bprofilespvtltd.com</div>
           </div>
           <script>
             window.onload = function() {
@@ -660,7 +668,7 @@ const handlePrintSticker = () => {
       </html>
     `);
     printWindow.document.close();
-  };
+};
 
   const handleDownloadQr = async () => {
     if (!qrCodeUrl) return;
