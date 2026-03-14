@@ -37,6 +37,7 @@ import ViewInventoryLog from './compoents/ViewInventoryLog';
 import ScanQrPage from './ScanQrPage';
 import Settings from './compoents/Settings';
 import LabelNotifications from './compoents/LabelNotifications';
+import ScanStickerPage from './compoents/ScanStickerPage';
 
 
 const ProtectedRoute = () => {
@@ -63,6 +64,7 @@ function App() {
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="add-machine" element={<MachineManager />} />
               <Route path="assign-machines" element={<AssignMachines />} />
+              <Route path="scan-sticker" element={<ScanStickerPage />} /> 
               <Route path="add-item" element={<AddItem />} />
               <Route path="view-items" element={<ViewItems />} />
               <Route path="view-clients" element={<ViewClients />} />
