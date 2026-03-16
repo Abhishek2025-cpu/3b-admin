@@ -602,12 +602,12 @@ const handlePrintSticker = () => {
               object-fit: contain;
             }
             .info-side {
-              width: 70%; /* टेक्स्ट के लिए जगह बढ़ाई ताकि एक लाइन में आए */
+               width: 70%;
               display: flex;
               flex-direction: column;
               justify-content: center;
+              align-items: center;  /* <<< YEH ADD KARNA HAI */
               text-align: center;
-              padding-left: 2mm;
             }
             .label-model {
               font-size: 11pt;
@@ -635,7 +635,7 @@ const handlePrintSticker = () => {
             .website-url {
               width: 100%;
               text-align: center;
-              font-size: 8.5pt;
+              font-size: 12pt; 
               font-weight: 900;
               color: #000;
               letter-spacing: 0.2px;
