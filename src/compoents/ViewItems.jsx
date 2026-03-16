@@ -81,7 +81,7 @@ box-border">
                         <div className="flex items-end">
                             <span className="font-bold text-xl min-w-[150px]">Profile Code</span>
                             <div className="flex-1 border-b-2 border-blue-900 text-center text-xl font-bold pb-1">
-                                {profileCodes || "N/A"}
+                                {item.itemNo?.trim()}
                             </div>
                         </div>
 

@@ -142,7 +142,7 @@ const SmartQrTagModal = ({ isOpen, onClose, item, box }) => {
     // DIRECT SINGLE CLICK DOWNLOAD FUNCTION
     const handleDownloadBarcode = async () => {
         if (!barCodeUrl) return;
-        
+
         setIsDownloading(true); // Start loading state
         const toastId = toast.loading("Downloading...");
 
@@ -162,29 +162,29 @@ const SmartQrTagModal = ({ isOpen, onClose, item, box }) => {
             // Attempt 1: Direct fetch 
             let response = await fetch(barCodeUrl);
             if (!response.ok) throw new Error("CORS or Network issue");
-            
+
             let blob = await response.blob();
             triggerDownload(blob);
             toast.success("Downloaded successfully!", { id: toastId });
-            
+
         } catch (error) {
             console.log("Direct fetch blocked by CORS. Using Proxy bypass...");
-            
+
             try {
                 // Attempt 2: Bypassing CORS using allorigins Proxy
                 const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(barCodeUrl)}`;
                 const proxyResponse = await fetch(proxyUrl);
-                
+
                 if (!proxyResponse.ok) throw new Error("Proxy fetch failed");
-                
+
                 let blob = await proxyResponse.blob();
                 triggerDownload(blob);
                 toast.success("Downloaded successfully!", { id: toastId });
-                
+
             } catch (proxyError) {
                 console.error("Proxy download failed.", proxyError);
                 toast.dismiss(toastId);
-                
+
                 // Final Fallback: if proxy fails somehow, open in new tab
                 const a = document.createElement('a');
                 a.href = barCodeUrl;
@@ -272,8 +272,8 @@ const SmartQrTagModal = ({ isOpen, onClose, item, box }) => {
 };
 
 const ImageSliderModal = ({ isOpen, onClose, images, startIndex = 0 }) => {
-    const[currentIndex, setCurrentIndex] = useState(startIndex);
-    useEffect(() => { setCurrentIndex(startIndex); },[startIndex, images]);
+    const [currentIndex, setCurrentIndex] = useState(startIndex);
+    useEffect(() => { setCurrentIndex(startIndex); }, [startIndex, images]);
     if (!isOpen || !images || images.length === 0) return null;
     const goToPrevious = () => { setCurrentIndex((prevIndex) => (prevIndex === 0 ? images.length - 1 : prevIndex - 1)); };
     const goToNext = () => { setCurrentIndex((prevIndex) => (prevIndex === images.length - 1 ? 0 : prevIndex + 1)); };
@@ -300,29 +300,29 @@ const ImageSliderModal = ({ isOpen, onClose, images, startIndex = 0 }) => {
 
 const ScanStickerPage = () => {
     // --- Scanner States ---
-    const[activeTab, setActiveTab] = useState("camera");
-    const[scanned, setScanned] = useState(false);
-    const[scannerLoading, setScannerLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState("camera");
+    const [scanned, setScanned] = useState(false);
+    const [scannerLoading, setScannerLoading] = useState(false);
     const [formData, setFormData] = useState({ itemNo: "", boxSerialNo: "", operatorId: "", operatorName: "", helperId: "", helperName: "", shift: "" });
     const scannerRef = useRef(null);
 
     // --- List States ---
     const [items, setItems] = useState([]);
     const [fullItemsMap, setFullItemsMap] = useState(new Map());
-    const[listLoading, setListLoading] = useState(true);
-    const[error, setError] = useState(null);
+    const [listLoading, setListLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
 
     // Modals States
-    const[isBoxesModalOpen, setIsBoxesModalOpen] = useState(false);
-    const[selectedItemForBoxes, setSelectedItemForBoxes] = useState(null);
-    const[isImageSliderModalOpen, setIsImageSliderModalOpen] = useState(false);
-    const[imagesForSlider, setImagesForSlider] = useState([]);
-    const[initialImageIndex, setInitialImageIndex] = useState(0);
+    const [isBoxesModalOpen, setIsBoxesModalOpen] = useState(false);
+    const [selectedItemForBoxes, setSelectedItemForBoxes] = useState(null);
+    const [isImageSliderModalOpen, setIsImageSliderModalOpen] = useState(false);
+    const [imagesForSlider, setImagesForSlider] = useState([]);
+    const [initialImageIndex, setInitialImageIndex] = useState(0);
 
     // Smart QR Tag Modal States
     const [isSmartQrModalOpen, setIsSmartQrModalOpen] = useState(false);
-    const[selectedBoxForSmartQr, setSelectedBoxForSmartQr] = useState(null);
+    const [selectedBoxForSmartQr, setSelectedBoxForSmartQr] = useState(null);
 
     // ==========================================
     // SCANNER LOGIC 
@@ -335,13 +335,13 @@ const ScanStickerPage = () => {
 
         try {
             const res = await axios.get(`https://threebapi-1067354145699.asia-south1.run.app/api/items/scan/${id}`);
-            
+
             if (res.data?.success) {
                 const { scannedBox, itemDetails } = res.data.data;
 
                 const opEids = itemDetails.operators?.map(op => op.roleEid).filter(Boolean).join(', ') || "";
                 const opNames = itemDetails.operators?.map(op => op.employeeId?.name).filter(Boolean).join(', ') || "";
-                
+
                 const helpEids = itemDetails.helpers?.map(h => h.roleEid).filter(Boolean).join(', ') || "";
                 const helpNames = itemDetails.helpers?.map(h => h.employeeId?.name).filter(Boolean).join(', ') || "";
 
@@ -354,12 +354,12 @@ const ScanStickerPage = () => {
                     helperName: helpNames,
                     shift: itemDetails.shift || ""
                 });
-                
+
                 toast.success("Item found successfully!");
                 setScanned(true);
             } else {
                 toast.error(res.data?.message || "Details not found via API.");
-                setActiveTab("camera"); 
+                setActiveTab("camera");
             }
         } catch (error) {
             console.error("Error:", error);
@@ -423,7 +423,7 @@ const ScanStickerPage = () => {
             const tempDiv = document.getElementById("temp-qr-reader");
             if (tempDiv) document.body.removeChild(tempDiv);
         } finally {
-            e.target.value = ""; 
+            e.target.value = "";
         }
     };
 
@@ -444,19 +444,19 @@ const ScanStickerPage = () => {
         const base = item.mainItem || item;
         return {
             ...item, ...base, _id: base._id || item._id,
-            helpers: Array.isArray(base.helpers) ? base.helpers : (Array.isArray(item.helpers) ? item.helpers :[]),
-            operators: Array.isArray(base.operators) ? base.operators : (Array.isArray(item.operators) ? item.operators :[]),
-            mixtures: Array.isArray(item.mixtures) ? item.mixtures : (Array.isArray(base.mixtures) ? base.mixtures :[]),
-            boxes: Array.isArray(item.boxes) ? item.boxes : (Array.isArray(base.boxes) ? base.boxes :[]),
+            helpers: Array.isArray(base.helpers) ? base.helpers : (Array.isArray(item.helpers) ? item.helpers : []),
+            operators: Array.isArray(base.operators) ? base.operators : (Array.isArray(item.operators) ? item.operators : []),
+            mixtures: Array.isArray(item.mixtures) ? item.mixtures : (Array.isArray(base.mixtures) ? base.mixtures : []),
+            boxes: Array.isArray(item.boxes) ? item.boxes : (Array.isArray(base.boxes) ? base.boxes : []),
             boxCount: base.boxCount || item.boxCount || (Array.isArray(item.boxes) ? item.boxes.length : 0),
-            productImageUrl: Array.isArray(base.productImageUrl) ? base.productImageUrl : base.productImageUrl ? [base.productImageUrl] : (item.productImageUrl ?[item.productImageUrl] :[]),
+            productImageUrl: Array.isArray(base.productImageUrl) ? base.productImageUrl : base.productImageUrl ? [base.productImageUrl] : (item.productImageUrl ? [item.productImageUrl] : []),
         };
     };
 
     const fetchAllData = useCallback(async () => {
         setListLoading(true);
         try {
-            const[listRes, detailRes] = await Promise.all([
+            const [listRes, detailRes] = await Promise.all([
                 fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-Allitems'),
                 fetch('https://threebapi-1067354145699.asia-south1.run.app/api/items/get-items'),
             ]);
@@ -465,8 +465,8 @@ const ScanStickerPage = () => {
             const listJson = await listRes.json();
             const detailJson = await detailRes.json();
 
-            const listRaw = Array.isArray(listJson) ? listJson : (listJson.data ||[]);
-            const detailRaw = Array.isArray(detailJson) ? detailJson : (detailJson.data ||[]);
+            const listRaw = Array.isArray(listJson) ? listJson : (listJson.data || []);
+            const detailRaw = Array.isArray(detailJson) ? detailJson : (detailJson.data || []);
 
             const normalizedListData = listRaw.map(normalizeItem);
             const normalizedDetailData = detailRaw.map(normalizeItem);
@@ -483,18 +483,18 @@ const ScanStickerPage = () => {
         } finally {
             setListLoading(false);
         }
-    },[]);
+    }, []);
 
     useEffect(() => { fetchAllData(); }, [fetchAllData]);
 
     const filteredItems = useMemo(() => {
-        if (!Array.isArray(items)) return[];
+        if (!Array.isArray(items)) return [];
         return items.filter(item =>
             item.itemNo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             item.helpers?.some(h => h.employeeId?.name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
             item.operators?.some(o => o.employeeId?.name?.toLowerCase().includes(searchQuery.toLowerCase()))
         );
-    },[items, searchQuery]);
+    }, [items, searchQuery]);
 
     const handleOpenBoxesModal = (itemFromList) => {
         const fullItemData = fullItemsMap.get(itemFromList._id);
@@ -589,19 +589,82 @@ const ScanStickerPage = () => {
 
                 {scanned && (
                     <div className="scan-card">
-                        <h3 style={{ margin: '0 0 15px 0', color: 'var(--primary-dark)', borderBottom: '2px solid var(--border)', paddingBottom: '10px' }}>📋 Sticker Details</h3>
+                        <h3 style={{ margin: '0 0 15px 0', color: 'var(--primary-dark)', borderBottom: '2px solid var(--border)', paddingBottom: '10px' }}>
+                            📋 Sticker Details
+                        </h3>
+
                         <div className="info-grid">
-                            <div><span className="label-scan">Item No</span><input type="text" name="itemNo" className="value-box font-bold text-gray-700 bg-gray-100" value={formData.itemNo} readOnly /></div>
-                            <div><span className="label-scan">Serial No</span><input type="text" name="boxSerialNo" className="value-box font-bold text-gray-700 bg-gray-100" value={formData.boxSerialNo} readOnly /></div>
-                            
-                            <div><span className="label-scan">Operator ID</span><input type="text" name="operatorId" className="value-box" value={formData.operatorId} onChange={handleChangeScannerForm} /></div>
-                            <div><span className="label-scan">Operator Name</span><input type="text" name="operatorName" className="value-box" value={formData.operatorName} onChange={handleChangeScannerForm} /></div>
-                            
-                            <div><span className="label-scan">Helper ID</span><input type="text" name="helperId" className="value-box" value={formData.helperId} onChange={handleChangeScannerForm} /></div>
-                            <div><span className="label-scan">Helper Name</span><input type="text" name="helperName" className="value-box" value={formData.helperName} onChange={handleChangeScannerForm} /></div>
-                            
-                            <div className="full-width"><span className="label-scan">Shift</span><input type="text" name="shift" className="value-box" value={formData.shift} onChange={handleChangeScannerForm} placeholder="e.g. Day / Night" /></div>
+                            <div>
+                                <span className="label-scan">Item No</span>
+                                <input
+                                    type="text"
+                                    className="value-box font-bold text-gray-700 bg-gray-100"
+                                    value={formData.itemNo}
+                                    readOnly
+                                />
+                            </div>
+
+                            <div>
+                                <span className="label-scan">Serial No</span>
+                                <input
+                                    type="text"
+                                    className="value-box font-bold text-gray-700 bg-gray-100"
+                                    value={formData.boxSerialNo}
+                                    readOnly
+                                />
+                            </div>
+
+                            <div>
+                                <span className="label-scan">Operator ID</span>
+                                <input
+                                    type="text"
+                                    className="value-box bg-gray-100"
+                                    value={formData.operatorId}
+                                    readOnly
+                                />
+                            </div>
+
+                            <div>
+                                <span className="label-scan">Operator Name</span>
+                                <input
+                                    type="text"
+                                    className="value-box bg-gray-100"
+                                    value={formData.operatorName}
+                                    readOnly
+                                />
+                            </div>
+
+                            <div>
+                                <span className="label-scan">Helper ID</span>
+                                <input
+                                    type="text"
+                                    className="value-box bg-gray-100"
+                                    value={formData.helperId}
+                                    readOnly
+                                />
+                            </div>
+
+                            <div>
+                                <span className="label-scan">Helper Name</span>
+                                <input
+                                    type="text"
+                                    className="value-box bg-gray-100"
+                                    value={formData.helperName}
+                                    readOnly
+                                />
+                            </div>
+
+                            <div className="full-width">
+                                <span className="label-scan">Shift</span>
+                                <input
+                                    type="text"
+                                    className="value-box bg-gray-100"
+                                    value={formData.shift}
+                                    readOnly
+                                />
+                            </div>
                         </div>
+
                         <div className="button-group">
                             <button className="btn-reset" onClick={handleCloseScannerForm}>❌ Close</button>
                             <button className="btn-action" onClick={handlePrintScannerForm}>🖨️ Print</button>
