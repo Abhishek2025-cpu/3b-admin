@@ -592,7 +592,7 @@ const handlePrintSticker = () => {
               width: 100%;
             }
             .qr-side {
-              width: 30%; /* QR की चौड़ाई थोड़ी कम की */
+              width: 30%; 
               display: flex;
               justify-content: center;
             }

@@ -121,7 +121,8 @@ box-border">
                     </p>
 
                     {/* Product Thumbnail in Dashed Box */}
-                    <div className="border-2 border-dashed border-gray-400 p-1 w-32 h-20 flex items-center justify-center bg-gray-50">
+                    {/* Product Thumbnail in Dashed Box */}
+                    <div className="border-2 border-dashed border-gray-400 p-1 w-44 h-32 flex items-center justify-center bg-gray-50">
                         {productImg ? (
                             <img src={productImg} alt="Product" className="max-w-full max-h-full object-contain" />
                         ) : (
