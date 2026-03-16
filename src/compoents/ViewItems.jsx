@@ -121,7 +121,8 @@ box-border">
                     </p>
 
                     {/* Product Thumbnail in Dashed Box */}
-                    <div className="border-2 border-dashed border-gray-400 p-1 w-32 h-20 flex items-center justify-center bg-gray-50">
+                    {/* Product Thumbnail in Dashed Box */}
+                    <div className="border-2 border-dashed border-gray-400 p-1 w-44 h-32 flex items-center justify-center bg-gray-50">
                         {productImg ? (
                             <img src={productImg} alt="Product" className="max-w-full max-h-full object-contain" />
                         ) : (
@@ -228,53 +229,91 @@ const PrintAllBoxesModal = ({ isOpen, onClose, item }) => {
     return (<>
         <style>{`
 @media print {
-
   @page {
     size: 152.4mm 108mm;
     margin: 0;
   }
 
-html, body {
-  width: 152.4mm;
-  height: 108mm;
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-}
+  html, body {
+    width: 152.4mm !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background-color: white !important;
+    overflow: visible !important;
+  }
 
+  /* Sab kuch globally hide karna */
   body * {
     visibility: hidden !important;
   }
 
+  /* 1. THE MAIN FIX: Modal ko fixed se hata kar absolute and block banana 
+        taki wo niche tak grow kar sake aur saare pages print ho jaye */
+  .fixed.inset-0 {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 152.4mm !important;
+    height: auto !important;
+    display: block !important; /* Flex hata diya taki top-left chipke */
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* 2. Modal ke andar ke containers ki height limit kholna */
+  .fixed.inset-0 > div {
+    position: static !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* 3. Sirf print area ko visible karna */
   #printable-all-boxes-area,
   #printable-all-boxes-area * {
     visibility: visible !important;
   }
 
   #printable-all-boxes-area {
-    position: absolute !important;
-    top: 0;
-    left: 0;
+    position: static !important;
+    display: block !important;
     width: 152.4mm !important;
+    height: auto !important;
     overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
-.printable-page {
-  width: 152.4mm;
-  height: 108mm;
-  overflow: hidden;
-  page-break-after: always;
-  break-after: page;
-}
+  /* 4. Page Break Rules: Har box ko exact 1 page me set karna */
+  .printable-page {
+    width: 152.4mm !important;
+    height: 108mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
 
+  /* Aakhri page ke baad extra blank page na aaye */
   .printable-page:last-child {
     page-break-after: auto !important;
+    break-after: auto !important;
   }
 
+  /* Header/Footer/Background hide karna */
   .no-print {
     display: none !important;
   }
-
 }
 `}</style>
 
@@ -284,7 +323,10 @@ html, body {
                 <button onClick={onClose} className="text-gray-500 hover:text-red-600 text-3xl">&times;</button>
             </div>
 
-            <div id="printable-all-boxes-area" className="p-4 overflow-y-auto max-h-[70vh] bg-gray-100 print:bg-white print:p-0">
+            <div 
+                id="printable-all-boxes-area" 
+                className="p-4 overflow-y-auto max-h-[70vh] bg-gray-100 print:bg-white print:p-0 print:overflow-visible print:max-h-none print:block"
+            >
                 {item.boxes?.map(box => (
                     <div
                         key={box._id}

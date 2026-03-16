@@ -243,14 +243,24 @@ function AddItem() {
         const res = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/staff/get-employees');
         const data = await res.json();
         
-        const processStaffByRole = (roleName) => {
-          return data
-            .filter(e => e.role && Array.isArray(e.role) && e.role.includes(roleName))
-            .map(e => ({
-              value: e._id,
-              label: `${e.name} (${e.eid || 'N/A'})`
-            }));
-        };
+        
+// Is block ko replace karein (fetchStaff function ke andar)
+const processStaffByRole = (roleName) => {
+  return data
+    .filter(e => {
+      if (!e.role) return false;
+      // Agar role array hai to includes check karein, agar string hai to direct check karein
+      if (Array.isArray(e.role)) {
+        return e.role.includes(roleName);
+      }
+      return e.role === roleName;
+    })
+    .map(e => ({
+      value: e._id,
+      label: `${e.name} (${e.eid || 'N/A'})`
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label)); // Optional: Naam ke hisaab se sort karne ke liye
+};
 
         setHelpers(processStaffByRole('Helper'));
         setOperators(processStaffByRole('Operator'));
