@@ -27,12 +27,18 @@ const OperatorTable = () => {
         const res = await axios.get(
           "https://threebapi-1067354145699.asia-south1.run.app/api/staff/get-employees"
         );
-        const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
+        const list = Array.isArray(res.data) ? res.data : res.data?.data ||[];
         
-        // Filter: Role must contain "operator" (case-insensitive)
-        const onlyOperators = list.filter(emp => 
-            emp.role && emp.role.toLowerCase().includes("operator")
-        );
+        // LOGIC FIX: Handle 'role' as an Array safely
+        const onlyOperators = list.filter(emp => {
+          if (!emp.role) return false;
+          if (Array.isArray(emp.role)) {
+            return emp.role.some(r => r.toLowerCase().includes("operator"));
+          } else if (typeof emp.role === 'string') {
+            return emp.role.toLowerCase().includes("operator");
+          }
+          return false;
+        });
         
         setOperators(onlyOperators);
       } catch (err) {
@@ -41,9 +47,9 @@ const OperatorTable = () => {
       }
     };
     fetchOperators();
-  }, []);
+  },[]);
 
-  // 2. Fetch Tasks & Match updatedBy ID
+  // 2. Fetch Tasks using the New API Endpoint
   const fetchTasks = async () => {
     if (!selectedOperator) {
       toast.error("Please select an Operator first");
@@ -52,35 +58,23 @@ const OperatorTable = () => {
 
     setLoading(true);
     try {
+      // LOGIC FIX: NEW API URL integrated here
       const res = await axios.get(
-        "https://threebapi-1067354145699.asia-south1.run.app/api/workers/get-task"
+        `https://threebapi-1067354145699.asia-south1.run.app/api/workers/employee-task/${selectedOperator}?lang=kn`
       );
       
-      const allTasks = res.data?.data || [];
+      let allTasks =[];
+      if (Array.isArray(res.data)) allTasks = res.data;
+      else if (Array.isArray(res.data?.data)) allTasks = res.data.data;
+      else if (Array.isArray(res.data?.tasks)) allTasks = res.data.tasks;
 
-      // Filter Logic
+      // Filter Logic (Only Date needed now, since API already filters by Operator)
       const filteredTasks = allTasks.filter((task) => {
-        // MATCH LOGIC: Check both String ID and Object ID scenarios
-        let isUpdatedByMatch = false;
-
-        if (task.updatedBy) {
-            if (typeof task.updatedBy === 'string') {
-                // If API returns "updatedBy": "ID_STRING"
-                isUpdatedByMatch = task.updatedBy === selectedOperator;
-            } else if (typeof task.updatedBy === 'object' && task.updatedBy._id) {
-                // If API returns "updatedBy": { "_id": "ID_STRING" }
-                isUpdatedByMatch = task.updatedBy._id === selectedOperator;
-            }
-        }
-
-        // DATE LOGIC (Optional)
-        let isDateMatch = true;
         if (selectedDate) {
            const taskDate = new Date(task.createdAt).toLocaleDateString("en-CA");
-           isDateMatch = taskDate === selectedDate;
+           return taskDate === selectedDate;
         }
-
-        return isUpdatedByMatch && isDateMatch;
+        return true;
       });
 
       setTasks(filteredTasks);
@@ -180,7 +174,7 @@ const OperatorTable = () => {
   };
 
   const handleCancel = (taskId) => {
-    setEditedRows(prev => ({ ...prev, [taskId]: { ...prev[taskId], __editing: false } }));
+    setEditedRows(prev => ({ ...prev,[taskId]: { ...prev[taskId], __editing: false } }));
   };
 
   const formatTime = (dateStr) => {
@@ -188,11 +182,14 @@ const OperatorTable = () => {
     return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Helper to get Operator Name (since updatedBy might be ID string)
+  // LOGIC FIX: Helper to get Operator Name robustly with new API
   const getOperatorName = (idOrObj) => {
-      if(!idOrObj) return "—";
+      // If no ID is passed from API, we already know who it is from the Dropdown!
+      if(!idOrObj && selectedOperator) {
+         const op = operators.find(o => o._id === selectedOperator);
+         return op ? op.name : "—";
+      }
       if(typeof idOrObj === 'object') return idOrObj.name;
-      // If it's a string ID, try to find it in our operator list
       const op = operators.find(o => o._id === idOrObj);
       return op ? op.name : "Unknown ID";
   };
