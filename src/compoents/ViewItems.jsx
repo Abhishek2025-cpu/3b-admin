@@ -9,7 +9,7 @@ const DeleteIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-5
 const PrintIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clipRule="evenodd" /></svg>);
 const TrackIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" /></svg>);
 const Spinner = () => (<svg className="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>);
-const StaticBarcodeIcon = () => (<svg className="h-12 w-full max-w-xs" viewBox="0 0 200 50" preserveAspectRatio="none"><rect x="0" y="0" width="200" height="50" fill="white" /><g fill="black"><rect x="10" y="5" width="2" height="40" /><rect x="14" y="5" width="2" height="40" /><rect x="18" y="5" width="4" height="40" /><rect x="24" y="5" width="2" height="40" /><rect x="28" y="5" width="4" height="40" /><rect x="34" y="5" width="2" height="40" /><rect x="38" y="5" width="2" height="40" /><rect x="42" y="5" width="6" height="40" /><rect x="50" y="5" width="2" height="40" /><rect x="54" y="5" width="4" height="40" /><rect x="60" y="5" width="2" height="40" /><rect x="64" y="5" width="2" height="40" /><rect x="68" y="5" width="4" height="40" /><rect x="74" y="5" width="4" height="40" /><rect x="80" y="5" width="2" height="40" /><rect x="84" y="5" width="6" height="40" /><rect x="92" y="5" width="2" height="40" /><rect x="96" y="5" width="2" height="40" /><rect x="100" y="5" width="4" height="40" /><rect x="106" y="5" width="2" height="40" /><rect x="110" y="5" width="6" height="40" /><rect x="118" y="5" width="2" height="40" /><rect x="122" y="5" width="4" height="40" /><rect x="128" y="5" width="2" height="40" /><rect x="132" y="5" width="4" height="40" /><rect x="138" y="5" width="2" height="40" /><rect x="142" y="5" width="6" height="40" /><rect x="150" y="5" width="2" height="40" /><rect x="154" y="5" width="2" height="40" /><rect x="158" y="5" width="4" height="40" /><rect x="164" y="5" width="4" height="40" /><rect x="170" y="5" width="2" height="40" /><rect x="174" y="5" width="6" height="40" /><rect x="182" y="5" width="2" height="40" /><rect x="186" y="5" width="4" height="40" /></g></svg>);
+// const StaticBarcodeIcon = () => (<svg className="h-12 w-full max-w-xs" viewBox="0 0 200 50" preserveAspectRatio="none"><rect x="0" y="0" width="200" height="50" fill="white" /><g fill="black"><rect x="10" y="5" width="2" height="40" /><rect x="14" y="5" width="2" height="40" /><rect x="18" y="5" width="4" height="40" /><rect x="24" y="5" width="2" height="40" /><rect x="28" y="5" width="4" height="40" /><rect x="34" y="5" width="2" height="40" /><rect x="38" y="5" width="2" height="40" /><rect x="42" y="5" width="6" height="40" /><rect x="50" y="5" width="2" height="40" /><rect x="54" y="5" width="4" height="40" /><rect x="60" y="5" width="2" height="40" /><rect x="64" y="5" width="2" height="40" /><rect x="68" y="5" width="4" height="40" /><rect x="74" y="5" width="4" height="40" /><rect x="80" y="5" width="2" height="40" /><rect x="84" y="5" width="6" height="40" /><rect x="92" y="5" width="2" height="40" /><rect x="96" y="5" width="2" height="40" /><rect x="100" y="5" width="4" height="40" /><rect x="106" y="5" width="2" height="40" /><rect x="110" y="5" width="6" height="40" /><rect x="118" y="5" width="2" height="40" /><rect x="122" y="5" width="4" height="40" /><rect x="128" y="5" width="2" height="40" /><rect x="132" y="5" width="4" height="40" /><rect x="138" y="5" width="2" height="40" /><rect x="142" y="5" width="6" height="40" /><rect x="150" y="5" width="2" height="40" /><rect x="154" y="5" width="2" height="40" /><rect x="158" y="5" width="4" height="40" /><rect x="164" y="5" width="4" height="40" /><rect x="170" y="5" width="2" height="40" /><rect x="174" y="5" width="6" height="40" /><rect x="182" y="5" width="2" height="40" /><rect x="186" y="5" width="4" height="40" /></g></svg>);
 const ProgressIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="h-5 w-5">
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125L21 13.125M3 13.125v4.875L21 18V13.125M3 13.125L7.5 4.125M21 13.125L16.5 4.125M7.5 4.125C7.5 3.076 8.336 2.25 9.38 2.25h5.24C15.664 2.25 16.5 3.076 16.5 4.125V13.125L7.5 13.125M7.5 4.125h9V13.125h-9V4.125Z" />
@@ -67,7 +67,7 @@ flex flex-col
 box-border">
             <div className="flex h-full">
 
-                {/* LEFT SECTION (70%) */}
+                {/* LEFT SECTION (65%) */}
                 <div className="w-[65%] flex flex-col justify-between pr-4">
                     {/* Logo & Brand */}
                     <div>
@@ -121,7 +121,6 @@ box-border">
                     </p>
 
                     {/* Product Thumbnail in Dashed Box */}
-                    {/* Product Thumbnail in Dashed Box */}
                     <div className="border-2 border-dashed border-gray-400 p-1 w-44 h-32 flex items-center justify-center bg-gray-50">
                         {productImg ? (
                             <img src={productImg} alt="Product" className="max-w-full max-h-full object-contain" />
@@ -130,9 +129,22 @@ box-border">
                         )}
                     </div>
 
-                    {/* Barcode at bottom */}
-                    <div className="mt-auto w-full">
-                        <StaticBarcodeIcon />
+                    <div className="mt-auto w-full flex justify-center">
+                        {/* FIXED: Changed item.barCodeUrl to box.barCodeUrl */}
+                        {box?.barCodeUrl ? (
+                            <img
+                                src={box.barCodeUrl.replace(/\s/g, "%20")}
+                                className="w-64 h-24 object-contain transform group-hover:scale-105 transition-transform duration-500"
+                                style={{ imageRendering: "pixelated" }}
+                                alt={`Barcode-${box.boxSerialNo}`}
+                            />
+                        ) : (
+                            <div className="w-64 h-24 bg-gray-50 flex flex-col items-center justify-center rounded-2xl gap-2">
+                                <span className="text-gray-400 text-sm font-bold tracking-widest uppercase text-center">
+                                    No Barcode <br /> Generated
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -323,8 +335,8 @@ const PrintAllBoxesModal = ({ isOpen, onClose, item }) => {
                 <button onClick={onClose} className="text-gray-500 hover:text-red-600 text-3xl">&times;</button>
             </div>
 
-            <div 
-                id="printable-all-boxes-area" 
+            <div
+                id="printable-all-boxes-area"
                 className="p-4 overflow-y-auto max-h-[70vh] bg-gray-100 print:bg-white print:p-0 print:overflow-visible print:max-h-none print:block"
             >
                 {item.boxes?.map(box => (
