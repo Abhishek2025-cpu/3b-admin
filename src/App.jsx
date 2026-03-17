@@ -38,6 +38,7 @@ import ScanQrPage from './ScanQrPage';
 import Settings from './compoents/Settings';
 import LabelNotifications from './compoents/LabelNotifications';
 import ScanStickerPage from './compoents/ScanStickerPage';
+import WorkerTable from './compoents/WorkerTable';
 
 
 const ProtectedRoute = () => {
@@ -89,6 +90,7 @@ function App() {
               <Route path="product-dimensions" element={<DimensionsTable />} />
               <Route path="archive-clients" element={<ArchivedClients />} />
               <Route path="operators" element={<OperatorTable />} />
+              <Route path="worker" element={<WorkerTable />} />
               <Route path="inventory-stock" element={<InventoryStock />} />
               <Route path="/manager/inventory-log" element={<ViewInventoryLog />} />
                <Route path="scan-qr" element={<ScanQrPage />} /> 

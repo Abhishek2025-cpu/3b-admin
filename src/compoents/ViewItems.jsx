@@ -72,31 +72,31 @@ box-border">
                     {/* Logo & Brand */}
                     <div>
                         <img src={logo} alt="3B Logo" className="w-48 mb-2" />
-                        <p className="text-blue-800 font-bold text-sm ml-2">www.3bprofilespvtlt.com</p>
+                        <p className="text-blue-800 font-bold text-sm ml-5 mt-[-60px]">www.3bprofilespvtlt.com</p>
                     </div>
 
                     {/* Data Fields */}
                     <div className="space-y-4 mb-8">
                         {/* Profile Code */}
                         <div className="flex items-end">
-                            <span className="font-bold text-xl min-w-[150px]">Profile Code</span>
-                            <div className="flex-1 border-b-2 border-blue-900 text-center text-xl font-bold pb-1">
+                            <span className="font-bold text-x min-w-[150px]">Profile Code</span>
+                            <div className="flex-1 border-b-2 border-blue-900 text-center text-x font-bold pb-1">
                                 {item.itemNo?.trim()}
                             </div>
                         </div>
 
                         {/* Height */}
                         <div className="flex items-end">
-                            <span className="font-bold text-xl min-w-[150px]">Height (m)</span>
-                            <div className="flex-1 border-b-2 border-blue-900 text-center text-xl font-bold pb-1">
+                            <span className="font-bold text-x min-w-[150px]">Height (m)</span>
+                            <div className="flex-1 border-b-2 border-blue-900 text-center text-x font-bold pb-1">
                                 {item.length}
                             </div>
                         </div>
 
                         {/* Qty per Box */}
                         <div className="flex items-end">
-                            <span className="font-bold text-xl min-w-[150px]">Qty per Box</span>
-                            <div className="flex-1 border-b-2 border-blue-900 text-center text-xl font-bold pb-1">
+                            <span className="font-bold text-x min-w-[150px]">Qty per Box</span>
+                            <div className="flex-1 border-b-2 border-blue-900 text-center text-x font-bold pb-1">
                                 {qtyPerBox}
                             </div>
                         </div>

@@ -132,6 +132,7 @@ function Sidebar({ isOpen, onClose, searchQuery = "" }) {
             <DropdownMenuItem icon={faCogs} text="Machines" isOpen={openMenus.machines} onClick={(e) => toggleNested(e, 'machines')} />
             <ul style={{ ...styles.nested, ...(openMenus.machines ? styles.nestedOpen : {}) }}>
               {matches("Operator Table") && <LinkMenuItem icon={faPlusSquare} text="Operator Table" to="/manager/operators" />}
+              {matches("Worker Table") && <LinkMenuItem icon={faPlusSquare} text="Worker Table" to="/manager/worker" />}
               {matches("Mixture Table") && <LinkMenuItem icon={faTasks} text="Mixture Table" to="/manager/add-machine" />}
             </ul>
           </>
