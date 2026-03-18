@@ -60,7 +60,7 @@ const PrintablePageLayout = ({ item, box }) => {
                             </p>
                         </div>
                         {/* QR Code */}
-                        <div className="flex-shrink-0 mt-2">
+                        <div className="flex-shrink-0 mt-12">
                             <img
                                 src={box.qrCodeUrl}
                                 alt="Box QR"
