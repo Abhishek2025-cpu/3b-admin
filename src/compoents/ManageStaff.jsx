@@ -491,7 +491,7 @@ const EmployeeDetails = ({ staff, onImageClick }) => {
             <p className="text-gray-800 font-mono font-medium">{staff.adharNumber || "N/A"}</p>
         </div>
       </div>
-      <div className="flex items-center gap-3">
+      {/* <div className="flex items-center gap-3">
         <div className="p-2 bg-white rounded-lg shadow-sm text-orange-500"><FaUsers /></div>
         <div>
              <p className="text-xs font-bold text-gray-500 uppercase">Custom Roles</p>
@@ -507,7 +507,7 @@ const EmployeeDetails = ({ staff, onImageClick }) => {
                  )}
              </div>
         </div>
-      </div>
+      </div> */}
       
       <div className="col-span-1 md:col-span-3 h-px bg-indigo-200 my-1"></div>
 

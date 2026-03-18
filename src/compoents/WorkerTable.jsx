@@ -11,56 +11,56 @@ const EditIcon = () => (
   </svg>
 );
 
-const OperatorTable = () => {
-  const [operators, setOperators] = useState([]);
-  const [selectedOperator, setSelectedOperator] = useState("");
+const WorkerTable = () => {
+  const [workers, setWorkers] = useState([]);
+  const [selectedWorker, setSelectedWorker] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editedRows, setEditedRows] = useState({});
 
-  // 1. Fetch Employees & Filter for 'Operator' Role ONLY
+  // 1. Fetch Employees & Filter for 'Helper' or 'Worker' Role ONLY
   useEffect(() => {
-    const fetchOperators = async () => {
+    const fetchWorkers = async () => {
       try {
         const res = await axios.get(
           "https://threebapi-1067354145699.asia-south1.run.app/api/staff/get-employees"
         );
         const list = Array.isArray(res.data) ? res.data : res.data?.data ||[];
         
-        // LOGIC FIX: Handle 'role' as an Array safely
-        const onlyOperators = list.filter(emp => {
+        // Filter logic for Workers/Helpers
+        const onlyWorkers = list.filter(emp => {
           if (!emp.role) return false;
           if (Array.isArray(emp.role)) {
-            return emp.role.some(r => r.toLowerCase().includes("operator"));
+            return emp.role.some(r => r.toLowerCase().includes("helper") || r.toLowerCase().includes("worker"));
           } else if (typeof emp.role === 'string') {
-            return emp.role.toLowerCase().includes("operator");
+            return emp.role.toLowerCase().includes("helper") || emp.role.toLowerCase().includes("worker");
           }
           return false;
         });
         
-        setOperators(onlyOperators);
+        setWorkers(onlyWorkers);
       } catch (err) {
         console.error("Error fetching staff:", err);
-        toast.error("Could not load operator list");
+        toast.error("Could not load worker list");
       }
     };
-    fetchOperators();
+    fetchWorkers();
   },[]);
 
   // 2. Fetch Tasks using the New API Endpoint
   const fetchTasks = async () => {
-    if (!selectedOperator) {
-      toast.error("Please select an Operator first");
+    if (!selectedWorker) {
+      toast.error("Please select a Worker first");
       return;
     }
 
     setLoading(true);
     try {
-      // LOGIC FIX: NEW API URL integrated here
+      // API call to get tasks for the selected worker
       const res = await axios.get(
-        `https://threebapi-1067354145699.asia-south1.run.app/api/workers/employee-task/${selectedOperator}?lang=kn`
+        `https://threebapi-1067354145699.asia-south1.run.app/api/workers/employee-task/${selectedWorker}?lang=kn`
       );
       
       let allTasks =[];
@@ -68,7 +68,7 @@ const OperatorTable = () => {
       else if (Array.isArray(res.data?.data)) allTasks = res.data.data;
       else if (Array.isArray(res.data?.tasks)) allTasks = res.data.tasks;
 
-      // Filter Logic (Only Date needed now, since API already filters by Operator)
+      // Filter Logic (Only Date needed now, since API already filters by Worker)
       const filteredTasks = allTasks.filter((task) => {
         if (selectedDate) {
            const taskDate = new Date(task.createdAt).toLocaleDateString("en-CA");
@@ -81,7 +81,7 @@ const OperatorTable = () => {
       setEditedRows({}); 
       
       if (filteredTasks.length === 0) {
-        toast("No validated tasks found for this operator.", { icon: "ℹ️" });
+        toast("No validated tasks found for this worker.", { icon: "ℹ️" });
       } else {
         toast.success(`Found ${filteredTasks.length} tasks`);
       }
@@ -137,7 +137,6 @@ const OperatorTable = () => {
             boxWeight: String(t?.boxWeight ?? "").replace(/kg$/i, "").trim(),
             frameWeight: String(t?.frameWeight ?? "").replace(/kg$/i, "").trim(),
             
-            // Logic: Ensure it's always an array for mapping inputs
             frameLength: Array.isArray(t?.frameLength) 
               ? [...t.frameLength] 
               : (t?.frameLength ? [t.frameLength] : [""]),
@@ -174,7 +173,7 @@ const OperatorTable = () => {
   };
 
   const handleCancel = (taskId) => {
-    setEditedRows(prev => ({ ...prev,[taskId]: { ...prev[taskId], __editing: false } }));
+    setEditedRows(prev => ({ ...prev, [taskId]: { ...prev[taskId], __editing: false } }));
   };
 
   const formatTime = (dateStr) => {
@@ -182,32 +181,31 @@ const OperatorTable = () => {
     return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // LOGIC FIX: Helper to get Operator Name robustly with new API
-  const getOperatorName = (idOrObj) => {
-      // If no ID is passed from API, we already know who it is from the Dropdown!
-      if(!idOrObj && selectedOperator) {
-         const op = operators.find(o => o._id === selectedOperator);
-         return op ? op.name : "—";
+  // Helper to get Worker Name
+  const getWorkerName = (idOrObj) => {
+      if(!idOrObj && selectedWorker) {
+         const w = workers.find(o => o._id === selectedWorker);
+         return w ? w.name : "—";
       }
       if(typeof idOrObj === 'object') return idOrObj.name;
-      const op = operators.find(o => o._id === idOrObj);
-      return op ? op.name : "Unknown ID";
+      const w = workers.find(o => o._id === idOrObj);
+      return w ? w.name : "Unknown ID";
   };
 
   return (
     <div className="review-task-page container">
       <Toaster position="top-right" />
       
-      <h1 className="page-title">Operator Validated Tasks</h1>
+      <h1 className="page-title">Worker Validated Tasks</h1>
 
-      {/* --- TOP BAR: Only Operator Dropdown & Date --- */}
+      {/* --- TOP BAR: Worker Dropdown & Date --- */}
       <div className="filters-wrapper">
         <div className="filter">
-          <label>Operator Name</label>
-          <select value={selectedOperator} onChange={(e) => setSelectedOperator(e.target.value)}>
-            <option value="">-- Select Operator --</option>
-            {operators.map(op => (
-              <option key={op._id} value={op._id}>{op.name}</option>
+          <label>Worker Name</label>
+          <select value={selectedWorker} onChange={(e) => setSelectedWorker(e.target.value)}>
+            <option value="">-- Select Worker --</option>
+            {workers.map(w => (
+              <option key={w._id} value={w._id}>{w.name}</option>
             ))}
           </select>
         </div>
@@ -218,7 +216,7 @@ const OperatorTable = () => {
         </div>
 
         <div className="filter actions">
-          <button className="btn primary" onClick={fetchTasks} disabled={!selectedOperator}>
+          <button className="btn primary" onClick={fetchTasks} disabled={!selectedWorker}>
             Get Data
           </button>
         </div>
@@ -241,7 +239,6 @@ const OperatorTable = () => {
                   <th>Frame Weight</th>
                   <th>Description</th>
                   <th>Verified By / Filled By </th>
-                  {/* <th>Action</th> */}
                 </tr>
               </thead>
               <tbody>
@@ -297,24 +294,11 @@ const OperatorTable = () => {
                       {/* Names Column */}
                       <td>
                         <div style={{fontSize: '0.8rem', lineHeight:'1.5'}}>
-                            <div><span style={{color:'#666'}}>Op:</span> <strong>{getOperatorName(task.updatedBy)}</strong></div>
-                            <div><span style={{color:'#666'}}>Hlp:</span> {task.employee?.name || "—"}</div>
+                            <div><span style={{color:'#666'}}>Op:</span> {task.updatedBy?.name || task.updatedBy || "—"}</div>
+                            <div><span style={{color:'#666'}}>Hlp:</span> <strong>{getWorkerName(task.employee)}</strong></div>
                         </div>
                       </td>
 
-                      {/* Action */}
-                      <td>
-                        {/* {isEditing ? (
-                           <div className="row-actions">
-                             <button className="btn small primary" onClick={() => handleToggleEdit(task._id)}>Save</button>
-                             <button className="btn small outline" onClick={() => handleCancel(task._id)}>X</button>
-                           </div>
-                        ) : (
-                        //    <div onClick={() => handleToggleEdit(task._id)} title="Edit Row">
-                        //      <EditIcon />
-                        //    </div>
-                        )} */}
-                      </td>
                     </tr>
                   );
                 })}
@@ -327,4 +311,4 @@ const OperatorTable = () => {
   );
 };
 
-export default OperatorTable;
+export default WorkerTable;
