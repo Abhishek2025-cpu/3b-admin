@@ -560,7 +560,7 @@ const handlePrintSticker = () => {
           <style>
             @page {
               size: 100mm 50mm;
-              margin: 0;
+              margin: 0; /* Page margin zero hona zaroori hai */
             }
             body {
               margin: 0;
@@ -581,53 +581,55 @@ const handlePrintSticker = () => {
               flex-direction: column;
               align-items: center;
               justify-content: center;
-              padding: 0 2mm;
+              padding: 0; /* Yaha padding zero kar di hai */
               box-sizing: border-box;
             }
             .top-content {
               display: flex;
               flex-direction: row;
               align-items: center;
-              justify-content: space-between;
-              width: 100%;
+              justify-content: space-between; /* Isse QR aur Text dono kinaro ki taraf jayenge */
+              width: 98%; /* Poori width use karne ke liye */
+              margin: 0 auto;
             }
             .qr-side {
-              width: 30%; 
+              width: 32%; 
               display: flex;
-              justify-content: center;
+              justify-content: flex-start; /* QR ko left se chipka diya */
+              padding-left: 2mm;
             }
             .qr-image {
-              width: 32mm;
-              height: 32mm;
+              width: 34mm; /* QR ka size thoda bada kiya */
+              height: 34mm;
               object-fit: contain;
             }
             .info-side {
-               width: 70%;
+              width: 68%;
               display: flex;
               flex-direction: column;
               justify-content: center;
-              align-items: center;  /* <<< YEH ADD KARNA HAI */
+              align-items: center; 
               text-align: center;
             }
             .label-model {
-              font-size: 11pt;
+              font-size: 12pt;
               font-weight: 800;
-              margin-bottom: 0;
+              margin-bottom: -2mm;
               color: #333;
             }
             .model-number {
-              font-size: 38pt; /* साइज थोड़ा कम किया ताकि लम्बे नाम एक लाइन में आ सकें */
+              font-size: 44pt; /* Font size bada kiya taki space fill ho jaye */
               font-weight: 900;
               margin: 0;
               padding: 0;
-              line-height: 1.1;
+              line-height: 1;
               color: #000;
               text-transform: uppercase;
-              white-space: nowrap; /* ये लाइन उसे एक ही रो में रखेगी */
-              letter-spacing: -0.5px;
+              white-space: nowrap;
+              letter-spacing: -1px;
             }
             .pcs-info {
-              font-size: 13pt;
+              font-size: 15pt;
               font-weight: 700;
               margin-top: 1mm;
               color: #333;
@@ -635,12 +637,13 @@ const handlePrintSticker = () => {
             .website-url {
               width: 100%;
               text-align: center;
-              font-size: 12pt; 
+              font-size: 13pt; 
               font-weight: 900;
               color: #000;
-              letter-spacing: 0.2px;
-              margin-top: -1mm;
-              padding-bottom: 2mm;
+              letter-spacing: 0.5px;
+              margin-top: 0mm;
+              padding-bottom: 1mm;
+              border-top: 1px solid #eee; /* Optional: halki line divider ke liye */
             }
           </style>
         </head>
