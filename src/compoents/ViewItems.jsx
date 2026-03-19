@@ -63,18 +63,18 @@ const PrintablePageLayout = ({ item, box }) => {
                         </div>
 
                         {/* QR CODE SECTION (Moved Down for Logo Alignment) */}
-                        <div className="flex-shrink-0 mr-1 mt-9"> {/* mt-9 se QR code logo ke barabar niche aa jayega */}
+                        <div className="flex-shrink-0 mr-1 mt-7" > {/* mt-9 se QR code logo ke barabar niche aa jayega */}
                             <img
                                 src={box.qrCodeUrl}
                                 alt="Box QR"
-                                className="w-[115px] h-[115px] object-contain" 
+                                className="w-[140px] h-[128px] object-contain" 
                                 style={{ imageRendering: 'pixelated' }}
                             />
                         </div>
                     </div>
 
                     {/* Bottom Container: Data Fields */}
-                    <div className="flex flex-col space-y-6 mb-12 w-full">
+                    <div className="flex flex-col space-y-6 mb-12 w-full ml-[2px]">
                         <div className="flex items-end w-full">
                             <span className="font-extrabold text-[15px] w-[45%] text-left">Profile Code</span>
                             <div className="w-[55%] border-b-2 border-[#1349a8] text-center text-[16px] font-extrabold pb-0.5 text-black">

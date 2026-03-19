@@ -631,7 +631,7 @@ function ViewProducts() {
             .model-number {
               font-size: 44pt; /* Font size bada kiya taki space fill ho jaye */
               font-weight: 900;
-              margin: 0;
+              margin-top: 8px;
               padding: 0;
               line-height: 1;
               color: #000;
@@ -648,7 +648,7 @@ function ViewProducts() {
 .website-url {
   position: absolute;
   bottom: 2mm;
-  left: 50%;
+  left: 54.5%;
   transform: translateX(-50%);
   font-size: 13pt;
   font-weight: 900;
