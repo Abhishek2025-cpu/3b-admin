@@ -547,8 +547,8 @@ function ViewProducts() {
     }
   };
 
-  
-const handlePrintSticker = () => {
+
+  const handlePrintSticker = () => {
     if (!qrCodeUrl) return toast.error("QR not found");
 
     const printWindow = window.open('', '_blank');
@@ -583,6 +583,7 @@ const handlePrintSticker = () => {
               justify-content: center;
               padding: 0; /* Yaha padding zero kar di hai */
               box-sizing: border-box;
+              position: relative;
             }
             .top-content {
               display: flex;
@@ -603,14 +604,24 @@ const handlePrintSticker = () => {
               height: 34mm;
               object-fit: contain;
             }
-            .info-side {
-              width: 68%;
-              display: flex;
-              flex-direction: column;
-              justify-content: center;
-              align-items: center; 
-              text-align: center;
-            }
+.info-side {
+  width: 68%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* TOP align */
+  align-items: center;
+  text-align: center;
+  padding-top: 2mm; /* thoda top spacing */
+}
+
+.top-content {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start; /* IMPORTANT */
+  justify-content: space-between;
+  width: 98%;
+  margin: 0 auto;
+}
             .label-model {
               font-size: 12pt;
               font-weight: 800;
@@ -634,17 +645,17 @@ const handlePrintSticker = () => {
               margin-top: 1mm;
               color: #333;
             }
-            .website-url {
-              width: 100%;
-              text-align: center;
-              font-size: 13pt; 
-              font-weight: 900;
-              color: #000;
-              letter-spacing: 0.5px;
-              margin-top: 0mm;
-              padding-bottom: 1mm;
-              border-top: 1px solid #eee; /* Optional: halki line divider ke liye */
-            }
+.website-url {
+  position: absolute;
+  bottom: 2mm;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13pt;
+  font-weight: 900;
+  color: #000;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
           </style>
         </head>
         <body>
@@ -671,7 +682,7 @@ const handlePrintSticker = () => {
       </html>
     `);
     printWindow.document.close();
-};
+  };
 
   const handleDownloadQr = async () => {
     if (!qrCodeUrl) return;

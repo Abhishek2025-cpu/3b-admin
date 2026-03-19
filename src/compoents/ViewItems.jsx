@@ -37,7 +37,7 @@ const UpdateBoxesModal = ({ isOpen, onClose, item, onUpdateSubmit }) => {
 };
 
 // ==========================================
-// PRINTABLE PAGE LAYOUT
+// PRINTABLE PAGE LAYOUT (QR ALIGNMENT FIXED)
 // ==========================================
 const PrintablePageLayout = ({ item, box }) => {
     const qtyPerBox = item.noOfSticks || "N/A";
@@ -50,21 +50,24 @@ const PrintablePageLayout = ({ item, box }) => {
             <div className="flex h-full w-full">
                 {/* LEFT SECTION (Approx 60%) */}
                 <div className="w-[62%] flex flex-col justify-between pr-5 h-full pt-1">
-                    {/* Top Container: Logo Block + QR Code Side-by-Side */}
-                    <div className="flex justify-between items-start w-full">
+                    
+                    {/* Top Container: Logo Block + QR Code */}
+                    <div className="flex justify-between items-start w-full"> {/* items-start rakha hai taaki manually control kar sakein */}
+                        
                         {/* Logo & Brand Block */}
-                        <div className="flex flex-col ml-[-4px] items-center">
-                            <img src={logo} alt="3B Logo" className="w-[180px] object-contain mb-1" />
-                            <p className="text-[#1349a8] font-bold mt-[-50px] text-[14px] mt-0.5">
+                        <div className="flex flex-col ml-[-4px] items-center justify-center">
+                            <img src={logo} alt="3B Logo" className="w-[180px] object-contain" />
+                            <p className="text-[#1349a8] font-bold mt-[-45px] text-[14px]">
                                 www.3bprofilespvtlt.com
                             </p>
                         </div>
-                        {/* QR Code */}
-                        <div className="flex-shrink-0 mt-2">
+
+                        {/* QR CODE SECTION (Moved Down for Logo Alignment) */}
+                        <div className="flex-shrink-0 mr-1 mt-9"> {/* mt-9 se QR code logo ke barabar niche aa jayega */}
                             <img
                                 src={box.qrCodeUrl}
                                 alt="Box QR"
-                                className="w-[60px] h-[60px] object-contain"
+                                className="w-[115px] h-[115px] object-contain" 
                                 style={{ imageRendering: 'pixelated' }}
                             />
                         </div>
@@ -95,11 +98,9 @@ const PrintablePageLayout = ({ item, box }) => {
 
                 {/* RIGHT SECTION (Approx 38%) */}
                 <div className="w-[38%] flex flex-col items-center border-l-[2px] border-gray-300 pl-4 py-1 h-full">
-                    {/* Serial Number Text */}
                     <p className="font-extrabold text-lg mt-3 mb-0 tracking-wide text-black text-center">
                         {item.itemNo?.trim()}/{box.boxSerialNo}
                     </p>
-                    {/* Product Thumbnail */}
                     <div className="flex-1 w-full border-2 border-dashed border-gray-400 p-2 flex items-center justify-center bg-white my-6 overflow-hidden">
                         {productImg ? (
                             <img 
@@ -111,7 +112,6 @@ const PrintablePageLayout = ({ item, box }) => {
                             <span className="text-xs text-gray-400 font-semibold uppercase">No Image</span>
                         )}
                     </div>
-                    {/* Barcode */}
                     <div className="w-full flex justify-center mb-1 h-13">
                         {box?.barCodeUrl ? (
                             <img
