@@ -67,7 +67,7 @@ const PrintablePageLayout = ({ item, box }) => {
                             <img
                                 src={box.qrCodeUrl}
                                 alt="Box QR"
-                                className="w-[140px] h-[128px] object-contain" 
+                                   className="w-[130px] h-[118px] object-contain" 
                                 style={{ imageRendering: 'pixelated' }}
                             />
                         </div>
@@ -97,16 +97,13 @@ const PrintablePageLayout = ({ item, box }) => {
                 </div>
 
                 {/* RIGHT SECTION (Approx 38%) */}
-                <div className="w-[38%] flex flex-col items-center border-l-[2px] border-gray-300 pl-4 py-1 h-full">
-                    <p className="font-extrabold text-lg mt-3 mb-0 tracking-wide text-black text-center">
-                        {item.itemNo?.trim()}/{box.boxSerialNo}
-                    </p>
-                    <div className="flex-1 w-full border-2 border-dashed border-gray-400 p-2 flex items-center justify-center bg-white my-6 overflow-hidden">
+               <div className="w-[38%] flex flex-col items-center pl-4 py-1 h-full">
+<div className="flex-1 w-full border-2 border-dashed border-gray-400 p-2 flex items-center justify-center bg-white mt-[34px] mb-6 overflow-hidden">
                         {productImg ? (
                             <img 
                                 src={productImg} 
                                 alt="Product" 
-                                className="max-w-full max-h-[140px] object-contain drop-shadow-sm" 
+                                 className="max-w-full max-h-[140px] object-contain drop-shadow-sm rotate-90" 
                             />
                         ) : (
                             <span className="text-xs text-gray-400 font-semibold uppercase">No Image</span>
