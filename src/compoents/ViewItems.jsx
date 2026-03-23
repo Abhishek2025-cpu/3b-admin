@@ -50,10 +50,10 @@ const PrintablePageLayout = ({ item, box }) => {
             <div className="flex h-full w-full">
                 {/* LEFT SECTION (Approx 60%) */}
                 <div className="w-[62%] flex flex-col justify-between pr-5 h-full pt-1">
-                    
+
                     {/* Top Container: Logo Block + QR Code */}
                     <div className="flex justify-between items-start w-full"> {/* items-start rakha hai taaki manually control kar sakein */}
-                        
+
                         {/* Logo & Brand Block */}
                         <div className="flex flex-col ml-[-4px] items-center justify-center">
                             <img src={logo} alt="3B Logo" className="w-[180px] object-contain" />
@@ -67,7 +67,7 @@ const PrintablePageLayout = ({ item, box }) => {
                             <img
                                 src={box.qrCodeUrl}
                                 alt="Box QR"
-                                   className="w-[130px] h-[118px] object-contain" 
+                                className="w-[130px] h-[118px] object-contain"
                                 style={{ imageRendering: 'pixelated' }}
                             />
                         </div>
@@ -97,18 +97,21 @@ const PrintablePageLayout = ({ item, box }) => {
                 </div>
 
                 {/* RIGHT SECTION (Approx 38%) */}
-               <div className="w-[38%] flex flex-col items-center pl-4 py-1 h-full">
-<div className="flex-1 w-full border-2 border-dashed border-gray-400 p-2 flex items-center justify-center bg-white mt-[34px] mb-6 overflow-hidden">
+                <div className="w-[38%] flex flex-col items-center pl-4 py-1 h-full">
+                    {/* Dotted Box: p-1 (4px padding) rakha hai taaki border se thoda gap rahe */}
+                    <div className="flex-1 w-full border-2 border-dashed border-gray-400 p-1 flex items-center justify-center bg-white mt-[34px] mb-6 overflow-hidden relative">
                         {productImg ? (
-                            <img 
-                                src={productImg} 
-                                alt="Product" 
-                                 className="max-w-full max-h-[140px] object-contain drop-shadow-sm rotate-90" 
+                            <img
+                                src={productImg}
+                                alt="Product"
+                                /* scale-[1.3] kiya hai taaki size perfect balance ho jaye */
+                                className="w-full h-full object-contain drop-shadow-sm rotate-90 scale-[1.3] transform-gpu"
                             />
                         ) : (
                             <span className="text-xs text-gray-400 font-semibold uppercase">No Image</span>
                         )}
                     </div>
+
                     <div className="w-full flex justify-center mb-1 h-13">
                         {box?.barCodeUrl ? (
                             <img
@@ -342,7 +345,7 @@ const ProgressModal = ({ isOpen, onClose, machineId }) => {
             const machineAssignment = data.data.find(assignment => assignment.machine._id === id);
             if (machineAssignment) setProgressData(machineAssignment);
             else { setProgressData(null); setProgressError('No progress data found for this machine.'); }
-        } catch (err) { setProgressError(err.message); toast.error("Error fetching machine progress."); } 
+        } catch (err) { setProgressError(err.message); toast.error("Error fetching machine progress."); }
         finally { setIsLoadingProgress(false); }
     }, []);
 
@@ -429,7 +432,7 @@ function ViewItems() {
     const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [expandedRowId, setExpandedRowId] = useState(null);
-    
+
     // Modal states
     const [isBoxesModalOpen, setIsBoxesModalOpen] = useState(false);
     const [selectedItemForBoxes, setSelectedItemForBoxes] = useState(null);
@@ -469,12 +472,12 @@ function ViewItems() {
             const detailJson = await detailRes.json();
             const normalizedListData = (Array.isArray(listJson) ? listJson : (listJson.data || [])).map(normalizeItem);
             const normalizedDetailData = (Array.isArray(detailJson) ? detailJson : (detailJson.data || [])).map(normalizeItem);
-            
+
             setItems(normalizedListData);
             const itemMap = new Map();
             normalizedDetailData.forEach((item) => { if (item._id) itemMap.set(item._id, item); });
             setFullItemsMap(itemMap);
-        } catch (err) { setError(err.message); toast.error('Could not fetch data.'); } 
+        } catch (err) { setError(err.message); toast.error('Could not fetch data.'); }
         finally { setIsLoading(false); }
     }, []);
 
@@ -495,7 +498,7 @@ function ViewItems() {
         setSelectedItemForBoxes(fullItemData || itemFromList);
         setIsBoxesModalOpen(true);
     };
-    
+
     const handleCloseBoxesModal = () => setIsBoxesModalOpen(false);
     const handleOpenPrintModal = (box) => { setSelectedBoxForPrint(box); setIsPrintModalOpen(true); };
     const handleClosePrintModal = () => { setIsPrintModalOpen(false); setSelectedBoxForPrint(null); };
@@ -515,7 +518,7 @@ function ViewItems() {
             const filtered = Array.isArray(data) ? data.filter(machine => machine.mainItem?._id === itemId) : [];
             if (!filtered.length) toast.error("No progress data found for this item.");
             setSelectedMachineIdForProgress(filtered);
-        } catch (err) { toast.error("Failed to fetch progress data."); } 
+        } catch (err) { toast.error("Failed to fetch progress data."); }
         finally { setIsLoading(false); }
     };
 
@@ -526,7 +529,7 @@ function ViewItems() {
         const promise = fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/items/${itemId}/add-boxes`, {
             method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ numberOfNewBoxes }),
         }).then(res => { if (!res.ok) { return res.json().then(err => { throw new Error(err.message || 'API request failed') }); } return res.json(); });
-        
+
         await toast.promise(promise, { loading: 'Adding new boxes...', success: () => { fetchAllData(); handleCloseUpdateModal(); return 'Boxes updated successfully!'; }, error: (err) => `Error: ${err.message}` }).finally(() => setIsLoading(false));
     };
 
@@ -561,7 +564,7 @@ function ViewItems() {
                     <h2 className="text-xl sm:text-2xl font-bold text-gray-800">View All Items</h2>
                     <input type="text" placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full sm:w-64 p-2 border rounded-xl focus:ring-indigo-500 focus:border-indigo-500" />
                 </div>
-                
+
                 <div className="overflow-x-auto rounded-lg border border-gray-200 w-full">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
