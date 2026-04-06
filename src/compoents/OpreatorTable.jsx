@@ -54,7 +54,7 @@ const MixtureTasks = () => {
     setTasks([]); // Clear previous results
     try {
       const res = await axios.get(
-        `https://threebapi-1067354145699.asia-south1.run.app/api/workers/employee-task/${selectedMixture}?lang=kn`
+        `https://threebapi-1067354145699.asia-south1.run.app/api/workers/employee-task/${selectedOperator}`
       );
       
       let allTasks = [];
