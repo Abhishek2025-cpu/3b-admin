@@ -81,10 +81,11 @@ const PrintablePageLayout = ({ item, box }) => {
                                 {item.itemNo?.trim()}
                             </div>
                         </div>
-                        <div className="flex items-end w-full">
+<div className="flex items-end w-full">
                             <span className="font-extrabold text-[15px] w-[45%] text-left">Height (m)</span>
                             <div className="w-[55%] border-b-2 border-[#1349a8] text-center text-[16px] font-extrabold pb-0.5 text-black">
-                                {item.length}
+                                {/* .replace(/feet/i, '').trim() lagaya hai taaki "Feet" word hat jaye aur sirf number bache */}
+                               {item.length ? (parseFloat(item.length) * 0.3048).toFixed(1) : ''}
                             </div>
                         </div>
                         <div className="flex items-end w-full">
@@ -98,14 +99,14 @@ const PrintablePageLayout = ({ item, box }) => {
 
                 {/* RIGHT SECTION (Approx 38%) */}
                 <div className="w-[38%] flex flex-col items-center pl-4 py-1 h-full">
-                    {/* Dotted Box: p-1 (4px padding) rakha hai taaki border se thoda gap rahe */}
-                    <div className="flex-1 w-full border-2 border-dashed border-gray-400 p-1 flex items-center justify-center bg-white mt-[34px] mb-6 overflow-hidden relative">
+                    {/* Dotted Box: p-0 rakha hai taaki koi extra space na ho */}
+                    <div className="flex-1 w-full border-2 border-dashed border-gray-400 p-0 flex items-center justify-center bg-white mt-[34px] mb-6 overflow-hidden relative">
                         {productImg ? (
                             <img
                                 src={productImg}
                                 alt="Product"
-                                /* scale-[1.3] kiya hai taaki size perfect balance ho jaye */
-                                className="w-full h-full object-contain drop-shadow-sm rotate-90 scale-[1.3] transform-gpu"
+                                /* object-cover aur scale-[1.3] kiya hai taaki white line dotted box se bilkul touch ho jaye */
+                                className="w-full h-full object-cover drop-shadow-sm rotate-90 scale-[1.4] transform-gpu"
                             />
                         ) : (
                             <span className="text-xs text-gray-400 font-semibold uppercase">No Image</span>
@@ -316,8 +317,23 @@ const ItemDetails = ({ item, onOpenProgressModal }) => {
             <div><p className="font-semibold text-gray-700">Shift:</p><p className="break-words">{item.shift}</p></div>
             <div><p className="font-semibold text-gray-700">Company:</p><p className="break-words">{item.company}</p></div>
             <div><p className="font-semibold text-gray-700">Created At:</p><p className="break-words">{new Date(item.createdAt).toLocaleString()}</p></div>
-            <div><p className="font-semibold text-gray-700">Operator EID:</p><p className="break-words">{item.operator?.eid || 'N/A'}</p></div>
-            <div><p className="font-semibold text-gray-700">Helper EID:</p><p className="break-words">{item.helper?.eid || 'N/A'}</p></div>
+            
+            {/* Operator EID Fixed */}
+            <div>
+                <p className="font-semibold text-gray-700">Operator EID:</p>
+                <p className="break-words">
+                    {item.operators?.length > 0 ? item.operators.map(op => op.roleEid).join(', ') : 'N/A'}
+                </p>
+            </div>
+            
+            {/* Helper EID Fixed */}
+            <div>
+                <p className="font-semibold text-gray-700">Helper EID:</p>
+                <p className="break-words">
+                    {item.helpers?.length > 0 ? item.helpers.map(h => h.roleEid).join(', ') : 'N/A'}
+                </p>
+            </div>
+            
             <div className="col-span-full mt-2">
                 <button onClick={() => onOpenProgressModal(item.machine?._id)} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center w-full sm:w-auto gap-2">
                     <ProgressIcon /> View Progress

@@ -197,11 +197,11 @@ function Sidebar({ isOpen, onClose, searchQuery = "" }) {
         {matches("Order Returns") && <LinkMenuItem icon={faUndo} text="Order Returns" to="/manager/order-returns" />}
         {matches("Companies") && <LinkMenuItem icon={faGlobe} text="Companies" to="/manager/company" />}
         {userRole === 'admin' && matches("Admins") && <LinkMenuItem icon={faUserShield} text="Admins" to="/manager/admins" />}
-
+ 
         {/* --- Label Notification Option Added Here --- */}
-        {matches("Label Notification") && <LinkMenuItem icon={faTag} text="Label Notification" to="/manager/label-notifications" />}
+        {/* {matches("Label Notification") && <LinkMenuItem icon={faTag} text="Label Notification" to="/manager/label-notifications" />} */}
 
-        {matches("Push Notifications") && <LinkMenuItem text="Push Notifications" to="/manager/notifications" icon={faBell} />}
+        {/* {matches("Push Notifications") && <LinkMenuItem text="Push Notifications" to="/manager/notifications" icon={faBell} />} */}
         {matches("App Feedback") && <LinkMenuItem icon={faComments} text="App Feedback" to="/manager/feedback" />}
         {matches("Archive Clients") && <LinkMenuItem icon={faArchive} text="Archive Clients" to="/manager/archive-clients" />}
         {matches("Settings") && <LinkMenuItem icon={faCog} text="Settings" to="/manager/settings" />}
