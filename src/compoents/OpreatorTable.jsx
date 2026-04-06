@@ -60,7 +60,7 @@ const OperatorTable = () => {
     try {
       // LOGIC FIX: NEW API URL integrated here
       const res = await axios.get(
-        `https://threebapi-1067354145699.asia-south1.run.app/api/workers/employee-task/${selectedOperator}?lang=kn`
+        `https://threebapi-1067354145699.asia-south1.run.app/api/workers/employee-task/${selectedOperator}`
       );
       
       let allTasks =[];
