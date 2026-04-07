@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
-import "./ReviewTasks.css"; 
+import "./ReviewTasks.css";
 
 // Simple Edit Icon
 const EditIcon = () => (
@@ -15,7 +15,7 @@ const WorkerTable = () => {
   const [workers, setWorkers] = useState([]);
   const [selectedWorker, setSelectedWorker] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
-  
+
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editedRows, setEditedRows] = useState({});
@@ -27,8 +27,8 @@ const WorkerTable = () => {
         const res = await axios.get(
           "https://threebapi-1067354145699.asia-south1.run.app/api/staff/get-employees"
         );
-        const list = Array.isArray(res.data) ? res.data : res.data?.data ||[];
-        
+        const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
+
         // Filter logic for Workers/Helpers
         const onlyWorkers = list.filter(emp => {
           if (!emp.role) return false;
@@ -39,7 +39,7 @@ const WorkerTable = () => {
           }
           return false;
         });
-        
+
         setWorkers(onlyWorkers);
       } catch (err) {
         console.error("Error fetching staff:", err);
@@ -47,7 +47,7 @@ const WorkerTable = () => {
       }
     };
     fetchWorkers();
-  },[]);
+  }, []);
 
   // 2. Fetch Tasks using the New API Endpoint
   const fetchTasks = async () => {
@@ -62,8 +62,8 @@ const WorkerTable = () => {
       const res = await axios.get(
         `https://threebapi-1067354145699.asia-south1.run.app/api/workers/employee-task/${selectedWorker}?lang=kn`
       );
-      
-      let allTasks =[];
+
+      let allTasks = [];
       if (Array.isArray(res.data)) allTasks = res.data;
       else if (Array.isArray(res.data?.data)) allTasks = res.data.data;
       else if (Array.isArray(res.data?.tasks)) allTasks = res.data.tasks;
@@ -71,15 +71,15 @@ const WorkerTable = () => {
       // Filter Logic (Only Date needed now, since API already filters by Worker)
       const filteredTasks = allTasks.filter((task) => {
         if (selectedDate) {
-           const taskDate = new Date(task.createdAt).toLocaleDateString("en-CA");
-           return taskDate === selectedDate;
+          const taskDate = new Date(task.createdAt).toLocaleDateString("en-CA");
+          return taskDate === selectedDate;
         }
         return true;
       });
 
       setTasks(filteredTasks);
-      setEditedRows({}); 
-      
+      setEditedRows({});
+
       if (filteredTasks.length === 0) {
         toast("No validated tasks found for this worker.", { icon: "ℹ️" });
       } else {
@@ -136,11 +136,11 @@ const WorkerTable = () => {
             numberOfBox: t?.numberOfBox ?? "",
             boxWeight: String(t?.boxWeight ?? "").replace(/kg$/i, "").trim(),
             frameWeight: String(t?.frameWeight ?? "").replace(/kg$/i, "").trim(),
-            
-            frameLength: Array.isArray(t?.frameLength) 
-              ? [...t.frameLength] 
+
+            frameLength: Array.isArray(t?.frameLength)
+              ? [...t.frameLength]
               : (t?.frameLength ? [t.frameLength] : [""]),
-            
+
             description: t?.description ?? "",
             __editing: true,
           },
@@ -183,42 +183,94 @@ const WorkerTable = () => {
 
   // Helper to get Worker Name
   const getWorkerName = (idOrObj) => {
-      if(!idOrObj && selectedWorker) {
-         const w = workers.find(o => o._id === selectedWorker);
-         return w ? w.name : "—";
-      }
-      if(typeof idOrObj === 'object') return idOrObj.name;
-      const w = workers.find(o => o._id === idOrObj);
-      return w ? w.name : "Unknown ID";
+    if (!idOrObj && selectedWorker) {
+      const w = workers.find(o => o._id === selectedWorker);
+      return w ? w.name : "—";
+    }
+    if (typeof idOrObj === 'object') return idOrObj.name;
+    const w = workers.find(o => o._id === idOrObj);
+    return w ? w.name : "Unknown ID";
   };
 
   return (
     <div className="review-task-page container">
       <Toaster position="top-right" />
-      
+
       <h1 className="page-title">Worker Validated Tasks</h1>
 
       {/* --- TOP BAR: Worker Dropdown & Date --- */}
-      <div className="filters-wrapper">
-        <div className="filter">
-          <label>Worker Name</label>
-          <select value={selectedWorker} onChange={(e) => setSelectedWorker(e.target.value)}>
-            <option value="">-- Select Worker --</option>
-            {workers.map(w => (
-              <option key={w._id} value={w._id}>{w.name}</option>
-            ))}
-          </select>
-        </div>
+      {/* --- TOP BAR: Enhanced Worker Filter Wrapper --- */}
+      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap items-end gap-4">
 
-        <div className="filter">
-          <label>Date</label>
-          <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
-        </div>
+          {/* Worker Name Filter */}
+          <div className="flex flex-col gap-2 min-w-[240px] flex-1">
+            <label className="text-xs font-semibold uppercase tracking-wider text-gray-400 ml-1">
+              Worker Name
+            </label>
+            <div className="relative">
+              <select
+                value={selectedWorker}
+                onChange={(e) => setSelectedWorker(e.target.value)}
+                className="w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-3 pr-10 text-sm text-gray-800 shadow-sm transition-all 
+                hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none cursor-pointer"
+              >
+                <option value="" disabled className="text-gray-400">
+                  Select Worker
+                </option>
+                {workers.map((w) => (
+                  <option key={w._id} value={w._id}>
+                    {w.name}
+                  </option>
+                ))}
+              </select>
 
-        <div className="filter actions">
-          <button className="btn primary" onClick={fetchTasks} disabled={!selectedWorker}>
-            Get Data
-          </button>
+              {/* Custom Arrow Icon */}
+              <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Date Filter */}
+          <div className="flex flex-col gap-1.5 min-w-[150px]">
+            <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 ml-1">
+              Date
+            </label>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 outline-none transition-all"
+            />
+          </div>
+
+          {/* Action Button */}
+          <div className="flex-none">
+            <button
+              onClick={fetchTasks}
+              disabled={!selectedWorker}
+              className={`inline-flex items-center justify-center rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-all focus:outline-none focus:ring-4 
+          ${!selectedWorker
+                  ? 'cursor-not-allowed bg-gray-300'
+                  : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-300 active:scale-95 shadow-md shadow-blue-100'
+                }`}
+            >
+              <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+              Get Data
+            </button>
+          </div>
+
         </div>
       </div>
 
@@ -253,19 +305,19 @@ const WorkerTable = () => {
                   return (
                     <tr key={task._id}>
                       <td>{idx + 1}</td>
-                      
+
                       {/* Submit Time */}
                       <td><span className="badge time">{formatTime(task.createdAt)}</span></td>
 
                       {/* Correction Time */}
-                      <td><span className="badge time" style={{background: '#e3f2fd', color: '#0056b3'}}>{formatTime(task.updatedAt)}</span></td>
+                      <td><span className="badge time" style={{ background: '#e3f2fd', color: '#0056b3' }}>{formatTime(task.updatedAt)}</span></td>
 
                       {/* Frame Length (Array) */}
                       <td>
                         {isEditing ? (
                           <div className="flex flex-col gap-1">
                             {edit.frameLength.map((val, i) => (
-                              <input 
+                              <input
                                 key={i}
                                 className="small-input mb-1"
                                 value={val}
@@ -277,10 +329,10 @@ const WorkerTable = () => {
                           </div>
                         ) : (
                           <div className="frame-badges">
-                             {Array.isArray(task.frameLength) 
-                                ? task.frameLength.map((f, i) => <span key={i} className="badge frame">{f}</span>)
-                                : <span className="badge frame">{task.frameLength}</span>
-                             }
+                            {Array.isArray(task.frameLength)
+                              ? task.frameLength.map((f, i) => <span key={i} className="badge frame">{f}</span>)
+                              : <span className="badge frame">{task.frameLength}</span>
+                            }
                           </div>
                         )}
                       </td>
@@ -293,9 +345,9 @@ const WorkerTable = () => {
 
                       {/* Names Column */}
                       <td>
-                        <div style={{fontSize: '0.8rem', lineHeight:'1.5'}}>
-                            <div><span style={{color:'#666'}}>Op:</span> {task.updatedBy?.name || task.updatedBy || "—"}</div>
-                            <div><span style={{color:'#666'}}>Hlp:</span> <strong>{getWorkerName(task.employee)}</strong></div>
+                        <div style={{ fontSize: '0.8rem', lineHeight: '1.5' }}>
+                          <div><span style={{ color: '#666' }}>Op:</span> {task.updatedBy?.name || task.updatedBy || "—"}</div>
+                          <div><span style={{ color: '#666' }}>Hlp:</span> <strong>{getWorkerName(task.employee)}</strong></div>
                         </div>
                       </td>
 

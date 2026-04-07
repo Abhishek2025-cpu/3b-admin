@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
-import "./ReviewTasks.css";
+import "./ReviewTasks.css"; 
 
 // Simple Edit Icon
 const EditIcon = () => (
@@ -15,7 +15,7 @@ const OperatorTable = () => {
   const [operators, setOperators] = useState([]);
   const [selectedOperator, setSelectedOperator] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
-
+  
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editedRows, setEditedRows] = useState({});
@@ -27,8 +27,8 @@ const OperatorTable = () => {
         const res = await axios.get(
           "https://threebapi-1067354145699.asia-south1.run.app/api/staff/get-employees"
         );
-        const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
-
+        const list = Array.isArray(res.data) ? res.data : res.data?.data ||[];
+        
         // LOGIC FIX: Handle 'role' as an Array safely
         const onlyOperators = list.filter(emp => {
           if (!emp.role) return false;
@@ -39,7 +39,7 @@ const OperatorTable = () => {
           }
           return false;
         });
-
+        
         setOperators(onlyOperators);
       } catch (err) {
         console.error("Error fetching staff:", err);
@@ -47,7 +47,7 @@ const OperatorTable = () => {
       }
     };
     fetchOperators();
-  }, []);
+  },[]);
 
   // 2. Fetch Tasks using the New API Endpoint
   const fetchTasks = async () => {
@@ -62,8 +62,8 @@ const OperatorTable = () => {
       const res = await axios.get(
         `https://threebapi-1067354145699.asia-south1.run.app/api/workers/employee-task/${selectedOperator}`
       );
-
-      let allTasks = [];
+      
+      let allTasks =[];
       if (Array.isArray(res.data)) allTasks = res.data;
       else if (Array.isArray(res.data?.data)) allTasks = res.data.data;
       else if (Array.isArray(res.data?.tasks)) allTasks = res.data.tasks;
@@ -71,15 +71,15 @@ const OperatorTable = () => {
       // Filter Logic (Only Date needed now, since API already filters by Operator)
       const filteredTasks = allTasks.filter((task) => {
         if (selectedDate) {
-          const taskDate = new Date(task.createdAt).toLocaleDateString("en-CA");
-          return taskDate === selectedDate;
+           const taskDate = new Date(task.createdAt).toLocaleDateString("en-CA");
+           return taskDate === selectedDate;
         }
         return true;
       });
 
       setTasks(filteredTasks);
-      setEditedRows({});
-
+      setEditedRows({}); 
+      
       if (filteredTasks.length === 0) {
         toast("No validated tasks found for this operator.", { icon: "ℹ️" });
       } else {
@@ -136,12 +136,12 @@ const OperatorTable = () => {
             numberOfBox: t?.numberOfBox ?? "",
             boxWeight: String(t?.boxWeight ?? "").replace(/kg$/i, "").trim(),
             frameWeight: String(t?.frameWeight ?? "").replace(/kg$/i, "").trim(),
-
+            
             // Logic: Ensure it's always an array for mapping inputs
-            frameLength: Array.isArray(t?.frameLength)
-              ? [...t.frameLength]
+            frameLength: Array.isArray(t?.frameLength) 
+              ? [...t.frameLength] 
               : (t?.frameLength ? [t.frameLength] : [""]),
-
+            
             description: t?.description ?? "",
             __editing: true,
           },
@@ -174,7 +174,7 @@ const OperatorTable = () => {
   };
 
   const handleCancel = (taskId) => {
-    setEditedRows(prev => ({ ...prev, [taskId]: { ...prev[taskId], __editing: false } }));
+    setEditedRows(prev => ({ ...prev,[taskId]: { ...prev[taskId], __editing: false } }));
   };
 
   const formatTime = (dateStr) => {
@@ -184,37 +184,37 @@ const OperatorTable = () => {
 
   // LOGIC FIX: Helper to get Operator Name robustly with new API
   const getOperatorName = (idOrObj) => {
-    // If no ID is passed from API, we already know who it is from the Dropdown!
-    if (!idOrObj && selectedOperator) {
-      const op = operators.find(o => o._id === selectedOperator);
-      return op ? op.name : "—";
-    }
-    if (typeof idOrObj === 'object') return idOrObj.name;
-    const op = operators.find(o => o._id === idOrObj);
-    return op ? op.name : "Unknown ID";
+      // If no ID is passed from API, we already know who it is from the Dropdown!
+      if(!idOrObj && selectedOperator) {
+         const op = operators.find(o => o._id === selectedOperator);
+         return op ? op.name : "—";
+      }
+      if(typeof idOrObj === 'object') return idOrObj.name;
+      const op = operators.find(o => o._id === idOrObj);
+      return op ? op.name : "Unknown ID";
   };
 
   return (
     <div className="review-task-page container">
       <Toaster position="top-right" />
-
+      
       <h1 className="page-title">Operator Validated Tasks</h1>
 
-      {/* --- TOP BAR: Enhanced Filter Wrapper --- */}
+      {/* --- TOP BAR: Enhanced Operator Filter Wrapper --- */}
       <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-end gap-4">
 
           {/* Operator Name Filter */}
           <div className="flex flex-col gap-2 min-w-[240px] flex-1">
             <label className="text-xs font-semibold uppercase tracking-wider text-gray-400 ml-1">
-  Operator Name
-</label>
+              Operator Name
+            </label>
             <div className="relative">
               <select
                 value={selectedOperator}
                 onChange={(e) => setSelectedOperator(e.target.value)}
                 className="w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-3 pr-10 text-sm text-gray-800 shadow-sm transition-all 
-    hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none cursor-pointer"
+                hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none cursor-pointer"
               >
                 <option value="" disabled className="text-gray-400">
                   Select Operator
@@ -226,7 +226,7 @@ const OperatorTable = () => {
                 ))}
               </select>
 
-              {/* Custom Arrow */}
+              {/* Custom Arrow Icon */}
               <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
                 <svg
                   className="w-4 h-4"
@@ -307,19 +307,19 @@ const OperatorTable = () => {
                   return (
                     <tr key={task._id}>
                       <td>{idx + 1}</td>
-
+                      
                       {/* Submit Time */}
                       <td><span className="badge time">{formatTime(task.createdAt)}</span></td>
 
                       {/* Correction Time */}
-                      <td><span className="badge time" style={{ background: '#e3f2fd', color: '#0056b3' }}>{formatTime(task.updatedAt)}</span></td>
+                      <td><span className="badge time" style={{background: '#e3f2fd', color: '#0056b3'}}>{formatTime(task.updatedAt)}</span></td>
 
                       {/* Frame Length (Array) */}
                       <td>
                         {isEditing ? (
                           <div className="flex flex-col gap-1">
                             {edit.frameLength.map((val, i) => (
-                              <input
+                              <input 
                                 key={i}
                                 className="small-input mb-1"
                                 value={val}
@@ -331,10 +331,10 @@ const OperatorTable = () => {
                           </div>
                         ) : (
                           <div className="frame-badges">
-                            {Array.isArray(task.frameLength)
-                              ? task.frameLength.map((f, i) => <span key={i} className="badge frame">{f}</span>)
-                              : <span className="badge frame">{task.frameLength}</span>
-                            }
+                             {Array.isArray(task.frameLength) 
+                                ? task.frameLength.map((f, i) => <span key={i} className="badge frame">{f}</span>)
+                                : <span className="badge frame">{task.frameLength}</span>
+                             }
                           </div>
                         )}
                       </td>
@@ -347,9 +347,9 @@ const OperatorTable = () => {
 
                       {/* Names Column */}
                       <td>
-                        <div style={{ fontSize: '0.8rem', lineHeight: '1.5' }}>
-                          <div><span style={{ color: '#666' }}>Op:</span> <strong>{getOperatorName(task.updatedBy)}</strong></div>
-                          <div><span style={{ color: '#666' }}>Hlp:</span> {task.employee?.name || "—"}</div>
+                        <div style={{fontSize: '0.8rem', lineHeight:'1.5'}}>
+                            <div><span style={{color:'#666'}}>Op:</span> <strong>{getOperatorName(task.updatedBy)}</strong></div>
+                            <div><span style={{color:'#666'}}>Hlp:</span> {task.employee?.name || "—"}</div>
                         </div>
                       </td>
 
