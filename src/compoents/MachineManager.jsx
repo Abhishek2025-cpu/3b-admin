@@ -1,264 +1,185 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
+import "./ReviewTasks.css"; // You can reuse the same CSS file
 
-const API_URL = "https://threebtest.onrender.com/api/machines";
-
-export default function MachineManager() {
-  const [machines, setMachines] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false); // New state for loader
-  const [showDeleteModal, setShowDeleteModal] = useState(false); // New state for delete modal
-  const [machineToDeleteId, setMachineToDeleteId] = useState(null); // New state to store ID for deletion
-
-  const [formData, setFormData] = useState({
-    name: "",
-    companyName: "",
-    dateOfManufacturing: "",
-    type: "",
-    image: null,
-  });
-
-  // Fetch machines
-  const fetchMachines = async () => {
-    try {
-      const res = await axios.get(`${API_URL}/get`);
-      setMachines(res.data.data || []);
-    } catch (err) {
-      toast.error("Failed to fetch machines");
-      console.error(err);
-    }
-  };
+const MixtureTasks = () => {
+  const [mixtures, setMixtures] = useState([]);
+  const [selectedMixture, setSelectedMixture] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [allEmployees, setAllEmployees] = useState([]);
 
   useEffect(() => {
-    fetchMachines();
-  }, []);
+    const fetchEmployees = async () => {
+      try {
+        const res = await axios.get(
+          "https://threebapi-1067354145699.asia-south1.run.app/api/staff/get-employees"
+        );
+        const employeeList = Array.isArray(res.data) ? res.data : res.data?.data || [];
+        setAllEmployees(employeeList);
 
-  const handleChange = (e) => {
-    if (e.target.name === "image") {
-      setFormData({ ...formData, image: e.target.files[0] });
-    } else {
-      setFormData({ ...formData, [e.target.name]: e.target.value });
-    }
-  };
+        const onlyMixtures = employeeList.filter(emp => {
+          if (!emp.role) return false;
+          if (Array.isArray(emp.role)) {
+            return emp.role.some(r => r.toLowerCase().includes("mixture"));
+          } else if (typeof emp.role === 'string') {
+            return emp.role.toLowerCase().includes("mixture");
+          }
+          return false;
+        });
+        
+        setMixtures(onlyMixtures);
+      } catch (err) {
+        console.error("Error fetching staff:", err);
+        toast.error("Could not load mixture list");
+      }
+    };
+    fetchEmployees();
+  },[]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!formData.name || !formData.companyName || !formData.dateOfManufacturing || !formData.type) {
-      toast.error("Please fill all fields!");
+  const fetchTasks = async () => {
+    if (!selectedMixture) {
+      toast.error("Please select a Mixture employee first");
       return;
     }
 
-    setIsSubmitting(true); // Start loader
-
-    const data = new FormData();
-    Object.keys(formData).forEach((key) => {
-      if (formData[key] !== null) { // Ensure null image isn't appended as "null" string
-        data.append(key, formData[key]);
-      }
-    });
-
+    setLoading(true);
+    setTasks([]); // Clear previous results
     try {
-      await axios.post(`${API_URL}/add`, data, {
-        headers: { "Content-Type": "multipart/form-data" },
+      const res = await axios.get(
+        `https://threebapi-1067354145699.asia-south1.run.app/api/workers/employee-task/${selectedMixture}?lang=kn`
+      );
+      
+      let allTasks =[];
+      if (Array.isArray(res.data)) allTasks = res.data;
+      else if (Array.isArray(res.data?.data)) allTasks = res.data.data;
+      else if (Array.isArray(res.data?.tasks)) allTasks = res.data.tasks;
+
+      const filteredTasks = allTasks.filter((task) => {
+        if (selectedDate) {
+           const taskDate = new Date(task.createdAt).toLocaleDateString("en-CA");
+           return taskDate === selectedDate;
+        }
+        return true;
       });
-      toast.success("Machine added successfully!");
-      setFormData({ name: "", companyName: "", dateOfManufacturing: "", type: "", image: null });
-      setIsModalOpen(false);
-      fetchMachines();
+
+      setTasks(filteredTasks);
+      
+      if (filteredTasks.length === 0) {
+        toast("No validated tasks found for this mixture employee.", { icon: "ℹ️" });
+      } else {
+        toast.success(`Found ${filteredTasks.length} tasks`);
+      }
+
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to add machine");
+      console.error("Error loading tasks:", err);
+      toast.error("Failed to load tasks");
     } finally {
-      setIsSubmitting(false); // Stop loader
+      setLoading(false);
     }
   };
 
-  // Function to open delete confirmation modal
-  const confirmDelete = (id) => {
-    setMachineToDeleteId(id);
-    setShowDeleteModal(true);
+  const formatTime = (dateStr) => {
+    if (!dateStr) return "-";
+    return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Function to handle actual deletion
-  const executeDelete = async () => {
-    setShowDeleteModal(false); // Close modal immediately
-    if (!machineToDeleteId) return;
-
-    try {
-      await axios.delete(`${API_URL}/delete/${machineToDeleteId}`);
-      toast.success("Machine deleted!");
-      fetchMachines();
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to delete machine");
-    } finally {
-      setMachineToDeleteId(null); // Reset ID
-    }
+  const getEmployeeName = (id) => {
+      if(!id) {
+         const emp = allEmployees.find(e => e._id === selectedMixture);
+         return emp ? emp.name : "—";
+      }
+      const emp = allEmployees.find(e => e._id === id);
+      return emp ? emp.name : "Unknown";
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="review-task-page container">
       <Toaster position="top-right" />
+      
+      <h1 className="page-title">Mixture Validated Tasks</h1>
 
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-[#6f42c1]">Machines</h1>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-[#6f42c1] text-white px-5 py-2 rounded-full shadow-md hover:shadow-lg hover:bg-[#5931a3] transition-all duration-200 border border-purple-700"
-        >
-          Add Machine
-        </button>
+      <div className="filters-wrapper">
+        <div className="filter">
+          <label>Mixture Name</label>
+          <select value={selectedMixture} onChange={(e) => setSelectedMixture(e.target.value)}>
+            <option value="">-- Select Mixture --</option>
+            {mixtures.map(op => (
+              <option key={op._id} value={op._id}>{op.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter">
+          <label>Date</label>
+          <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
+        </div>
+
+        <div className="filter actions">
+          <button className="btn primary" onClick={fetchTasks} disabled={!selectedMixture}>
+            Get Data
+          </button>
+        </div>
       </div>
 
-      {/* Add Machine Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 flex justify-center items-center z-50  pointer-events-none">
-          <div className="bg-white pointer-events-auto rounded-xl shadow-xl w-96 p-6 border border-gray-200 relative">
-            <h2 className="text-xl font-bold text-[#6f42c1] mb-4">Add New Machine</h2>
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 font-bold text-lg"
-            >
-              ×
-            </button>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-3 mt-2">
-              <input
-                type="text"
-                name="name"
-                placeholder="Machine Name"
-                value={formData.name}
-                onChange={handleChange}
-                className="border rounded-lg p-2 focus:ring-2 focus:ring-[#6f42c1]"
-                required
-              />
-              <input
-                type="text"
-                name="companyName"
-                placeholder="Company Name"
-                value={formData.companyName}
-                onChange={handleChange}
-                className="border rounded-lg p-2 focus:ring-2 focus:ring-[#6f42c1]"
-                required
-              />
-              <input
-                type="date"
-                name="dateOfManufacturing"
-                value={formData.dateOfManufacturing}
-                onChange={handleChange}
-                className="border rounded-lg p-2 focus:ring-2 focus:ring-[#6f42c1]"
-                required
-              />
-              <input
-                type="text"
-                name="type"
-                placeholder="Type"
-                value={formData.type}
-                onChange={handleChange}
-                className="border rounded-lg p-2 focus:ring-2 focus:ring-[#6f42c1]"
-                required
-              />
-              <input type="file" name="image" onChange={handleChange} className="border rounded-lg p-2" />
-              <button
-                type="submit"
-                className="bg-[#6f42c1] text-white py-2 rounded-full shadow-md hover:shadow-lg hover:bg-[#5931a3] transition-all duration-200 border border-purple-700 mt-2 flex items-center justify-center"
-                disabled={isSubmitting} // Disable button when submitting
-              >
-                {isSubmitting ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Submitting...
-                  </>
-                ) : (
-                  "Submit"
-                )}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 flex justify-center items-center z-50  pointer-events-none">
-          <div className="bg-white pointer-events-auto rounded-xl shadow-xl w-96 p-6 border border-gray-200 relative text-center">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Confirm Deletion</h2>
-            <p className="text-gray-600 mb-6">Are you sure you want to delete this machine? This action cannot be undone.</p>
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="bg-gray-300 text-gray-800 px-5 py-2 rounded-full shadow hover:bg-gray-400 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={executeDelete}
-                className="bg-red-600 text-white px-5 py-2 rounded-full shadow hover:bg-red-700 transition-colors"
-              >
-                Yes, Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Table */}
-      <div className="bg-white shadow-lg rounded-xl p-4 border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200 rounded-xl overflow-hidden">
-          <thead className="bg-[#6f42c1] text-white">
-            <tr>
-              {["Name", "Company", "Date", "Type", "Image", "Actions"].map((th) => (
-                <th key={th} className="px-4 py-2 text-left text-sm font-semibold">
-                  {th}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {machines.length > 0 ? (
-              machines.map((m, idx) => (
-                <tr
-                  key={m._id}
-                  className={`${
-                    idx % 2 === 0 ? "bg-gray-50" : "bg-white"
-                  } hover:bg-purple-50 transition-colors`}
-                >
-                  <td className="px-4 py-2">{m.name}</td>
-                  <td className="px-4 py-2">{m.companyName}</td>
-                  <td className="px-4 py-2">{new Date(m.dateOfManufacturing).toLocaleDateString()}</td>
-                  <td className="px-4 py-2">{m.type}</td>
-                  <td className="px-4 py-2">
-                    {m.image ? (
-                      <img src={m.image} alt={m.name} className="h-12 w-12 object-cover rounded" />
-                    ) : (
-                      "No Image"
-                    )}
-                  </td>
-                  <td className="px-4 py-2">
-                    <button
-                      onClick={() => confirmDelete(m._id)} // Call confirmDelete
-                      className="bg-red-600 text-white px-3 py-1 rounded-full shadow hover:bg-red-700 transition-all duration-200"
-                    >
-                      Delete
-                    </button>
-                  </td>
+      <div className="table-card">
+        {loading ? (
+          <div className="loader">Loading Data...</div>
+        ) : (
+          <div className="table-responsive">
+            <table className="rt-table">
+              <thead>
+                <tr>
+                  <th>S.No</th>
+                  <th>Submit Time</th>
+                  <th>Correction Time</th>
+                  <th style={{ minWidth: '140px' }}>Frame Lengths</th>
+                  <th>No. Boxes</th>
+                  <th>Box Weight</th>
+                  <th>Frame Weight</th>
+                  <th>Description</th>
+                  <th>Verified By / Filled By </th>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="6" className="p-4 text-center text-gray-400">
-                  No machines found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              </thead>
+              <tbody>
+                {tasks.length === 0 ? (
+                  <tr><td colSpan="9" className="empty">No tasks found for selected criteria</td></tr>
+                ) : (
+                  tasks.map((task, idx) => (
+                    <tr key={task._id}>
+                      <td>{idx + 1}</td>
+                      <td><span className="badge time">{formatTime(task.createdAt)}</span></td>
+                      <td><span className="badge time" style={{background: '#e3f2fd', color: '#0056b3'}}>{formatTime(task.updatedAt)}</span></td>
+                      <td>
+                        <div className="frame-badges">
+                           {Array.isArray(task.frameLength) 
+                              ? task.frameLength.map((f, i) => <span key={i} className="badge frame">{f}</span>)
+                              : <span className="badge frame">{task.frameLength}</span>
+                           }
+                        </div>
+                      </td>
+                      <td>{task.numberOfBox}</td>
+                      <td>{task.boxWeight}</td>
+                      <td>{task.frameWeight}</td>
+                      <td>{task.description || "—"}</td>
+                      <td>
+                        <div style={{fontSize: '0.8rem', lineHeight:'1.5'}}>
+                            <div><span style={{color:'#666'}}>Mixture:</span> <strong>{getEmployeeName(task.updatedBy)}</strong></div>
+                            <div><span style={{color:'#666'}}>Hlp:</span> {task.employee?.name || "—"}</div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
-}
+};
+
+export default MixtureTasks;
