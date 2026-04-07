@@ -1,79 +1,87 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
-import * as XLSX from "xlsx"; // For Excel export
-import { saveAs } from "file-saver"; // For saving files
-import jsPDF from "jspdf"; // For PDF export
-import "jspdf-autotable"; // For PDF tables
+import "./ReviewTasks.css"; 
 
-import "./ReviewTasks.css"; // Reuse the same CSS file
+// Simple Edit Icon
+const EditIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ cursor: "pointer", color: "#007bff" }}>
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+  </svg>
+);
 
-const MixtureTasks = () => {
-  const [mixtures, setMixtures] = useState([]);
-  const [selectedMixture, setSelectedMixture] = useState("");
+const OperatorTable = () => {
+  const [operators, setOperators] = useState([]);
+  const [selectedOperator, setSelectedOperator] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
+  
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [allEmployees, setAllEmployees] = useState([]);
+  const [editedRows, setEditedRows] = useState({});
 
+  // 1. Fetch Employees & Filter for 'Operator' Role ONLY
   useEffect(() => {
-    const fetchEmployees = async () => {
+    const fetchOperators = async () => {
       try {
         const res = await axios.get(
           "https://threebapi-1067354145699.asia-south1.run.app/api/staff/get-employees"
         );
-        const employeeList = Array.isArray(res.data) ? res.data : res.data?.data || [];
-        setAllEmployees(employeeList);
-
-        const onlyMixtures = employeeList.filter(emp => {
+        const list = Array.isArray(res.data) ? res.data : res.data?.data ||[];
+        
+        // LOGIC FIX: Handle 'role' as an Array safely
+        const onlyOperators = list.filter(emp => {
           if (!emp.role) return false;
           if (Array.isArray(emp.role)) {
-            return emp.role.some(r => r.toLowerCase().includes("mixture"));
+            return emp.role.some(r => r.toLowerCase().includes("operator"));
           } else if (typeof emp.role === 'string') {
-            return emp.role.toLowerCase().includes("mixture");
+            return emp.role.toLowerCase().includes("operator");
           }
           return false;
         });
         
-        setMixtures(onlyMixtures);
+        setOperators(onlyOperators);
       } catch (err) {
         console.error("Error fetching staff:", err);
-        toast.error("Could not load mixture list");
+        toast.error("Could not load operator list");
       }
     };
-    fetchEmployees();
-  }, []);
+    fetchOperators();
+  },[]);
 
+  // 2. Fetch Tasks using the New API Endpoint
   const fetchTasks = async () => {
-    if (!selectedMixture) {
-      toast.error("Please select a Mixture employee first");
+    if (!selectedOperator) {
+      toast.error("Please select an Operator first");
       return;
     }
 
     setLoading(true);
-    setTasks([]); // Clear previous results
     try {
+      // LOGIC FIX: NEW API URL integrated here
       const res = await axios.get(
-        `https://threebapi-1067354145699.asia-south1.run.app/api/workers/employee-task/${selectedOperator}`
+        `https://threebapi-1067354145699.asia-south1.run.app/api/workers/employee-task/${selectedOperator}?lang=kn`
       );
       
-      let allTasks = [];
+      let allTasks =[];
       if (Array.isArray(res.data)) allTasks = res.data;
       else if (Array.isArray(res.data?.data)) allTasks = res.data.data;
       else if (Array.isArray(res.data?.tasks)) allTasks = res.data.tasks;
 
+      // Filter Logic (Only Date needed now, since API already filters by Operator)
       const filteredTasks = allTasks.filter((task) => {
         if (selectedDate) {
-           const taskDate = new Date(task.createdAt).toLocaleDateString("en-CA"); // YYYY-MM-DD format
+           const taskDate = new Date(task.createdAt).toLocaleDateString("en-CA");
            return taskDate === selectedDate;
         }
         return true;
       });
 
       setTasks(filteredTasks);
+      setEditedRows({}); 
       
       if (filteredTasks.length === 0) {
-        toast("No validated tasks found for this mixture employee.", { icon: "ℹ️" });
+        toast("No validated tasks found for this operator.", { icon: "ℹ️" });
       } else {
         toast.success(`Found ${filteredTasks.length} tasks`);
       }
@@ -86,94 +94,87 @@ const MixtureTasks = () => {
     }
   };
 
-  const getEmployeeName = (id) => {
-    const emp = allEmployees.find(e => e._id === id);
-    return emp ? emp.name : "Unknown";
-  };
-  
-  const getSelectedMixtureName = () => {
-      if (!selectedMixture) return "Mixture";
-      const emp = mixtures.find(m => m._id === selectedMixture);
-      return emp ? emp.name : "Mixture";
-  }
+  // 3. Edit Handler
+  const handleToggleEdit = async (taskId) => {
+    const isEditing = editedRows[taskId]?.__editing;
 
-  // --- EXPORT TO EXCEL ---
-  const handleExportExcel = () => {
-    if (tasks.length === 0) {
-      toast.error("No data to export!");
-      return;
+    if (isEditing) {
+      // === SAVE ===
+      try {
+        const dataToSave = editedRows[taskId];
+        const cleanFrameLength = dataToSave.frameLength.filter(str => str && str.toString().trim() !== "");
+
+        const payload = {
+          numberOfBox: dataToSave.numberOfBox,
+          boxWeight: isNaN(Number(dataToSave.boxWeight)) ? dataToSave.boxWeight : `${dataToSave.boxWeight}kg`,
+          frameWeight: isNaN(Number(dataToSave.frameWeight)) ? dataToSave.frameWeight : `${dataToSave.frameWeight}kg`,
+          frameLength: cleanFrameLength,
+          description: dataToSave.description,
+        };
+
+        await axios.put(
+          `https://threebapi-1067354145699.asia-south1.run.app/api/workers/update-task/${taskId}`,
+          payload
+        );
+
+        setTasks(prev => prev.map(t => (t._id === taskId ? { ...t, ...payload, updatedAt: new Date().toISOString() } : t)));
+        setEditedRows(prev => ({ ...prev, [taskId]: { ...prev[taskId], __editing: false } }));
+        toast.success("Updated Successfully!");
+
+      } catch (err) {
+        console.error(err);
+        toast.error("Update failed.");
+      }
+
+    } else {
+      // === EDIT START ===
+      setEditedRows((prev) => {
+        const t = tasks.find((x) => x._id === taskId);
+        return {
+          ...prev,
+          [taskId]: {
+            numberOfBox: t?.numberOfBox ?? "",
+            boxWeight: String(t?.boxWeight ?? "").replace(/kg$/i, "").trim(),
+            frameWeight: String(t?.frameWeight ?? "").replace(/kg$/i, "").trim(),
+            
+            // Logic: Ensure it's always an array for mapping inputs
+            frameLength: Array.isArray(t?.frameLength) 
+              ? [...t.frameLength] 
+              : (t?.frameLength ? [t.frameLength] : [""]),
+            
+            description: t?.description ?? "",
+            __editing: true,
+          },
+        };
+      });
     }
+  };
 
-    const formattedData = tasks.map((task, idx) => ({
-      "S.No": idx + 1,
-      "Mixture Name": getEmployeeName(task.updatedBy) || getSelectedMixtureName(),
-      "Helper Name": task.employee?.name || "—",
-      "Submit Time": formatTime(task.createdAt),
-      "Correction Time": formatTime(task.updatedAt),
-      "Frame Lengths": Array.isArray(task.frameLength) ? task.frameLength.join(', ') : task.frameLength,
-      "No. Boxes": task.numberOfBox,
-      "Box Weight": task.boxWeight,
-      "Frame Weight": task.frameWeight,
-      "Description": task.description || "—",
+  // Input Handlers
+  const handleArrayChange = (taskId, index, value) => {
+    setEditedRows(prev => {
+      const newArr = [...prev[taskId].frameLength];
+      newArr[index] = value;
+      return { ...prev, [taskId]: { ...prev[taskId], frameLength: newArr } };
+    });
+  };
+
+  const addArrayField = (taskId) => {
+    setEditedRows(prev => ({
+      ...prev,
+      [taskId]: { ...prev[taskId], frameLength: [...prev[taskId].frameLength, ""] }
     }));
-
-    const worksheet = XLSX.utils.json_to_sheet(formattedData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Tasks");
-    
-    // Auto-size columns
-    const cols = Object.keys(formattedData[0]).map(key => ({ wch: Math.max(20, key.length) }));
-    worksheet["!cols"] = cols;
-
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const data = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" });
-    
-    const fileName = `Mixture_Tasks_${getSelectedMixtureName()}_${selectedDate || 'all-dates'}.xlsx`;
-    saveAs(data, fileName);
   };
 
-  // --- EXPORT TO PDF ---
-  const handleExportPDF = () => {
-    if (tasks.length === 0) {
-      toast.error("No data to export!");
-      return;
-    }
+  const handleFieldChange = (taskId, field, value) => {
+    setEditedRows(prev => ({
+      ...prev,
+      [taskId]: { ...prev[taskId], [field]: value }
+    }));
+  };
 
-    const doc = new jsPDF();
-    
-    // Add a title to the PDF
-    doc.setFontSize(16);
-    doc.text(`Validated Tasks for: ${getSelectedMixtureName()}`, 14, 15);
-    doc.setFontSize(10);
-    doc.text(`Date: ${selectedDate || 'All Dates'}`, 14, 22);
-
-    const tableColumn = ["S.No", "Submit Time", "Frame Lengths", "Boxes", "Box Wt", "Frame Wt", "Helper"];
-    const tableRows = [];
-
-    tasks.forEach((task, idx) => {
-      const taskData = [
-        idx + 1,
-        formatTime(task.createdAt),
-        Array.isArray(task.frameLength) ? task.frameLength.join(', ') : task.frameLength,
-        task.numberOfBox,
-        task.boxWeight,
-        task.frameWeight,
-        task.employee?.name || "—",
-      ];
-      tableRows.push(taskData);
-    });
-
-    doc.autoTable({
-        head: [tableColumn],
-        body: tableRows,
-        startY: 30, // Start table after the title
-        theme: 'grid',
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [41, 128, 185] }, // Blue header
-    });
-    
-    const fileName = `Mixture_Tasks_${getSelectedMixtureName()}_${selectedDate || 'all-dates'}.pdf`;
-    doc.save(fileName);
+  const handleCancel = (taskId) => {
+    setEditedRows(prev => ({ ...prev,[taskId]: { ...prev[taskId], __editing: false } }));
   };
 
   const formatTime = (dateStr) => {
@@ -181,18 +182,31 @@ const MixtureTasks = () => {
     return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  // LOGIC FIX: Helper to get Operator Name robustly with new API
+  const getOperatorName = (idOrObj) => {
+      // If no ID is passed from API, we already know who it is from the Dropdown!
+      if(!idOrObj && selectedOperator) {
+         const op = operators.find(o => o._id === selectedOperator);
+         return op ? op.name : "—";
+      }
+      if(typeof idOrObj === 'object') return idOrObj.name;
+      const op = operators.find(o => o._id === idOrObj);
+      return op ? op.name : "Unknown ID";
+  };
+
   return (
     <div className="review-task-page container">
       <Toaster position="top-right" />
       
-      <h1 className="page-title">Mixture Validated Tasks</h1>
+      <h1 className="page-title">Operator Validated Tasks</h1>
 
+      {/* --- TOP BAR: Only Operator Dropdown & Date --- */}
       <div className="filters-wrapper">
         <div className="filter">
-          <label>Mixture Name</label>
-          <select value={selectedMixture} onChange={(e) => setSelectedMixture(e.target.value)}>
-            <option value="">-- Select Mixture --</option>
-            {mixtures.map(op => (
+          <label>Operator Name</label>
+          <select value={selectedOperator} onChange={(e) => setSelectedOperator(e.target.value)}>
+            <option value="">-- Select Operator --</option>
+            {operators.map(op => (
               <option key={op._id} value={op._id}>{op.name}</option>
             ))}
           </select>
@@ -204,21 +218,9 @@ const MixtureTasks = () => {
         </div>
 
         <div className="filter actions">
-          <button className="btn primary" onClick={fetchTasks} disabled={!selectedMixture}>
+          <button className="btn primary" onClick={fetchTasks} disabled={!selectedOperator}>
             Get Data
           </button>
-          
-          {/* ---- EXPORT BUTTONS ---- */}
-          {tasks.length > 0 && (
-            <>
-              <button className="btn btn-export-excel" onClick={handleExportExcel}>
-                Excel
-              </button>
-              <button className="btn btn-export-pdf" onClick={handleExportPDF}>
-                PDF
-              </button>
-            </>
-          )}
         </div>
       </div>
 
@@ -239,38 +241,83 @@ const MixtureTasks = () => {
                   <th>Frame Weight</th>
                   <th>Description</th>
                   <th>Verified By / Filled By </th>
+                  {/* <th>Action</th> */}
                 </tr>
               </thead>
               <tbody>
-                {tasks.length === 0 ? (
-                  <tr><td colSpan="9" className="empty">No tasks found for selected criteria</td></tr>
-                ) : (
-                  tasks.map((task, idx) => (
+                {tasks.length === 0 && (
+                  <tr><td colSpan="10" className="empty">No tasks found for selected criteria</td></tr>
+                )}
+
+                {tasks.map((task, idx) => {
+                  const edit = editedRows[task._id] || {};
+                  const isEditing = Boolean(edit.__editing);
+
+                  return (
                     <tr key={task._id}>
                       <td>{idx + 1}</td>
+                      
+                      {/* Submit Time */}
                       <td><span className="badge time">{formatTime(task.createdAt)}</span></td>
+
+                      {/* Correction Time */}
                       <td><span className="badge time" style={{background: '#e3f2fd', color: '#0056b3'}}>{formatTime(task.updatedAt)}</span></td>
+
+                      {/* Frame Length (Array) */}
                       <td>
-                        <div className="frame-badges">
-                           {Array.isArray(task.frameLength) 
-                              ? task.frameLength.map((f, i) => <span key={i} className="badge frame">{f}</span>)
-                              : <span className="badge frame">{task.frameLength}</span>
-                           }
-                        </div>
+                        {isEditing ? (
+                          <div className="flex flex-col gap-1">
+                            {edit.frameLength.map((val, i) => (
+                              <input 
+                                key={i}
+                                className="small-input mb-1"
+                                value={val}
+                                onChange={(e) => handleArrayChange(task._id, i, e.target.value)}
+                                placeholder="Length"
+                              />
+                            ))}
+                            <button className="text-blue-500 text-xs mt-1" onClick={() => addArrayField(task._id)}>+ Add Field</button>
+                          </div>
+                        ) : (
+                          <div className="frame-badges">
+                             {Array.isArray(task.frameLength) 
+                                ? task.frameLength.map((f, i) => <span key={i} className="badge frame">{f}</span>)
+                                : <span className="badge frame">{task.frameLength}</span>
+                             }
+                          </div>
+                        )}
                       </td>
-                      <td>{task.numberOfBox}</td>
-                      <td>{task.boxWeight}</td>
-                      <td>{task.frameWeight}</td>
-                      <td>{task.description || "—"}</td>
+
+                      {/* Fields */}
+                      <td>{isEditing ? <input className="small-input" value={edit.numberOfBox} onChange={(e) => handleFieldChange(task._id, 'numberOfBox', e.target.value)} /> : task.numberOfBox}</td>
+                      <td>{isEditing ? <input className="small-input" value={edit.boxWeight} onChange={(e) => handleFieldChange(task._id, 'boxWeight', e.target.value)} /> : task.boxWeight}</td>
+                      <td>{isEditing ? <input className="small-input" value={edit.frameWeight} onChange={(e) => handleFieldChange(task._id, 'frameWeight', e.target.value)} /> : task.frameWeight}</td>
+                      <td>{isEditing ? <textarea className="desc-input" value={edit.description} onChange={(e) => handleFieldChange(task._id, 'description', e.target.value)} /> : (task.description || "—")}</td>
+
+                      {/* Names Column */}
                       <td>
                         <div style={{fontSize: '0.8rem', lineHeight:'1.5'}}>
-                            <div><span style={{color:'#666'}}>Mixture:</span> <strong>{getEmployeeName(task.updatedBy)}</strong></div>
+                            <div><span style={{color:'#666'}}>Op:</span> <strong>{getOperatorName(task.updatedBy)}</strong></div>
                             <div><span style={{color:'#666'}}>Hlp:</span> {task.employee?.name || "—"}</div>
                         </div>
                       </td>
+
+                      {/* Action */}
+                      <td>
+                        {/* {isEditing ? (
+                           <div className="row-actions">
+                             <button className="btn small primary" onClick={() => handleToggleEdit(task._id)}>Save</button>
+                             <button className="btn small outline" onClick={() => handleCancel(task._id)}>X</button>
+                           </div>
+                        ) : (
+                        //    <div onClick={() => handleToggleEdit(task._id)} title="Edit Row">
+                        //      <EditIcon />
+                        //    </div>
+                        )} */}
+                      </td>
                     </tr>
-                  ))
-                )}
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -280,4 +327,4 @@ const MixtureTasks = () => {
   );
 };
 
-export default MixtureTasks;
+export default OperatorTable;
