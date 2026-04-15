@@ -204,7 +204,7 @@ function Sidebar({ isOpen, onClose, searchQuery = "" }) {
         {/* {matches("Push Notifications") && <LinkMenuItem text="Push Notifications" to="/manager/notifications" icon={faBell} />} */}
         {matches("App Feedback") && <LinkMenuItem icon={faComments} text="App Feedback" to="/manager/feedback" />}
         {matches("Archive Clients") && <LinkMenuItem icon={faArchive} text="Archive Clients" to="/manager/archive-clients" />}
-        {matches("Settings") && <LinkMenuItem icon={faCog} text="Settings" to="/manager/settings" />}
+       
       </ul>
     </div>
   );

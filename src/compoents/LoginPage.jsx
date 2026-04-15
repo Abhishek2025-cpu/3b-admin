@@ -137,7 +137,7 @@ const handleLogin = async (e) => {
             {isLoading && <div style={styles.spinner}></div>}
           </button>
         </form>
-        <p><a href="#" style={styles.forgotPasswordLink}><FontAwesomeIcon icon={faKey} style={{ marginRight: '5px' }}/>Forgot Password?</a></p>
+     
       </div>
 
       {toast.show && (<div style={styles.toastContainer}><div style={toastStyle}>{toast.message}</div></div>)}
