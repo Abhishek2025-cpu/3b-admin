@@ -1,55 +1,40 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
-import "./ReviewTasks.css"; 
-
-// Simple Edit Icon
-const EditIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ cursor: "pointer", color: "#007bff" }}>
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-  </svg>
-);
+import * as XLSX from "xlsx";
+import "./ReviewTasks.css";
 
 const OperatorTable = () => {
   const [operators, setOperators] = useState([]);
   const [selectedOperator, setSelectedOperator] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
-  
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [editedRows, setEditedRows] = useState({});
+  const [allEmployees, setAllEmployees] = useState([]);
 
-  // 1. Fetch Employees & Filter for 'Operator' Role ONLY
   useEffect(() => {
     const fetchOperators = async () => {
       try {
         const res = await axios.get(
           "https://threebapi-1067354145699.asia-south1.run.app/api/staff/get-employees"
         );
-        const list = Array.isArray(res.data) ? res.data : res.data?.data ||[];
-        
-        // LOGIC FIX: Handle 'role' as an Array safely
+        const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
+        setAllEmployees(list);
+
         const onlyOperators = list.filter(emp => {
           if (!emp.role) return false;
-          if (Array.isArray(emp.role)) {
-            return emp.role.some(r => r.toLowerCase().includes("operator"));
-          } else if (typeof emp.role === 'string') {
-            return emp.role.toLowerCase().includes("operator");
-          }
-          return false;
+          const roles = Array.isArray(emp.role) ? emp.role : [emp.role];
+          return roles.some(r => r.toLowerCase().includes("operator"));
         });
-        
+
         setOperators(onlyOperators);
       } catch (err) {
-        console.error("Error fetching staff:", err);
         toast.error("Could not load operator list");
       }
     };
     fetchOperators();
-  },[]);
+  }, []);
 
-  // 2. Fetch Tasks using the New API Endpoint
   const fetchTasks = async () => {
     if (!selectedOperator) {
       toast.error("Please select an Operator first");
@@ -58,123 +43,59 @@ const OperatorTable = () => {
 
     setLoading(true);
     try {
-      // LOGIC FIX: NEW API URL integrated here
       const res = await axios.get(
         `https://threebapi-1067354145699.asia-south1.run.app/api/workers/employee-task/${selectedOperator}`
       );
-      
-      let allTasks =[];
-      if (Array.isArray(res.data)) allTasks = res.data;
-      else if (Array.isArray(res.data?.data)) allTasks = res.data.data;
-      else if (Array.isArray(res.data?.tasks)) allTasks = res.data.tasks;
 
-      // Filter Logic (Only Date needed now, since API already filters by Operator)
+      let allTasks = Array.isArray(res.data) ? res.data : (res.data?.data || res.data?.tasks || []);
+
       const filteredTasks = allTasks.filter((task) => {
         if (selectedDate) {
-           const taskDate = new Date(task.createdAt).toLocaleDateString("en-CA");
-           return taskDate === selectedDate;
+          const taskDate = new Date(task.createdAt).toLocaleDateString("en-CA");
+          return taskDate === selectedDate;
         }
         return true;
       });
 
       setTasks(filteredTasks);
-      setEditedRows({}); 
-      
+
       if (filteredTasks.length === 0) {
-        toast("No validated tasks found for this operator.", { icon: "ℹ️" });
+        toast("No validated tasks found.", { icon: "ℹ️" });
       } else {
         toast.success(`Found ${filteredTasks.length} tasks`);
       }
-
     } catch (err) {
-      console.error("Error loading tasks:", err);
       toast.error("Failed to load tasks");
     } finally {
       setLoading(false);
     }
   };
 
-  // 3. Edit Handler
-  const handleToggleEdit = async (taskId) => {
-    const isEditing = editedRows[taskId]?.__editing;
-
-    if (isEditing) {
-      // === SAVE ===
-      try {
-        const dataToSave = editedRows[taskId];
-        const cleanFrameLength = dataToSave.frameLength.filter(str => str && str.toString().trim() !== "");
-
-        const payload = {
-          numberOfBox: dataToSave.numberOfBox,
-          boxWeight: isNaN(Number(dataToSave.boxWeight)) ? dataToSave.boxWeight : `${dataToSave.boxWeight}kg`,
-          frameWeight: isNaN(Number(dataToSave.frameWeight)) ? dataToSave.frameWeight : `${dataToSave.frameWeight}kg`,
-          frameLength: cleanFrameLength,
-          description: dataToSave.description,
-        };
-
-        await axios.put(
-          `https://threebapi-1067354145699.asia-south1.run.app/api/workers/update-task/${taskId}`,
-          payload
-        );
-
-        setTasks(prev => prev.map(t => (t._id === taskId ? { ...t, ...payload, updatedAt: new Date().toISOString() } : t)));
-        setEditedRows(prev => ({ ...prev, [taskId]: { ...prev[taskId], __editing: false } }));
-        toast.success("Updated Successfully!");
-
-      } catch (err) {
-        console.error(err);
-        toast.error("Update failed.");
-      }
-
-    } else {
-      // === EDIT START ===
-      setEditedRows((prev) => {
-        const t = tasks.find((x) => x._id === taskId);
-        return {
-          ...prev,
-          [taskId]: {
-            numberOfBox: t?.numberOfBox ?? "",
-            boxWeight: String(t?.boxWeight ?? "").replace(/kg$/i, "").trim(),
-            frameWeight: String(t?.frameWeight ?? "").replace(/kg$/i, "").trim(),
-            
-            // Logic: Ensure it's always an array for mapping inputs
-            frameLength: Array.isArray(t?.frameLength) 
-              ? [...t.frameLength] 
-              : (t?.frameLength ? [t.frameLength] : [""]),
-            
-            description: t?.description ?? "",
-            __editing: true,
-          },
-        };
-      });
+  const downloadExcel = () => {
+    if (tasks.length === 0) {
+      toast.error("No data available to download");
+      return;
     }
-  };
 
-  // Input Handlers
-  const handleArrayChange = (taskId, index, value) => {
-    setEditedRows(prev => {
-      const newArr = [...prev[taskId].frameLength];
-      newArr[index] = value;
-      return { ...prev, [taskId]: { ...prev[taskId], frameLength: newArr } };
-    });
-  };
-
-  const addArrayField = (taskId) => {
-    setEditedRows(prev => ({
-      ...prev,
-      [taskId]: { ...prev[taskId], frameLength: [...prev[taskId].frameLength, ""] }
+    const excelData = tasks.map((task, idx) => ({
+      "S.No": idx + 1,
+      "Date": new Date(task.createdAt).toLocaleDateString("en-GB"),
+      "Submit Time": formatTime(task.createdAt),
+      "Correction Time": formatTime(task.updatedAt),
+      "Operator Name": getOperatorName(task.updatedBy),
+      "Helper Name": task.employee?.name || "—",
+      "Frame Lengths": Array.isArray(task.frameLength) ? task.frameLength.join(", ") : task.frameLength,
+      "No. of Boxes": task.numberOfBox,
+      "Box Weight": task.boxWeight,
+      "Frame Weight": task.frameWeight,
+      "Description": task.description || "—",
+      "Selfie URL": task.selfie?.url || "N/A"
     }));
-  };
 
-  const handleFieldChange = (taskId, field, value) => {
-    setEditedRows(prev => ({
-      ...prev,
-      [taskId]: { ...prev[taskId], [field]: value }
-    }));
-  };
-
-  const handleCancel = (taskId) => {
-    setEditedRows(prev => ({ ...prev,[taskId]: { ...prev[taskId], __editing: false } }));
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Operator Tasks");
+    XLSX.writeFile(workbook, `Operator_Tasks_${selectedDate || "All"}.xlsx`);
   };
 
   const formatTime = (dateStr) => {
@@ -182,29 +103,24 @@ const OperatorTable = () => {
     return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // LOGIC FIX: Helper to get Operator Name robustly with new API
   const getOperatorName = (idOrObj) => {
-      // If no ID is passed from API, we already know who it is from the Dropdown!
-      if(!idOrObj && selectedOperator) {
-         const op = operators.find(o => o._id === selectedOperator);
-         return op ? op.name : "—";
-      }
-      if(typeof idOrObj === 'object') return idOrObj.name;
-      const op = operators.find(o => o._id === idOrObj);
-      return op ? op.name : "Unknown ID";
+    if (!idOrObj && selectedOperator) {
+      const op = operators.find(o => o._id === selectedOperator);
+      return op ? op.name : "—";
+    }
+    if (typeof idOrObj === 'object') return idOrObj?.name || "—";
+    const op = allEmployees.find(o => o._id === idOrObj);
+    return op ? op.name : "Unknown";
   };
 
   return (
     <div className="review-task-page container">
       <Toaster position="top-right" />
-      
+
       <h1 className="page-title">Operator Validated Tasks</h1>
 
-      {/* --- TOP BAR: Enhanced Operator Filter Wrapper --- */}
       <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-end gap-4">
-
-          {/* Operator Name Filter */}
           <div className="flex flex-col gap-2 min-w-[240px] flex-1">
             <label className="text-xs font-semibold uppercase tracking-wider text-gray-400 ml-1">
               Operator Name
@@ -213,8 +129,7 @@ const OperatorTable = () => {
               <select
                 value={selectedOperator}
                 onChange={(e) => setSelectedOperator(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-3 pr-10 text-sm text-gray-800 shadow-sm transition-all 
-                hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none cursor-pointer"
+                className="w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-3 pr-10 text-sm text-gray-800 shadow-sm transition-all hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none cursor-pointer"
               >
                 <option value="" disabled className="text-gray-400">
                   Select Operator
@@ -225,23 +140,14 @@ const OperatorTable = () => {
                   </option>
                 ))}
               </select>
-
-              {/* Custom Arrow Icon */}
               <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="M6 9l6 6 6-6" />
                 </svg>
               </div>
             </div>
           </div>
 
-          {/* Date Filter */}
           <div className="flex flex-col gap-1.5 min-w-[150px]">
             <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 ml-1">
               Date
@@ -254,24 +160,29 @@ const OperatorTable = () => {
             />
           </div>
 
-          {/* Action Button */}
-          <div className="flex-none">
+          <div className="flex gap-2">
             <button
               onClick={fetchTasks}
               disabled={!selectedOperator}
-              className={`inline-flex items-center justify-center rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-all focus:outline-none focus:ring-4 
-          ${!selectedOperator
-                  ? 'cursor-not-allowed bg-gray-300'
-                  : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-300 active:scale-95 shadow-md shadow-blue-100'
-                }`}
+              className={`inline-flex items-center justify-center rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-all focus:outline-none focus:ring-4 ${
+                !selectedOperator ? 'cursor-not-allowed bg-gray-300' : 'bg-blue-600 hover:bg-blue-700 active:scale-95 shadow-md shadow-blue-100'
+              }`}
             >
-              <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-              </svg>
               Get Data
             </button>
+            <button
+              onClick={downloadExcel}
+              disabled={tasks.length === 0}
+              className={`inline-flex items-center justify-center rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-all focus:outline-none focus:ring-4 ${
+                tasks.length === 0 ? 'cursor-not-allowed bg-gray-300' : 'bg-green-600 hover:bg-green-700 active:scale-95 shadow-md shadow-green-100'
+              }`}
+            >
+              <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Excel
+            </button>
           </div>
-
         </div>
       </div>
 
@@ -284,6 +195,7 @@ const OperatorTable = () => {
               <thead>
                 <tr>
                   <th>S.No</th>
+                  <th>Selfie</th>
                   <th>Submit Time</th>
                   <th>Correction Time</th>
                   <th style={{ minWidth: '140px' }}>Frame Lengths</th>
@@ -292,83 +204,51 @@ const OperatorTable = () => {
                   <th>Frame Weight</th>
                   <th>Description</th>
                   <th>Verified By / Filled By </th>
-                  {/* <th>Action</th> */}
                 </tr>
               </thead>
               <tbody>
-                {tasks.length === 0 && (
+                {tasks.length === 0 ? (
                   <tr><td colSpan="10" className="empty">No tasks found for selected criteria</td></tr>
-                )}
-
-                {tasks.map((task, idx) => {
-                  const edit = editedRows[task._id] || {};
-                  const isEditing = Boolean(edit.__editing);
-
-                  return (
+                ) : (
+                  tasks.map((task, idx) => (
                     <tr key={task._id}>
                       <td>{idx + 1}</td>
-                      
-                      {/* Submit Time */}
-                      <td><span className="badge time">{formatTime(task.createdAt)}</span></td>
-
-                      {/* Correction Time */}
-                      <td><span className="badge time" style={{background: '#e3f2fd', color: '#0056b3'}}>{formatTime(task.updatedAt)}</span></td>
-
-                      {/* Frame Length (Array) */}
                       <td>
-                        {isEditing ? (
-                          <div className="flex flex-col gap-1">
-                            {edit.frameLength.map((val, i) => (
-                              <input 
-                                key={i}
-                                className="small-input mb-1"
-                                value={val}
-                                onChange={(e) => handleArrayChange(task._id, i, e.target.value)}
-                                placeholder="Length"
-                              />
-                            ))}
-                            <button className="text-blue-500 text-xs mt-1" onClick={() => addArrayField(task._id)}>+ Add Field</button>
-                          </div>
+                        {task.selfie?.url ? (
+                          <a href={task.selfie.url} target="_blank" rel="noreferrer">
+                            <img 
+                              src={task.selfie.url} 
+                              alt="selfie" 
+                              className="w-24 h-24 rounded-lg object-cover border-2 border-gray-100 shadow-sm hover:scale-105 transition-transform"
+                            />
+                          </a>
                         ) : (
-                          <div className="frame-badges">
-                             {Array.isArray(task.frameLength) 
-                                ? task.frameLength.map((f, i) => <span key={i} className="badge frame">{f}</span>)
-                                : <span className="badge frame">{task.frameLength}</span>
-                             }
-                          </div>
+                          <span className="text-gray-400 text-xs italic">No Image</span>
                         )}
                       </td>
-
-                      {/* Fields */}
-                      <td>{isEditing ? <input className="small-input" value={edit.numberOfBox} onChange={(e) => handleFieldChange(task._id, 'numberOfBox', e.target.value)} /> : task.numberOfBox}</td>
-                      <td>{isEditing ? <input className="small-input" value={edit.boxWeight} onChange={(e) => handleFieldChange(task._id, 'boxWeight', e.target.value)} /> : task.boxWeight}</td>
-                      <td>{isEditing ? <input className="small-input" value={edit.frameWeight} onChange={(e) => handleFieldChange(task._id, 'frameWeight', e.target.value)} /> : task.frameWeight}</td>
-                      <td>{isEditing ? <textarea className="desc-input" value={edit.description} onChange={(e) => handleFieldChange(task._id, 'description', e.target.value)} /> : (task.description || "—")}</td>
-
-                      {/* Names Column */}
+                      <td><span className="badge time">{formatTime(task.createdAt)}</span></td>
+                      <td><span className="badge time" style={{ background: '#e3f2fd', color: '#0056b3' }}>{formatTime(task.updatedAt)}</span></td>
                       <td>
-                        <div style={{fontSize: '0.8rem', lineHeight:'1.5'}}>
-                            <div><span style={{color:'#666'}}>Op:</span> <strong>{getOperatorName(task.updatedBy)}</strong></div>
-                            <div><span style={{color:'#666'}}>Hlp:</span> {task.employee?.name || "—"}</div>
+                        <div className="frame-badges">
+                          {Array.isArray(task.frameLength)
+                            ? task.frameLength.map((f, i) => <span key={i} className="badge frame">{f}</span>)
+                            : <span className="badge frame">{task.frameLength}</span>
+                          }
                         </div>
                       </td>
-
-                      {/* Action */}
+                      <td>{task.numberOfBox}</td>
+                      <td>{task.boxWeight}</td>
+                      <td>{task.frameWeight}</td>
+                      <td>{task.description || "—"}</td>
                       <td>
-                        {/* {isEditing ? (
-                           <div className="row-actions">
-                             <button className="btn small primary" onClick={() => handleToggleEdit(task._id)}>Save</button>
-                             <button className="btn small outline" onClick={() => handleCancel(task._id)}>X</button>
-                           </div>
-                        ) : (
-                        //    <div onClick={() => handleToggleEdit(task._id)} title="Edit Row">
-                        //      <EditIcon />
-                        //    </div>
-                        )} */}
+                        <div style={{ fontSize: '0.8rem', lineHeight: '1.5' }}>
+                          <div><span style={{ color: '#666' }}>Op:</span> <strong>{getOperatorName(task.updatedBy)}</strong></div>
+                          <div><span style={{ color: '#666' }}>Hlp:</span> {task.employee?.name || "—"}</div>
+                        </div>
                       </td>
                     </tr>
-                  );
-                })}
+                  ))
+                )}
               </tbody>
             </table>
           </div>

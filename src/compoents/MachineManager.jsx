@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
-import "./ReviewTasks.css"; // You can reuse the same CSS file
+import * as XLSX from "xlsx";
+import "./ReviewTasks.css";
 
 const MixtureTasks = () => {
   const [mixtures, setMixtures] = useState([]);
@@ -32,7 +33,6 @@ const MixtureTasks = () => {
 
         setMixtures(onlyMixtures);
       } catch (err) {
-        console.error("Error fetching staff:", err);
         toast.error("Could not load mixture list");
       }
     };
@@ -46,10 +46,10 @@ const MixtureTasks = () => {
     }
 
     setLoading(true);
-    setTasks([]); // Clear previous results
+    setTasks([]);
     try {
       const res = await axios.get(
-        `https://threebapi-1067354145699.asia-south1.run.app/api/workers/employee-task/${selectedMixture}?lang=kn`
+        `https://threebapi-1067354145699.asia-south1.run.app/api/workers/employee-task/${selectedMixture}`
       );
 
       let allTasks = [];
@@ -68,17 +68,43 @@ const MixtureTasks = () => {
       setTasks(filteredTasks);
 
       if (filteredTasks.length === 0) {
-        toast("No validated tasks found for this mixture employee.", { icon: "ℹ️" });
+        toast("No validated tasks found.", { icon: "ℹ️" });
       } else {
         toast.success(`Found ${filteredTasks.length} tasks`);
       }
 
     } catch (err) {
-      console.error("Error loading tasks:", err);
       toast.error("Failed to load tasks");
     } finally {
       setLoading(false);
     }
+  };
+
+  const downloadExcel = () => {
+    if (tasks.length === 0) {
+      toast.error("No data available to download");
+      return;
+    }
+
+    const excelData = tasks.map((task, idx) => ({
+      "S.No": idx + 1,
+      "Date": new Date(task.createdAt).toLocaleDateString("en-GB"),
+      "Submit Time": formatTime(task.createdAt),
+      "Correction Time": formatTime(task.updatedAt),
+      "Mixture Name": getEmployeeName(task.updatedBy),
+      "Helper Name": task.employee?.name || "—",
+      "Frame Lengths": Array.isArray(task.frameLength) ? task.frameLength.join(", ") : task.frameLength,
+      "No. of Boxes": task.numberOfBox,
+      "Box Weight": task.boxWeight,
+      "Frame Weight": task.frameWeight,
+      "Description": task.description || "—",
+      "Selfie URL": task.selfie?.url || "N/A"
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Mixture Tasks");
+    XLSX.writeFile(workbook, `Mixture_Tasks_${selectedDate || "All"}.xlsx`);
   };
 
   const formatTime = (dateStr) => {
@@ -101,11 +127,8 @@ const MixtureTasks = () => {
 
       <h1 className="page-title">Mixture Validated Tasks</h1>
 
-      {/* --- TOP BAR: Enhanced Mixture Filter Wrapper --- */}
       <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-end gap-4">
-
-          {/* Mixture Name Filter */}
           <div className="flex flex-col gap-2 min-w-[240px] flex-1">
             <label className="text-xs font-semibold uppercase tracking-wider text-gray-400 ml-1">
               Mixture Name
@@ -114,8 +137,7 @@ const MixtureTasks = () => {
               <select
                 value={selectedMixture}
                 onChange={(e) => setSelectedMixture(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-3 pr-10 text-sm text-gray-800 shadow-sm transition-all 
-                hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none cursor-pointer"
+                className="w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-3 pr-10 text-sm text-gray-800 shadow-sm transition-all hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none cursor-pointer"
               >
                 <option value="" disabled className="text-gray-400">
                   Select Mixture
@@ -126,23 +148,14 @@ const MixtureTasks = () => {
                   </option>
                 ))}
               </select>
-
-              {/* Custom Arrow */}
               <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="M6 9l6 6 6-6" />
                 </svg>
               </div>
             </div>
           </div>
 
-          {/* Date Filter */}
           <div className="flex flex-col gap-1.5 min-w-[150px]">
             <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 ml-1">
               Date
@@ -155,24 +168,34 @@ const MixtureTasks = () => {
             />
           </div>
 
-          {/* Action Button */}
-          <div className="flex-none">
+          <div className="flex gap-2">
             <button
               onClick={fetchTasks}
               disabled={!selectedMixture}
-              className={`inline-flex items-center justify-center rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-all focus:outline-none focus:ring-4 
-          ${!selectedMixture
+              className={`inline-flex items-center justify-center rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-all focus:outline-none focus:ring-4 ${
+                !selectedMixture
                   ? 'cursor-not-allowed bg-gray-300'
                   : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-300 active:scale-95 shadow-md shadow-blue-100'
-                }`}
+              }`}
             >
-              <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-              </svg>
               Get Data
             </button>
-          </div>
 
+            <button
+              onClick={downloadExcel}
+              disabled={tasks.length === 0}
+              className={`inline-flex items-center justify-center rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-all focus:outline-none focus:ring-4 ${
+                tasks.length === 0
+                  ? 'cursor-not-allowed bg-gray-300'
+                  : 'bg-green-600 hover:bg-green-700 focus:ring-green-300 active:scale-95 shadow-md shadow-green-100'
+              }`}
+            >
+              <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Excel
+            </button>
+          </div>
         </div>
       </div>
 
@@ -185,6 +208,7 @@ const MixtureTasks = () => {
               <thead>
                 <tr>
                   <th>S.No</th>
+                  <th>Selfie</th>
                   <th>Submit Time</th>
                   <th>Correction Time</th>
                   <th style={{ minWidth: '140px' }}>Frame Lengths</th>
@@ -197,11 +221,24 @@ const MixtureTasks = () => {
               </thead>
               <tbody>
                 {tasks.length === 0 ? (
-                  <tr><td colSpan="9" className="empty">No tasks found for selected criteria</td></tr>
+                  <tr><td colSpan="10" className="empty">No tasks found for selected criteria</td></tr>
                 ) : (
                   tasks.map((task, idx) => (
                     <tr key={task._id}>
                       <td>{idx + 1}</td>
+                      <td>
+                        {task.selfie?.url ? (
+                          <a href={task.selfie.url} target="_blank" rel="noreferrer">
+                            <img 
+                              src={task.selfie.url} 
+                              alt="task" 
+                              className="w-24 h-24 rounded-lg object-cover border-2 border-gray-100 hover:scale-105 transition-transform cursor-zoom-in shadow-sm"
+                            />
+                          </a>
+                        ) : (
+                          <span className="text-gray-400 text-xs italic">No Image</span>
+                        )}
+                      </td>
                       <td><span className="badge time">{formatTime(task.createdAt)}</span></td>
                       <td><span className="badge time" style={{ background: '#e3f2fd', color: '#0056b3' }}>{formatTime(task.updatedAt)}</span></td>
                       <td>
@@ -213,13 +250,13 @@ const MixtureTasks = () => {
                         </div>
                       </td>
                       <td>{task.numberOfBox}</td>
-                      <td>{task.boxWeight}</td>
-                      <td>{task.frameWeight}</td>
+                      <td>{task.boxWeight} kg</td>
+                      <td>{task.frameWeight} kg</td>
                       <td>{task.description || "—"}</td>
                       <td>
-                        <div style={{ fontSize: '0.8rem', lineHeight: '1.5' }}>
-                          <div><span style={{ color: '#666' }}>Mixture:</span> <strong>{getEmployeeName(task.updatedBy)}</strong></div>
-                          <div><span style={{ color: '#666' }}>Hlp:</span> {task.employee?.name || "—"}</div>
+                        <div style={{ fontSize: '0.85rem', lineHeight: '1.6' }}>
+                          <div><span className="text-gray-500">Mixture:</span> <strong className="text-blue-700">{getEmployeeName(task.updatedBy)}</strong></div>
+                          <div><span className="text-gray-500">Helper:</span> <span className="font-medium">{task.employee?.name || "—"}</span></div>
                         </div>
                       </td>
                     </tr>

@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "80f6771e-6846-4c3b-ba5a-1953d70cbdef"
+      }
+    },
+    "android": {
+      "package": "com.harshit.b2b"
+    }
+  }
+}
