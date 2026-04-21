@@ -4,12 +4,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faFileInvoiceDollar, faTachometerAlt, faStickyNote, faPlusSquare, faList,
   faUsers, faUserTie, faUserFriends, faComments, faUserPlus, faUsersCog,
-  faThLarge, faBoxOpen, faBox, faShoppingCart, faCog, faChevronDown,faQrcode,
-  faGlobe, faUserShield, faUndo, faBell, faCogs, faTasks, faArchive, faBarcode,
-  faTag // यहाँ faTag आइकॉन जोड़ा गया है
+  faThLarge, faBoxOpen, faBox, faShoppingCart, faChevronDown, faQrcode,
+  faGlobe, faUserShield, faUndo, faArchive, faBarcode, faCogs, faTasks
 } from '@fortawesome/free-solid-svg-icons';
 import profilePic from '../assets/3b.png';
-import { ScanIcon } from 'lucide-react';
 
 const styles = {
   sideMenu: { position: 'fixed', top: 0, left: 0, width: '260px', height: '100%', backgroundColor: '#f5f5f5', boxShadow: '2px 0 5px rgba(0,0,0,0.2)', padding: '20px', zIndex: 2000, transform: 'translateX(-100%)', transition: 'transform 0.3s ease', overflowY: 'auto' },
@@ -23,7 +21,7 @@ const styles = {
   menuItem: { padding: '12px 10px', fontSize: '16px', color: '#6f42c1', display: 'flex', alignItems: 'center', gap: '15px', cursor: 'pointer', transition: 'background-color 0.2s', borderRadius: '5px' },
   activeMenuItem: { backgroundColor: '#e0d8f0', fontWeight: 'bold' },
   nested: { listStyle: 'none', paddingLeft: '0px', maxHeight: 0, overflow: 'hidden', transition: 'max-height 0.4s ease-in-out' },
-  nestedOpen: { maxHeight: '800px' },
+  nestedOpen: { maxHeight: '1000px' },
   arrow: { marginLeft: 'auto', transition: 'transform 0.3s ease' },
   arrowRotated: { transform: 'rotate(180deg)' },
   icon: { width: '20px', textAlign: 'center' }
@@ -52,12 +50,12 @@ const DropdownMenuItem = ({ icon, text, isOpen, onClick }) => (
 
 function Sidebar({ isOpen, onClose, searchQuery = "" }) {
   const [openMenus, setOpenMenus] = useState({});
-  const [userRole, setUserRole] = useState(null);
+  const location = useLocation();
 
-  useEffect(() => {
-    const storedRole = localStorage.getItem('userRole');
-    if (storedRole) setUserRole(storedRole);
-  }, []);
+  const userRole = localStorage.getItem('role');
+  const userName = localStorage.getItem('userName') || 'User';
+  const userEmail = localStorage.getItem('userEmail') || '';
+  const permissions = JSON.parse(localStorage.getItem('permissions') || '{}');
 
   useEffect(() => {
     if (searchQuery.trim() !== "") {
@@ -73,18 +71,20 @@ function Sidebar({ isOpen, onClose, searchQuery = "" }) {
     setOpenMenus(prev => ({ ...prev, [menuId]: !prev[menuId] }));
   };
 
-  const userName = localStorage.getItem('userName') || 'Manager';
-  const userEmail = "manager@3bprofiles.com";
+  const hasAccess = (path) => {
+    if (userRole === 'admin') return true;
+    const keys = path.split('.');
+    let current = permissions;
+    for (const key of keys) {
+      if (current === undefined || current === null) return false;
+      current = current[key];
+    }
+    return current === true;
+  };
 
   const matches = (text) => {
     if (!searchQuery) return true;
     return text.toLowerCase().includes(searchQuery.toLowerCase());
-  };
-
-  const shouldShowGroup = (parentText, childrenArray = []) => {
-    if (!searchQuery) return true;
-    if (matches(parentText)) return true;
-    return childrenArray.some(child => matches(child));
   };
 
   const isSidebarActive = isOpen || searchQuery.trim() !== "";
@@ -97,67 +97,54 @@ function Sidebar({ isOpen, onClose, searchQuery = "" }) {
         <h4 style={styles.profileName}>{userName}</h4>
         <p style={styles.profileEmail}>{userEmail}</p>
       </div>
+
       <ul style={styles.menuList}>
-        {matches("Dashboard") && <LinkMenuItem icon={faTachometerAlt} text="Dashboard" to="/manager/dashboard" />}
+        
+        {hasAccess('dashboard') && matches("Dashboard") && (
+          <LinkMenuItem icon={faTachometerAlt} text="Dashboard" to="/manager/dashboard" />
+        )}
 
-        {/* Sticker Group */}
-        {shouldShowGroup("Sticker", ["Add", "View", "Scan"]) && (
+        {(hasAccess('stickers.add') || hasAccess('stickers.view')) && (
           <>
-            <DropdownMenuItem
-              icon={faStickyNote}
-              text="Sticker"
-              isOpen={openMenus.sticker}
-              onClick={(e) => toggleNested(e, "sticker")}
-            />
-
+            <DropdownMenuItem icon={faStickyNote} text="Sticker" isOpen={openMenus.sticker} onClick={(e) => toggleNested(e, "sticker")} />
             <ul style={{ ...styles.nested, ...(openMenus.sticker ? styles.nestedOpen : {}) }}>
-              {matches("Add") && (
-                <LinkMenuItem icon={faPlusSquare} text="Add" to="/manager/add-item" />
-              )}
-
-              {matches("View") && (
-                <LinkMenuItem icon={faList} text="View" to="/manager/view-items" />
-              )}
-
-              {matches("Scan") && (
-                <LinkMenuItem icon={faQrcode} text="Scan BarCode" to="/manager/scan-sticker" />
-              )}
+              {hasAccess('stickers.add') && matches("Add") && <LinkMenuItem icon={faPlusSquare} text="Add" to="/manager/add-item" />}
+              {hasAccess('stickers.view') && matches("View") && <LinkMenuItem icon={faList} text="View" to="/manager/view-items" />}
+              {hasAccess('stickers.view') && matches("Scan") && <LinkMenuItem icon={faQrcode} text="Scan BarCode" to="/manager/scan-sticker" />}
             </ul>
           </>
         )}
 
-        {/* Machines Group */}
-        {shouldShowGroup("Machines", ["Operator Table", "Mixture Table"]) && (
+        {(hasAccess('machines.operatorTable') || hasAccess('machines.mixtureTable') || hasAccess('machines.helperTable')) && (
           <>
             <DropdownMenuItem icon={faCogs} text="Machines" isOpen={openMenus.machines} onClick={(e) => toggleNested(e, 'machines')} />
             <ul style={{ ...styles.nested, ...(openMenus.machines ? styles.nestedOpen : {}) }}>
-              {matches("Operator Table") && <LinkMenuItem icon={faPlusSquare} text="Operator Table" to="/manager/operators" />}
-              {matches("Worker Table") && <LinkMenuItem icon={faPlusSquare} text="Helper Table" to="/manager/worker" />}
-              {matches("Mixture Table") && <LinkMenuItem icon={faTasks} text="Mixture Table" to="/manager/add-machine" />}
+              {hasAccess('machines.operatorTable') && matches("Operator Table") && <LinkMenuItem icon={faPlusSquare} text="Operator Table" to="/manager/operators" />}
+              {hasAccess('machines.helperTable') && matches("Worker Table") && <LinkMenuItem icon={faPlusSquare} text="Helper Table" to="/manager/worker" />}
+              {hasAccess('machines.mixtureTable') && matches("Mixture Table") && <LinkMenuItem icon={faTasks} text="Mixture Table" to="/manager/add-machine" />}
             </ul>
           </>
         )}
 
-        {/* Users Group */}
-        {shouldShowGroup("Users", ["Clients", "View Clients", "Chats", "Staff", "Add Staff", "View Staff"]) && (
+        {(hasAccess('users.clients') || hasAccess('users.staff')) && (
           <>
             <DropdownMenuItem icon={faUsers} text="Users" isOpen={openMenus.users} onClick={(e) => toggleNested(e, 'users')} />
             <ul style={{ ...styles.nested, ...(openMenus.users ? styles.nestedOpen : {}) }}>
-              {shouldShowGroup("Clients", ["View Clients", "Chats"]) && (
+              {(hasAccess('users.clients.view') || hasAccess('users.clients.chat')) && (
                 <>
                   <DropdownMenuItem icon={faUserTie} text="Clients" isOpen={openMenus.clients} onClick={(e) => toggleNested(e, 'clients')} />
                   <ul style={{ ...styles.nested, ...(openMenus.clients ? styles.nestedOpen : {}) }}>
-                    {matches("View Clients") && <LinkMenuItem icon={faUserFriends} text="View Clients" to="/manager/view-clients" />}
-                    {matches("Chats") && <LinkMenuItem icon={faComments} text="Chats" to="/manager/chats" />}
+                    {hasAccess('users.clients.view') && matches("View Clients") && <LinkMenuItem icon={faUserFriends} text="View Clients" to="/manager/view-clients" />}
+                    {hasAccess('users.clients.chat') && matches("Chats") && <LinkMenuItem icon={faComments} text="Chats" to="/manager/chats" />}
                   </ul>
                 </>
               )}
-              {shouldShowGroup("Staff", ["Add Staff", "View Staff"]) && (
+              {(hasAccess('users.staff.add') || hasAccess('users.staff.view')) && (
                 <>
                   <DropdownMenuItem icon={faUsersCog} text="Staff" isOpen={openMenus.staff} onClick={(e) => toggleNested(e, 'staff')} />
                   <ul style={{ ...styles.nested, ...(openMenus.staff ? styles.nestedOpen : {}) }}>
-                    {matches("Add Staff") && <LinkMenuItem icon={faUserPlus} text="Add Staff" to="/manager/add-staff" />}
-                    {matches("View Staff") && <LinkMenuItem icon={faUsersCog} text="View Staff" to="/manager/manage-staff" />}
+                    {hasAccess('users.staff.add') && matches("Add Staff") && <LinkMenuItem icon={faUserPlus} text="Add Staff" to="/manager/add-staff" />}
+                    {hasAccess('users.staff.view') && matches("View Staff") && <LinkMenuItem icon={faUsersCog} text="View Staff" to="/manager/manage-staff" />}
                   </ul>
                 </>
               )}
@@ -165,46 +152,42 @@ function Sidebar({ isOpen, onClose, searchQuery = "" }) {
           </>
         )}
 
-        {/* Categories Group */}
-        {shouldShowGroup("Categories", ["New Category", "All Categories", "Other Categories"]) && (
+        {(hasAccess('categories.newCategory') || hasAccess('categories.allCategories') || hasAccess('categories.otherCategories')) && (
           <>
             <DropdownMenuItem icon={faThLarge} text="Categories" isOpen={openMenus.categories} onClick={(e) => toggleNested(e, 'categories')} />
             <ul style={{ ...styles.nested, ...(openMenus.categories ? styles.nestedOpen : {}) }}>
-              {matches("New Category") && <LinkMenuItem icon={faPlusSquare} text="New Category" to="/manager/add-category" />}
-              {matches("All Categories") && <LinkMenuItem icon={faList} text="All Categories" to="/manager/view-categories" />}
-              {matches("Other Categories") && <LinkMenuItem icon={faList} text="Other Categories" to="/manager/other-categories" />}
+              {hasAccess('categories.newCategory') && matches("New Category") && <LinkMenuItem icon={faPlusSquare} text="New Category" to="/manager/add-category" />}
+              {hasAccess('categories.allCategories') && matches("All Categories") && <LinkMenuItem icon={faList} text="All Categories" to="/manager/view-categories" />}
+              {hasAccess('categories.otherCategories') && matches("Other Categories") && <LinkMenuItem icon={faList} text="Other Categories" to="/manager/other-categories" />}
             </ul>
           </>
         )}
 
-        {/* Products Group */}
-        {shouldShowGroup("Products", ["All Products", "Scan QR", "View Inventory", "Other Products", "Product Dimensions"]) && (
+        {(hasAccess('products.allProducts') || hasAccess('products.scanQR') || hasAccess('products.inventory') || hasAccess('products.otherProducts') || hasAccess('products.dimensions')) && (
           <>
             <DropdownMenuItem icon={faBoxOpen} text="Products" isOpen={openMenus.products} onClick={(e) => toggleNested(e, 'products')} />
             <ul style={{ ...styles.nested, ...(openMenus.products ? styles.nestedOpen : {}) }}>
-              {matches("All Products") && <LinkMenuItem icon={faBox} text="All Products" to="/manager/view-products" />}
-              {matches("Scan QR") && <LinkMenuItem icon={faBarcode} text="Scan QR" to="/manager/scan-qr" />}
-              {matches("View Inventory") && <LinkMenuItem icon={faList} text="View Inventory" to="/manager/inventory-log" />}
-              {matches("Other Products") && <LinkMenuItem icon={faList} text="Other Products" to="/manager/other-products" />}
-              {matches("Product Dimensions") && <LinkMenuItem icon={faStickyNote} text='Product Dimensions' to='/manager/product-dimensions' />}
+              {hasAccess('products.allProducts') && matches("All Products") && <LinkMenuItem icon={faBox} text="All Products" to="/manager/view-products" />}
+              {hasAccess('products.scanQR') && matches("Scan QR") && <LinkMenuItem icon={faBarcode} text="Scan QR" to="/manager/scan-qr" />}
+              {hasAccess('products.inventory') && matches("View Inventory") && <LinkMenuItem icon={faList} text="View Inventory" to="/manager/inventory-log" />}
+              {hasAccess('products.otherProducts') && matches("Other Products") && <LinkMenuItem icon={faList} text="Other Products" to="/manager/other-products" />}
+              {hasAccess('products.dimensions') && matches("Product Dimensions") && <LinkMenuItem icon={faStickyNote} text='Product Dimensions' to='/manager/product-dimensions' />}
             </ul>
           </>
         )}
 
-        {matches("Orders") && <LinkMenuItem icon={faShoppingCart} text="Orders" to="/manager/orders" />}
-        {matches("Billing") && <LinkMenuItem icon={faFileInvoiceDollar} text="Billing" to="/manager/billing" />}
-        {matches("All Bills") && <LinkMenuItem icon={faFileInvoiceDollar} text="All Bills" to="/manager/get-bills" />}
-        {matches("Order Returns") && <LinkMenuItem icon={faUndo} text="Order Returns" to="/manager/order-returns" />}
-        {matches("Companies") && <LinkMenuItem icon={faGlobe} text="Companies" to="/manager/company" />}
+        {hasAccess('orders') && matches("Orders") && <LinkMenuItem icon={faShoppingCart} text="Orders" to="/manager/orders" />}
+        {hasAccess('billing') && matches("Billing") && <LinkMenuItem icon={faFileInvoiceDollar} text="Billing" to="/manager/billing" />}
+        {hasAccess('allBills') && matches("All Bills") && <LinkMenuItem icon={faFileInvoiceDollar} text="All Bills" to="/manager/get-bills" />}
+        {hasAccess('orderReturns') && matches("Order Returns") && <LinkMenuItem icon={faUndo} text="Order Returns" to="/manager/order-returns" />}
+        {hasAccess('companies') && matches("Companies") && <LinkMenuItem icon={faGlobe} text="Companies" to="/manager/company" />}
+        
         {userRole === 'admin' && matches("Admins") && <LinkMenuItem icon={faUserShield} text="Admins" to="/manager/admins" />}
- 
-        {/* --- Label Notification Option Added Here --- */}
-        {/* {matches("Label Notification") && <LinkMenuItem icon={faTag} text="Label Notification" to="/manager/label-notifications" />} */}
+        {hasAccess('admins') && matches("Permissions") && <LinkMenuItem icon={faUserShield} text="Permissions" to="/manager/permissions" />}
+        
+        {hasAccess('feedback') && matches("App Feedback") && <LinkMenuItem icon={faComments} text="App Feedback" to="/manager/feedback" />}
+        {hasAccess('archivedClients') && matches("Archive Clients") && <LinkMenuItem icon={faArchive} text="Archive Clients" to="/manager/archive-clients" />}
 
-        {/* {matches("Push Notifications") && <LinkMenuItem text="Push Notifications" to="/manager/notifications" icon={faBell} />} */}
-        {matches("App Feedback") && <LinkMenuItem icon={faComments} text="App Feedback" to="/manager/feedback" />}
-        {matches("Archive Clients") && <LinkMenuItem icon={faArchive} text="Archive Clients" to="/manager/archive-clients" />}
-       
       </ul>
     </div>
   );

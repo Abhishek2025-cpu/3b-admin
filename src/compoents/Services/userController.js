@@ -54,3 +54,23 @@ export const verifyOtp = async (userId, otp, sessionId) => {
         throw error;
     }
 };
+
+
+export const fetchSubAdmins = async () => {
+    try {
+        const response = await fetch(`${BASE_URL}/api/sub-admin/sub-admins`);
+        
+        if (!response.ok) {
+            throw new Error("Sub-admins fetch karne mein error aayi");
+        }
+        
+        const data = await response.json();
+        
+    
+        return data.subAdmins || data; 
+        
+    } catch (error) {
+        console.error("Fetch Error:", error);
+        return [];
+    }
+};

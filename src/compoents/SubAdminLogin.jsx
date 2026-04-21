@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPhone, faLock, faArrowRight, faCheckCircle, faCopyright } from '@fortawesome/free-solid-svg-icons';
 
-import { adminLogin, verifyOtp } from '../../src/compoents/Services/userController'; 
+import { sendOtp, verifyOtp } from '../compoents/Services/subadmin'; 
 import adminLogo from '../assets/3b.png';
 import vectorNew from '../assets/Vectornew.png';
 
@@ -32,26 +32,27 @@ const globalStyle = `
   input::placeholder { letter-spacing: normal !important; color: #aaa; }
 `;
 
-function LoginPage() {
+function SubAdminLogin() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [number, setNumber] = useState('');
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  
-  const [sessionData, setSessionData] = useState({ userId: '', sessionId: '' });
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
     if (number.length === 10) {
       setLoading(true);
       try {
-        const data = await adminLogin(number);
-        setSessionData({ userId: data.userId, sessionId: data.sessionId });
-        setStep(2);
+        const response = await sendOtp(number);
+        if (response.success || response.message.includes("sent")) {
+          setStep(2);
+        } else {
+          alert(response.message || "Failed to send OTP");
+        }
       } catch (error) {
-        alert(error.message || "Failed to send OTP");
+        alert("An error occurred. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -64,11 +65,23 @@ function LoginPage() {
       setStep(3);
       setIsVerifying(true);
       try {
-        await verifyOtp(sessionData.userId, otp, sessionData.sessionId);
-        setIsVerifying(false);
-        setTimeout(() => navigate('/manager'), 1500);
+        const response = await verifyOtp(number, otp);
+        if (response.user || response.token) {
+          
+          localStorage.setItem('token', response.token || 'dummy-token');
+          localStorage.setItem('role', response.role);
+          localStorage.setItem('userName', response.user.name);
+          localStorage.setItem('userEmail', response.user.email);
+          localStorage.setItem('userId', response.user._id);
+          localStorage.setItem('permissions', JSON.stringify(response.user.permissions));
+
+          setIsVerifying(false);
+          setTimeout(() => navigate('/manager/dashboard'), 1500); 
+        } else {
+          throw new Error(response.message || "Invalid OTP");
+        }
       } catch (error) {
-        alert(error.message || "Invalid OTP");
+        alert(error.message);
         setStep(2);
         setIsVerifying(false);
       }
@@ -100,7 +113,7 @@ function LoginPage() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
             >
-              <p style={styles.subText}>Admin Login - Enter your mobile number</p>
+              <p style={{...styles.subText, color: '#452983', fontWeight: '600'}}>Sub-Admin Login</p>
               <form onSubmit={handleSendOtp}>
                 <div style={styles.inputWrapper}>
                   <FontAwesomeIcon icon={faPhone} style={styles.iconLeft} />
@@ -119,14 +132,12 @@ function LoginPage() {
                   {!loading && <FontAwesomeIcon icon={faArrowRight} />}
                 </button>
 
-                {/* Sub-Admin Login Option */}
                 <div 
-                  onClick={() => navigate('/subadmin-login')} 
+                  onClick={() => navigate('/')} 
                   style={styles.linkText}
                 >
-                  Login to Sub-Admin
+                  Login as Admin instead
                 </div>
-
               </form>
             </motion.div>
           )}
@@ -160,13 +171,11 @@ function LoginPage() {
                 <button type="submit" style={styles.mainButton}>
                   Verify & Login <FontAwesomeIcon icon={faCheckCircle} />
                 </button>
-                
-                {/* Back to Number Option */}
                 <div 
                   onClick={() => { setStep(1); setOtp(''); }} 
                   style={{...styles.linkText, fontSize: '0.85rem'}}
                 >
-                  Change Phone Number
+                   Change Phone Number
                 </div>
               </form>
             </motion.div>
@@ -193,7 +202,7 @@ function LoginPage() {
                 >
                   <FontAwesomeIcon icon={faCheckCircle} style={styles.successIcon} />
                   <h2 style={{color: '#28a745', margin: '0 0 10px 0'}}>Login Successful!</h2>
-                  <p style={styles.subText}>Welcome back, Redirecting...</p>
+                  <p style={styles.subText}>Welcome Sub-Admin, Redirecting...</p>
                 </motion.div>
               )}
             </motion.div>
@@ -209,4 +218,4 @@ function LoginPage() {
   );
 }
 
-export default LoginPage;
+export default SubAdminLogin;

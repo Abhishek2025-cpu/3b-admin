@@ -1,12 +1,11 @@
-import React from 'react'; // React import karna zaroori hai
+import React from 'react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 
-// Sabhi Components ke Imports (Kuch bhi miss nahi kiya gaya hai)
-import LoginPage from './compoents/LoginPage'; 
+import LoginPage from './compoents/LoginPage';
 import ManagerLayout from './compoents/ManagerLayout';
-import Dashboard from './compoents/Dashboard'; 
+import Dashboard from './compoents/Dashboard';
 import AddItem from './compoents/AddItem';
 import ViewItems from './compoents/ViewItems';
 import ViewClients from './compoents/ViewClients';
@@ -20,8 +19,8 @@ import AddCategoryForm from './compoents/AddCategoryForm';
 import Categories from './compoents/Categories';
 import ManageOtherCategories from './compoents/ManageOtherCategories';
 import ManageOtherProducts from './compoents/ManageOtherProducts';
-import CompanyDetails from './compoents/CompanyDetails'; 
-import SubAdmins from './compoents/SubAdmins'; 
+import CompanyDetails from './compoents/CompanyDetails';
+import SubAdmins from './compoents/SubAdmins';
 import FeedbackAdmin from './compoents/FeedbackAdmin';
 import ReturnOrder from './compoents/ReturnOrder';
 import Billings from './compoents/Billings';
@@ -33,18 +32,17 @@ import AssignMachines from './compoents/AssignMachines';
 import ArchivedClients from './compoents/ArchivedClients';
 import OperatorTable from './compoents/OpreatorTable';
 import InventoryStock from './compoents/InventoryStock';
-import ViewInventoryLog from './compoents/ViewInventoryLog'; 
+import ViewInventoryLog from './compoents/ViewInventoryLog';
 import ScanQrPage from './ScanQrPage';
 import Settings from './compoents/Settings';
 import LabelNotifications from './compoents/LabelNotifications';
 import ScanStickerPage from './compoents/ScanStickerPage';
 import WorkerTable from './compoents/WorkerTable';
-
+import PermissionsPage from './compoents/PermissionsPage';
+import SubAdminLogin from './compoents/SubAdminLogin';
 
 const ProtectedRoute = () => {
-  const token = localStorage.getItem('token'); 
-  
-  
+  const token = localStorage.getItem('token');
   return token ? <Outlet /> : <Navigate to="/login" replace />;
 };
 
@@ -53,33 +51,32 @@ function App() {
     <>
       <BrowserRouter basename="/">
         <Routes>
-         
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<LoginPage />} />
+          <Route path="/subadmin-login" element={<SubAdminLogin />} />
 
-       
           <Route element={<ProtectedRoute />}>
             <Route path="/manager" element={<ManagerLayout />}>
-            <Route path="/manager/label-notifications" element={<LabelNotifications />} />
               <Route index element={<Dashboard />} />
               <Route path="dashboard" element={<Dashboard />} />
+              <Route path="label-notifications" element={<LabelNotifications />} />
               <Route path="add-machine" element={<MachineManager />} />
               <Route path="assign-machines" element={<AssignMachines />} />
-              <Route path="scan-sticker" element={<ScanStickerPage />} /> 
+              <Route path="scan-sticker" element={<ScanStickerPage />} />
               <Route path="add-item" element={<AddItem />} />
               <Route path="view-items" element={<ViewItems />} />
               <Route path="view-clients" element={<ViewClients />} />
               <Route path="chats" element={<Chat />} />
-              <Route path="chats/:userId" element={<Chat />} />       
+              <Route path="chats/:userId" element={<Chat />} />
               <Route path="add-staff" element={<AddStaffForm />} />
               <Route path="manage-staff" element={<ManageStaff />} />
               <Route path="Orders" element={<UserOrders />} />
               <Route path="add-product" element={<AddProductForm />} />
-              <Route path="view-products" element={<ViewProducts />} /> 
-              <Route path='add-category' element={<AddCategoryForm/>}/>
-              <Route path='view-categories' element= {<Categories/>}/>
-              <Route path ='Other-Categories' element ={<ManageOtherCategories/>}/>
-              <Route path = 'other-products' element ={<ManageOtherProducts/>}/>
+              <Route path="view-products" element={<ViewProducts />} />
+              <Route path="add-category" element={<AddCategoryForm />} />
+              <Route path="view-categories" element={<Categories />} />
+              <Route path="Other-Categories" element={<ManageOtherCategories />} />
+              <Route path="other-products" element={<ManageOtherProducts />} />
               <Route path="company" element={<CompanyDetails />} />
               <Route path="admins" element={<SubAdmins />} />
               <Route path="Feedback" element={<FeedbackAdmin />} />
@@ -92,30 +89,28 @@ function App() {
               <Route path="operators" element={<OperatorTable />} />
               <Route path="worker" element={<WorkerTable />} />
               <Route path="inventory-stock" element={<InventoryStock />} />
-              <Route path="/manager/inventory-log" element={<ViewInventoryLog />} />
-               <Route path="scan-qr" element={<ScanQrPage />} /> 
-                <Route path="settings" element={<Settings />} /> 
+              <Route path="inventory-log" element={<ViewInventoryLog />} />
+              <Route path="scan-qr" element={<ScanQrPage />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="permissions" element={<PermissionsPage />} />
             </Route>
           </Route>
 
-          {/* 404 Route */}
           <Route path="*" element={<h1>404: Page Not Found</h1>} />
         </Routes>
       </BrowserRouter>
 
-      <div>
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-        />
-      </div>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </>
   );
 }
