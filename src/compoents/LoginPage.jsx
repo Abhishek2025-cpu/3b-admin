@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'; // Added useEffect
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -39,17 +39,19 @@ function LoginPage() {
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true); // To prevent flickering
-  
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [sessionData, setSessionData] = useState({ userId: '', sessionId: '' });
 
-  // 1. Check if user is already logged in when the page loads
   useEffect(() => {
     const adminToken = localStorage.getItem('adminToken');
+    const subAdminToken = localStorage.getItem('token');
+
     if (adminToken) {
       navigate('/manager');
+    } else if (subAdminToken) {
+      navigate('/manager/dashboard');
     } else {
-      setCheckingAuth(false); // Only show login form if no token
+      setCheckingAuth(false);
     }
   }, [navigate]);
 
@@ -76,11 +78,7 @@ function LoginPage() {
       setIsVerifying(true);
       try {
         const response = await verifyOtp(sessionData.userId, otp, sessionData.sessionId);
-        
-        // 2. Save token to localStorage on successful login
-        // Assuming your API returns a token. If not, you can save a dummy 'true'
         localStorage.setItem('adminToken', response.token || 'true'); 
-        
         setIsVerifying(false);
         setTimeout(() => navigate('/manager'), 1500);
       } catch (error) {
@@ -91,7 +89,6 @@ function LoginPage() {
     }
   };
 
-  // If we are checking for the token, show a blank screen or a loader to avoid flickering
   if (checkingAuth) {
     return <div style={styles.body}><div style={styles.loaderRing}></div></div>;
   }
@@ -99,130 +96,56 @@ function LoginPage() {
   return (
     <div style={styles.body}>
       <style>{globalStyle}</style>
-      
       <div style={styles.topImgContainer}>
         <img src={vectorNew} alt="bg" style={styles.topImg} />
       </div>
-
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.9 }} 
-        animate={{ opacity: 1, scale: 1 }} 
-        transition={{ duration: 0.4 }}
-        style={styles.loginContainer}
-      >
+      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }} style={styles.loginContainer}>
         <img src={adminLogo} alt="Logo" style={styles.logo} />
         <h1 style={styles.h1}>3B Profiles</h1>
-
         <AnimatePresence mode="wait">
           {step === 1 && (
-            <motion.div
-              key="phone-step"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-            >
+            <motion.div key="phone-step" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <p style={styles.subText}>Admin Login - Enter your mobile number</p>
               <form onSubmit={handleSendOtp}>
                 <div style={styles.inputWrapper}>
                   <FontAwesomeIcon icon={faPhone} style={styles.iconLeft} />
-                  <input 
-                    type="tel" 
-                    placeholder="Phone Number" 
-                    style={styles.input} 
-                    value={number}
-                    onChange={(e) => setNumber(e.target.value.replace(/\D/g, ''))}
-                    maxLength="10"
-                    required
-                  />
+                  <input type="tel" placeholder="Phone Number" style={styles.input} value={number} onChange={(e) => setNumber(e.target.value.replace(/\D/g, ''))} maxLength="10" required />
                 </div>
                 <button type="submit" style={styles.mainButton} disabled={loading}>
                   {loading ? 'Sending OTP...' : 'Get OTP'} 
                   {!loading && <FontAwesomeIcon icon={faArrowRight} />}
                 </button>
-
-                <div 
-                  onClick={() => navigate('/subadmin-login')} 
-                  style={styles.linkText}
-                >
-                  Login to Sub-Admin
-                </div>
+                <div onClick={() => navigate('/subadmin-login')} style={styles.linkText}>Login to Sub-Admin</div>
               </form>
             </motion.div>
           )}
-
           {step === 2 && (
-            <motion.div
-              key="otp-step"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-            >
+            <motion.div key="otp-step" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <p style={styles.subText}>OTP sent to <b>+91 {number}</b></p>
               <form onSubmit={handleVerifyOtp}>
                 <div style={styles.inputWrapper}>
                   <FontAwesomeIcon icon={faLock} style={styles.iconLeft} />
-                  <input 
-                    type="text" 
-                    placeholder="Enter 6 Digit OTP" 
-                    style={{
-                        ...styles.input, 
-                        letterSpacing: otp.length > 0 ? '8px' : 'normal',
-                        textAlign: otp.length > 0 ? 'center' : 'left',
-                        paddingLeft: otp.length > 0 ? '15px' : '50px'
-                    }} 
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                    maxLength="6"
-                    required
-                  />
+                  <input type="text" placeholder="Enter 6 Digit OTP" style={{ ...styles.input, letterSpacing: otp.length > 0 ? '8px' : 'normal', textAlign: otp.length > 0 ? 'center' : 'left', paddingLeft: otp.length > 0 ? '15px' : '50px' }} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} maxLength="6" required />
                 </div>
-                <button type="submit" style={styles.mainButton}>
-                  Verify & Login <FontAwesomeIcon icon={faCheckCircle} />
-                </button>
-                
-                <div 
-                  onClick={() => { setStep(1); setOtp(''); }} 
-                  style={{...styles.linkText, fontSize: '0.85rem'}}
-                >
-                  Change Phone Number
-                </div>
+                <button type="submit" style={styles.mainButton}>Verify & Login <FontAwesomeIcon icon={faCheckCircle} /></button>
+                <div onClick={() => { setStep(1); setOtp(''); }} style={{...styles.linkText, fontSize: '0.85rem'}}>Change Phone Number</div>
               </form>
             </motion.div>
           )}
-
           {step === 3 && (
-            <motion.div
-              key="status-step"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={{padding: '30px 0'}}
-            >
+            <motion.div key="status-step" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{padding: '30px 0'}}>
               {isVerifying ? (
-                <>
-                  <div style={styles.loaderRing}></div>
-                  <h3 style={{color: '#452983', marginTop: '15px'}}>Verifying OTP...</h3>
-                  <p style={{color: '#888'}}>Please hold on a moment</p>
-                </>
+                <><div style={styles.loaderRing}></div><h3 style={{color: '#452983', marginTop: '15px'}}>Verifying OTP...</h3><p style={{color: '#888'}}>Please hold on a moment</p></>
               ) : (
-                <motion.div
-                    initial={{ scale: 0.5 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 200 }}
-                >
-                  <FontAwesomeIcon icon={faCheckCircle} style={styles.successIcon} />
-                  <h2 style={{color: '#28a745', margin: '0 0 10px 0'}}>Login Successful!</h2>
-                  <p style={styles.subText}>Welcome back, Redirecting...</p>
+                <motion.div initial={{ scale: 0.5 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200 }}>
+                  <FontAwesomeIcon icon={faCheckCircle} style={styles.successIcon} /><h2 style={{color: '#28a745', margin: '0 0 10px 0'}}>Login Successful!</h2><p style={styles.subText}>Welcome back, Redirecting...</p>
                 </motion.div>
               )}
             </motion.div>
           )}
         </AnimatePresence>
       </motion.div>
-
-      <div style={styles.footer}>
-        <FontAwesomeIcon icon={faCopyright} style={{ marginRight: '8px' }}/>
-        2025 All Rights Reserved By 3B Profiles
-      </div>
+      <div style={styles.footer}><FontAwesomeIcon icon={faCopyright} style={{ marginRight: '8px' }}/>2025 All Rights Reserved By 3B Profiles</div>
     </div>
   );
 }
