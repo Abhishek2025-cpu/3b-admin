@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Added useEffect
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -39,8 +39,19 @@ function LoginPage() {
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true); // To prevent flickering
   
   const [sessionData, setSessionData] = useState({ userId: '', sessionId: '' });
+
+  // 1. Check if user is already logged in when the page loads
+  useEffect(() => {
+    const adminToken = localStorage.getItem('adminToken');
+    if (adminToken) {
+      navigate('/manager');
+    } else {
+      setCheckingAuth(false); // Only show login form if no token
+    }
+  }, [navigate]);
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
@@ -64,7 +75,12 @@ function LoginPage() {
       setStep(3);
       setIsVerifying(true);
       try {
-        await verifyOtp(sessionData.userId, otp, sessionData.sessionId);
+        const response = await verifyOtp(sessionData.userId, otp, sessionData.sessionId);
+        
+        // 2. Save token to localStorage on successful login
+        // Assuming your API returns a token. If not, you can save a dummy 'true'
+        localStorage.setItem('adminToken', response.token || 'true'); 
+        
         setIsVerifying(false);
         setTimeout(() => navigate('/manager'), 1500);
       } catch (error) {
@@ -74,6 +90,11 @@ function LoginPage() {
       }
     }
   };
+
+  // If we are checking for the token, show a blank screen or a loader to avoid flickering
+  if (checkingAuth) {
+    return <div style={styles.body}><div style={styles.loaderRing}></div></div>;
+  }
 
   return (
     <div style={styles.body}>
@@ -119,14 +140,12 @@ function LoginPage() {
                   {!loading && <FontAwesomeIcon icon={faArrowRight} />}
                 </button>
 
-                {/* Sub-Admin Login Option */}
                 <div 
                   onClick={() => navigate('/subadmin-login')} 
                   style={styles.linkText}
                 >
                   Login to Sub-Admin
                 </div>
-
               </form>
             </motion.div>
           )}
@@ -161,7 +180,6 @@ function LoginPage() {
                   Verify & Login <FontAwesomeIcon icon={faCheckCircle} />
                 </button>
                 
-                {/* Back to Number Option */}
                 <div 
                   onClick={() => { setStep(1); setOtp(''); }} 
                   style={{...styles.linkText, fontSize: '0.85rem'}}

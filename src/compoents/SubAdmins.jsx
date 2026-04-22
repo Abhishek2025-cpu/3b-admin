@@ -3,17 +3,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     UserPlus, Search, Eye, Trash2, X, Copy, Check, 
     Calendar, Mail, Phone, MapPin, Shield, ExternalLink, 
-    AlertCircle, User, Loader2
+    AlertCircle, User, Loader2, Camera, FileText
 } from 'lucide-react';
 
-// --- Configuration ---
 const API_BASE_URL = 'https://threebapi-1067354145699.asia-south1.run.app/api/sub-admin';
 
-// --- Reusable Modern Modal ---
+// MODAL WRAPPER FIXED: Added flex-col and max-h logic
 const ModalWrapper = ({ isOpen, onClose, title, children, maxWidth = "max-w-md" }) => (
     <AnimatePresence>
         {isOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                 <motion.div 
                     initial={{ opacity: 0 }} 
                     animate={{ opacity: 1 }} 
@@ -25,22 +24,25 @@ const ModalWrapper = ({ isOpen, onClose, title, children, maxWidth = "max-w-md" 
                     initial={{ scale: 0.9, opacity: 0, y: 20 }} 
                     animate={{ scale: 1, opacity: 1, y: 0 }} 
                     exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                    className={`relative bg-white rounded-3xl shadow-2xl w-full ${maxWidth} overflow-hidden z-50`}
+                    className={`relative bg-white rounded-[2rem] shadow-2xl w-full ${maxWidth} flex flex-col max-h-[90vh] overflow-hidden z-50`}
                 >
-                    <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
+                    {/* Header: Always Fixed at Top */}
+                    <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
                         <h3 className="text-xl font-bold text-slate-800 tracking-tight">{title}</h3>
                         <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
                             <X size={20} className="text-slate-500" />
                         </button>
                     </div>
-                    <div className="p-6">{children}</div>
+                    
+                    {/* Body: Scrollable */}
+                    <div className="p-6 overflow-y-auto custom-scrollbar grow">
+                        {children}
+                    </div>
                 </motion.div>
             </div>
         )}
     </AnimatePresence>
 );
-
-// --- Sub-Components ---
 
 const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => (
     <ModalWrapper isOpen={isOpen} onClose={onClose} title={title}>
@@ -59,22 +61,38 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => (
 
 const AddSubAdminModal = ({ isOpen, onClose, onAdd }) => {
     const [formData, setFormData] = useState({ name: '', email: '', phone: '', dob: '', address: '' });
-    const [file, setFile] = useState(null);
+    const [profilePicture, setProfilePicture] = useState(null);
+    const [verificationDocument, setVerificationDocument] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
 
     const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-    const handleFileChange = (e) => setFile(e.target.files[0]);
+    
+    const handleProfileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setProfilePicture(file);
+            setPreviewUrl(URL.createObjectURL(file));
+        }
+    };
+
+    const handleDocChange = (e) => setVerificationDocument(e.target.files[0]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!file) { setError('Verification document is required.'); return; }
+        if (!verificationDocument) { setError('Verification document is required.'); return; }
         setError('');
         setIsSubmitting(true);
         try {
             const data = new FormData();
-            Object.keys(formData).forEach(key => data.append(key, formData[key]));
-            data.append('verificationDocument', file);
+            data.append('name', formData.name);
+            data.append('email', formData.email);
+            data.append('phone', formData.phone);
+            data.append('dob', formData.dob);
+            data.append('address', formData.address);
+            if (profilePicture) data.append('profilePicture', profilePicture);
+            data.append('verificationDocument', verificationDocument);
             await onAdd(data);
         } catch (err) {
             setError(err.message || 'Registration failed.');
@@ -86,50 +104,66 @@ const AddSubAdminModal = ({ isOpen, onClose, onAdd }) => {
     return (
         <ModalWrapper isOpen={isOpen} onClose={onClose} title="Add New Sub-Admin" maxWidth="max-w-2xl">
             <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="flex flex-col items-center mb-4">
+                    <div className="relative group">
+                        <div className="w-24 h-24 rounded-3xl bg-slate-100 overflow-hidden border-2 border-dashed border-slate-300 group-hover:border-indigo-400 transition-all">
+                            {previewUrl ? (
+                                <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="flex items-center justify-center h-full text-slate-400">
+                                    <Camera size={32} />
+                                </div>
+                            )}
+                        </div>
+                        <label className="absolute -bottom-2 -right-2 p-2 bg-indigo-600 text-white rounded-xl shadow-lg cursor-pointer hover:bg-indigo-700 transition-all">
+                            <Camera size={16} />
+                            <input type="file" name="profilePicture" onChange={handleProfileChange} accept="image/*" className="hidden" />
+                        </label>
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="space-y-1">
                         <label className="text-sm font-semibold text-slate-700">Full Name</label>
-                        <input type="text" name="name" placeholder="John Doe" onChange={handleChange} required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+                        <input type="text" name="name" onChange={handleChange} required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
                     </div>
                     <div className="space-y-1">
                         <label className="text-sm font-semibold text-slate-700">Email Address</label>
-                        <input type="email" name="email" placeholder="john@example.com" onChange={handleChange} required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+                        <input type="email" name="email" onChange={handleChange} required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
                     </div>
                     <div className="space-y-1">
                         <label className="text-sm font-semibold text-slate-700">Phone Number</label>
-                        <input type="tel" name="phone" placeholder="+91 00000 00000" onChange={handleChange} required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+                        <input type="tel" name="phone" onChange={handleChange} required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
                     </div>
                     <div className="space-y-1">
                         <label className="text-sm font-semibold text-slate-700">Date of Birth</label>
-                        <input type="date" name="dob" onChange={handleChange} required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+                        <input type="date" name="dob" onChange={handleChange} required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
                     </div>
                 </div>
                 <div className="space-y-1">
                     <label className="text-sm font-semibold text-slate-700">Address</label>
-                    <textarea name="address" rows="2" placeholder="Enter full address" onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"></textarea>
+                    <textarea name="address" rows="2" onChange={handleChange} required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
                 </div>
                 <div className="space-y-1">
-                    <label className="text-sm font-semibold text-slate-700">Verification Document (ID Proof)</label>
-                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 border-dashed rounded-2xl hover:border-indigo-400 transition-colors">
+                    <label className="text-sm font-semibold text-slate-700">Verification Document</label>
+                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 border-dashed rounded-2xl">
                         <div className="space-y-1 text-center">
-                            <User className="mx-auto h-12 w-12 text-slate-400" />
+                            <FileText className="mx-auto h-12 w-12 text-slate-400" />
                             <div className="flex text-sm text-slate-600">
-                                <label className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500">
-                                    <span>Upload a file</span>
-                                    <input type="file" onChange={handleFileChange} required accept="image/*" className="sr-only" />
+                                <label className="relative cursor-pointer bg-white font-medium text-indigo-600">
+                                    <span>Upload Document</span>
+                                    <input type="file" name="verificationDocument" onChange={handleDocChange} required className="sr-only" />
                                 </label>
-                                <p className="pl-1 text-slate-500">or drag and drop</p>
                             </div>
-                            <p className="text-xs text-slate-400 uppercase font-bold tracking-tighter">{file ? file.name : 'PNG, JPG up to 10MB'}</p>
+                            <p className="text-xs text-slate-400">{verificationDocument?.name || 'PNG, JPG, PDF'}</p>
                         </div>
                     </div>
                 </div>
-                {error && <p className="text-red-500 text-sm font-medium flex items-center gap-1"><AlertCircle size={14}/> {error}</p>}
+                {error && <p className="text-red-500 text-sm flex items-center gap-1"><AlertCircle size={14}/> {error}</p>}
                 <div className="flex justify-end gap-3 pt-4">
                     <button type="button" onClick={onClose} className="px-6 py-3 text-slate-600 font-semibold rounded-xl hover:bg-slate-100">Cancel</button>
-                    <button type="submit" disabled={isSubmitting} className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 disabled:bg-indigo-300 flex items-center gap-2 transition-all">
-                        {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <UserPlus size={20} />}
-                        Add Sub-Admin
+                    <button type="submit" disabled={isSubmitting} className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg disabled:bg-indigo-300 flex items-center gap-2">
+                        {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <UserPlus size={20} />} Add Admin
                     </button>
                 </div>
             </form>
@@ -141,59 +175,75 @@ const DetailsModal = ({ isOpen, onClose, admin }) => {
     if (!isOpen || !admin) return null;
 
     const InfoRow = ({ icon: Icon, label, value, isStatus }) => (
-        <div className="flex items-start gap-4 p-3 bg-slate-50 rounded-2xl border border-slate-100">
-            <div className="p-2 bg-white rounded-lg shadow-sm text-indigo-600">
-                <Icon size={18} />
+        <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+            <div className="p-2.5 bg-white rounded-xl shadow-sm text-indigo-600 shrink-0">
+                <Icon size={20} />
             </div>
-            <div className="flex-1">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+            <div className="min-w-0">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{label}</p>
                 {isStatus ? (
-                    <span className={`inline-block mt-1 px-3 py-0.5 rounded-full text-xs font-bold uppercase ${value === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    <span className={`inline-block px-3 py-1 rounded-lg text-[11px] font-bold uppercase ${value === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                         {value}
                     </span>
                 ) : (
-                    <p className="text-slate-800 font-semibold break-all">{value}</p>
+                    <p className="text-slate-800 font-bold truncate text-sm">{value || 'N/A'}</p>
                 )}
             </div>
         </div>
     );
 
+    const isPDF = admin.verificationDocument?.url?.toLowerCase().endsWith('.pdf');
+
     return (
-        <ModalWrapper isOpen={isOpen} onClose={onClose} title="Sub-Admin Profile" maxWidth="max-w-lg">
-            <div className="flex flex-col items-center mb-8">
+        <ModalWrapper isOpen={isOpen} onClose={onClose} title="Sub-Admin Profile" maxWidth="max-w-2xl">
+            <div className="flex flex-col items-center mb-8 shrink-0">
                 <div className="relative">
                     <img 
                         src={admin.profilePicture?.url || 'https://via.placeholder.com/150'} 
                         alt="Profile" 
-                        className="w-24 h-24 rounded-3xl object-cover ring-4 ring-indigo-50 shadow-xl" 
+                        className="w-28 h-28 rounded-[2rem] object-cover ring-4 ring-indigo-50 shadow-xl" 
                     />
-                    <div className={`absolute -bottom-2 -right-2 p-1.5 rounded-xl border-2 border-white shadow-lg ${admin.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}>
-                        <Shield size={14} className="text-white" />
+                    <div className={`absolute -bottom-1 -right-1 p-1.5 rounded-xl border-4 border-white shadow-lg ${admin.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}>
+                        <Shield size={16} className="text-white" />
                     </div>
                 </div>
                 <h2 className="text-2xl font-black text-slate-800 mt-4 tracking-tight">{admin.name}</h2>
                 <p className="text-slate-400 font-medium">{admin.email}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <InfoRow icon={Phone} label="Phone" value={admin.phone} />
-                <InfoRow icon={Calendar} label="DOB" value={new Date(admin.dob).toLocaleDateString()} />
-                <InfoRow icon={Shield} label="Status" value={admin.status} isStatus />
-                <InfoRow icon={Mail} label="Permissions" value={admin.permissions.join(', ')} />
-                <div className="md:col-span-2">
-                    <InfoRow icon={MapPin} label="Address" value={admin.address} />
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                <InfoRow icon={Phone} label="Phone Number" value={admin.phone} />
+                <InfoRow icon={Calendar} label="Date of Birth" value={new Date(admin.dob).toLocaleDateString()} />
+                <InfoRow icon={Shield} label="Account Status" value={admin.status} isStatus />
+                <InfoRow icon={MapPin} label="Office Address" value={admin.address} />
             </div>
 
-            <div className="mt-6 flex flex-col gap-3">
-                <a 
-                    href={admin.verificationDocument?.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="flex items-center justify-center gap-2 w-full p-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-lg"
-                >
-                    <ExternalLink size={18} /> View Verification ID
-                </a>
+            <div className="space-y-4">
+                <div className="flex items-center justify-between px-1">
+                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em] flex items-center gap-2">
+                        <FileText size={16} className="text-indigo-600" /> Verification ID Proof
+                    </h4>
+                    {admin.verificationDocument?.url && (
+                        <a href={admin.verificationDocument.url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:scale-110 transition-transform">
+                            <ExternalLink size={18} />
+                        </a>
+                    )}
+                </div>
+                
+                <div className="bg-slate-100 rounded-[2rem] p-3 border-2 border-dashed border-slate-200 overflow-hidden min-h-[200px] flex items-center justify-center">
+                    {admin.verificationDocument?.url ? (
+                        isPDF ? (
+                            <iframe src={`${admin.verificationDocument.url}#toolbar=0`} className="w-full h-[400px] rounded-2xl" title="ID Proof" />
+                        ) : (
+                            <img src={admin.verificationDocument.url} alt="ID Proof" className="w-full h-auto max-h-[500px] object-contain rounded-2xl shadow-sm" />
+                        )
+                    ) : (
+                        <div className="text-center py-10">
+                            <AlertCircle className="mx-auto text-slate-300 mb-2" size={32} />
+                            <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">No Document Available</p>
+                        </div>
+                    )}
+                </div>
             </div>
         </ModalWrapper>
     );
@@ -201,7 +251,6 @@ const DetailsModal = ({ isOpen, onClose, admin }) => {
 
 const PasswordDisplayModal = ({ isOpen, onClose, password }) => {
     const [copied, setCopied] = useState(false);
-
     const copyToClipboard = () => {
         navigator.clipboard.writeText(password);
         setCopied(true);
@@ -214,42 +263,29 @@ const PasswordDisplayModal = ({ isOpen, onClose, password }) => {
                 <div className="w-16 h-16 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Check size={32} />
                 </div>
-                <p className="text-slate-600 mb-6">Generated temporary password for the new admin:</p>
-                <div className="relative group">
-                    <div className="bg-slate-50 p-6 rounded-2xl border-2 border-dashed border-indigo-200 font-mono text-2xl font-bold text-indigo-600 break-all">
+                <p className="text-slate-600 mb-6">Temporary password generated:</p>
+                <div className="relative">
+                    <div className="bg-slate-50 p-6 rounded-2xl border-2 border-dashed border-indigo-200 font-mono text-2xl font-bold text-indigo-600">
                         {password}
                     </div>
-                    <button
-                        onClick={copyToClipboard}
-                        className="absolute top-2 right-2 p-2 bg-white shadow-md rounded-xl text-indigo-600 hover:bg-indigo-50 transition-all"
-                    >
+                    <button onClick={copyToClipboard} className="absolute top-2 right-2 p-2 bg-white shadow-md rounded-xl text-indigo-600 hover:bg-indigo-50">
                         {copied ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
                     </button>
                 </div>
-                <p className="mt-6 text-sm text-slate-400 font-medium leading-relaxed">
-                    Make sure to share this password with the sub-admin. They will be asked to change it upon first login.
-                </p>
-                <button onClick={onClose} className="w-full mt-8 py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all uppercase tracking-widest">
-                    Done
-                </button>
+                <button onClick={onClose} className="w-full mt-8 py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 shadow-xl transition-all uppercase tracking-widest">Done</button>
             </div>
         </ModalWrapper>
     );
 };
 
-// --- Main Component ---
 export default function SubAdmins() {
     const [subAdmins, setSubAdmins] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
-    
-    // Modal States
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-    
     const [selectedAdmin, setSelectedAdmin] = useState(null);
     const [newAdminPassword, setNewAdminPassword] = useState('');
     const [confirmAction, setConfirmAction] = useState(null);
@@ -259,10 +295,9 @@ export default function SubAdmins() {
         setIsLoading(true);
         try {
             const response = await fetch(`${API_BASE_URL}/sub-admins`);
-            if (!response.ok) throw new Error('Failed to fetch sub-admins.');
             const data = await response.json();
             setSubAdmins(Array.isArray(data) ? data : []);
-        } catch (err) { setError(err.message); } 
+        } catch (err) { console.error(err); } 
         finally { setIsLoading(false); }
     };
 
@@ -319,153 +354,80 @@ export default function SubAdmins() {
     }, [subAdmins, searchQuery]);
 
     if (isLoading) return (
-        <div className="flex flex-col justify-center items-center h-screen bg-slate-50 text-indigo-600">
-            <Loader2 className="animate-spin mb-4" size={48} />
-            <p className="font-bold text-slate-500 animate-pulse uppercase tracking-widest">Loading Dashboard...</p>
+        <div className="flex flex-col justify-center items-center h-screen bg-slate-50">
+            <Loader2 className="animate-spin mb-4 text-indigo-600" size={48} />
+            <p className="font-bold text-slate-400 uppercase tracking-widest">Loading Dashboard...</p>
         </div>
     );
 
     return (
-        <div className="min-h-screen bg-slate-50 p-4 md:p-10 font-sans text-slate-900">
+        <div className="min-h-screen bg-slate-50 p-4 md:p-10 text-slate-900 font-sans">
             <div className="max-w-7xl mx-auto">
-                
-                {/* Header Card */}
-                <motion.div 
-                    initial={{ y: -20, opacity: 0 }} 
-                    animate={{ y: 0, opacity: 1 }}
-                    className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6"
-                >
+                <header className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
                     <div>
                         <h1 className="text-4xl font-black tracking-tight text-slate-900">Sub-Admins</h1>
-                        <p className="text-slate-500 font-medium mt-1">Manage permissions and team accounts</p>
+                        <p className="text-slate-500 font-medium mt-1">Management console for team permissions</p>
                     </div>
-                    
                     <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
                         <div className="relative flex-1 md:w-80">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                            <input 
-                                type="text" 
-                                placeholder="Search by name/email..." 
-                                value={searchQuery} 
-                                onChange={e => setSearchQuery(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3 bg-white border-none shadow-sm rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all font-medium"
-                            />
+                            <input type="text" placeholder="Search admins..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-white shadow-sm rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
                         </div>
-                        <button 
-                            onClick={() => setIsAddModalOpen(true)}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-2xl shadow-lg shadow-indigo-100 flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
-                        >
-                            <UserPlus size={20} />
-                            Add Admin
+                        <button onClick={() => setIsAddModalOpen(true)} className="bg-indigo-600 text-white font-bold px-6 py-3 rounded-2xl shadow-lg hover:scale-105 transition-all flex items-center gap-2">
+                            <UserPlus size={20} /> Add Admin
                         </button>
                     </div>
-                </motion.div>
+                </header>
 
-                {/* Table Section */}
-                <motion.div 
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 overflow-hidden border border-slate-100"
-                >
+                <div className="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-slate-100">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
+                        <table className="w-full text-left">
                             <thead>
-                                <tr className="bg-slate-50/50 border-b border-slate-100 text-slate-400 uppercase text-xs font-black tracking-[0.2em]">
-                                    <th className="px-8 py-6">Admin Profile</th>
-                                    <th className="px-8 py-6">Contact Info</th>
+                                <tr className="bg-slate-50 border-b border-slate-100 text-slate-400 uppercase text-[11px] font-black tracking-widest">
+                                    <th className="px-8 py-6">Admin Detail</th>
+                                    <th className="px-8 py-6">Contact</th>
                                     <th className="px-8 py-6 text-center">Status</th>
-                                    <th className="px-8 py-6 text-right">Action</th>
+                                    <th className="px-8 py-6 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
-                                {filteredAdmins.length > 0 ? filteredAdmins.map((admin, idx) => (
-                                    <motion.tr 
-                                        initial={{ opacity: 0, x: -10 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: idx * 0.05 }}
-                                        key={admin._id} 
-                                        className="hover:bg-indigo-50/30 transition-all group"
-                                    >
+                                {filteredAdmins.map((admin, idx) => (
+                                    <tr key={admin._id} className="hover:bg-slate-50/50 transition-colors group">
                                         <td className="px-8 py-6">
                                             <div className="flex items-center gap-4">
-                                                <div className="relative">
-                                                    <img 
-                                                        src={admin.profilePicture?.url || 'https://via.placeholder.com/40'} 
-                                                        alt="" 
-                                                        className="w-12 h-12 rounded-2xl object-cover ring-2 ring-slate-100 group-hover:ring-indigo-200 transition-all shadow-md" 
-                                                    />
-                                                    {admin.status === 'active' && (
-                                                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-                                                    )}
-                                                </div>
+                                                <img src={admin.profilePicture?.url || 'https://via.placeholder.com/150'} alt="" className="w-12 h-12 rounded-2xl object-cover shadow-sm" />
                                                 <div>
-                                                    <p className="font-black text-slate-800 tracking-tight leading-none">{admin.name}</p>
-                                                    <p className="text-xs text-slate-400 font-bold mt-1 tracking-wider uppercase">ID: {admin._id.slice(-6)}</p>
+                                                    <p className="font-black text-slate-800 tracking-tight">{admin.name}</p>
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter mt-0.5">ID: {admin._id.slice(-6)}</p>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-8 py-6">
-                                            <div className="space-y-1">
-                                                <div className="flex items-center gap-2 text-sm text-slate-600 font-medium">
-                                                    <Mail size={14} className="text-slate-300" /> {admin.email}
-                                                </div>
-                                                <div className="flex items-center gap-2 text-sm text-slate-400">
-                                                    <Phone size={14} className="text-slate-300" /> {admin.phone}
-                                                </div>
-                                            </div>
+                                            <div className="text-sm font-medium text-slate-600">{admin.email}</div>
+                                            <div className="text-xs text-slate-400">{admin.phone}</div>
                                         </td>
                                         <td className="px-8 py-6 text-center">
-                                            <button 
-                                                onClick={() => openConfirmModal(
-                                                    admin, 
-                                                    () => handleStatusToggle(admin),
-                                                    `Do you want to ${admin.status === 'active' ? 'Deactivate' : 'Activate'} ${admin.name}?`
-                                                )}
-                                                className={`relative inline-flex items-center h-6 w-12 rounded-full transition-colors focus:outline-none ${admin.status === 'active' ? 'bg-green-500 shadow-green-100 shadow-lg' : 'bg-slate-300'}`}
-                                            >
-                                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${admin.status === 'active' ? 'translate-x-7' : 'translate-x-1'}`} />
+                                            <button onClick={() => openConfirmModal(admin, () => handleStatusToggle(admin), `Change status for ${admin.name}?`)} className={`relative h-6 w-11 rounded-full transition-colors ${admin.status === 'active' ? 'bg-green-500' : 'bg-slate-200'}`}>
+                                                <span className={`absolute top-1 left-1 h-4 w-4 rounded-full bg-white transition-transform ${admin.status === 'active' ? 'translate-x-5' : 'translate-x-0'}`} />
                                             </button>
                                         </td>
                                         <td className="px-8 py-6 text-right">
                                             <div className="flex justify-end gap-2">
-                                                <button 
-                                                    onClick={() => { setSelectedAdmin(admin); setIsDetailsModalOpen(true); }}
-                                                    className="p-3 bg-slate-100 text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
-                                                    title="View Details"
-                                                >
-                                                    <Eye size={18} />
-                                                </button>
-                                                <button 
-                                                    onClick={() => openConfirmModal(
-                                                        admin, 
-                                                        () => handleDelete(admin._id),
-                                                        `Permanently delete ${admin.name}? This action cannot be undone.`
-                                                    )}
-                                                    className="p-3 bg-slate-100 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm"
-                                                    title="Delete Account"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
+                                                <button onClick={() => { setSelectedAdmin(admin); setIsDetailsModalOpen(true); }} className="p-3 bg-slate-100 text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all"><Eye size={18} /></button>
+                                                <button onClick={() => openConfirmModal(admin, () => handleDelete(admin._id), `Delete ${admin.name} permanently?`)} className="p-3 bg-slate-100 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all"><Trash2 size={18} /></button>
                                             </div>
                                         </td>
-                                    </motion.tr>
-                                )) : (
-                                    <tr>
-                                        <td colSpan="4" className="text-center py-20 text-slate-400 font-bold uppercase tracking-widest">
-                                            No sub-admins found matching your search.
-                                        </td>
                                     </tr>
-                                )}
+                                ))}
                             </tbody>
                         </table>
                     </div>
-                </motion.div>
+                </div>
             </div>
 
-            {/* Modals Container */}
             <AddSubAdminModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAdd={handleAdd} />
             <DetailsModal isOpen={isDetailsModalOpen} onClose={() => setIsDetailsModalOpen(false)} admin={selectedAdmin} />
-            <ConfirmModal isOpen={isConfirmModalOpen} onClose={() => setIsConfirmModalOpen(false)} onConfirm={() => { confirmAction(); setIsConfirmModalOpen(false); }} title="Are you sure?" message={confirmMessage} />
+            <ConfirmModal isOpen={isConfirmModalOpen} onClose={() => setIsConfirmModalOpen(false)} onConfirm={() => { confirmAction(); setIsConfirmModalOpen(false); }} title="Confirm Action" message={confirmMessage} />
             <PasswordDisplayModal isOpen={isPasswordModalOpen} onClose={() => setIsPasswordModalOpen(false)} password={newAdminPassword} />
         </div>
     );
