@@ -56,7 +56,7 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, productName }) => {
   );
 };
 
-const ImageThumb = memo(({ file, onRemove, isUrl = false }) => {
+const ImageThumb = memo(({ file, onRemove, isUrl = false, index, onDragStart, onDragOver, onDrop }) => {
   const [preview, setPreview] = useState("");
   useEffect(() => {
     if (isUrl) { setPreview(file); return; }
@@ -67,9 +67,15 @@ const ImageThumb = memo(({ file, onRemove, isUrl = false }) => {
   }, [file, isUrl]);
 
   return (
-    <div className="relative w-24 h-24 border-2 border-gray-100 rounded-xl overflow-hidden shadow-sm group hover:shadow-md hover:border-purple-200 transition-all duration-300">
-      {preview && <img src={preview} alt="thumb" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />}
-      <button type="button" onClick={onRemove} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all duration-300 shadow-md">
+    <div 
+      className="relative w-24 h-24 border-2 border-gray-100 rounded-xl overflow-hidden shadow-sm group hover:shadow-md hover:border-purple-200 transition-all duration-300 cursor-move"
+      draggable={isUrl}
+      onDragStart={() => onDragStart && onDragStart(index)}
+      onDragOver={(e) => onDragOver && onDragOver(e, index)}
+      onDrop={() => onDrop && onDrop(index)}
+    >
+      {preview && <img src={preview} alt="thumb" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 pointer-events-none" />}
+      <button type="button" onClick={onRemove} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all duration-300 shadow-md z-10">
         <FontAwesomeIcon icon={faTimes} />
       </button>
     </div>
@@ -239,6 +245,9 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
   const [visibleBoxes, setVisibleBoxes] = useState(4);
   const [isCompressing, setIsCompressing] = useState(false);
 
+  const dragItem = React.useRef(null);
+  const dragOverItem = React.useRef(null);
+
   useEffect(() => {
     if (product && isOpen) {
       setFormData({
@@ -251,25 +260,48 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
         quantity: product.quantity || "",
         position: product.position || 0
       });
-
       setExistingImages(product.images || []);
-      const colorImgs = product.colorImageMap ? Object.values(product.colorImageMap) : [];
-      setExistingColorImages(colorImgs);
-
+      setExistingColorImages(product.colorImageMap ? Object.values(product.colorImageMap) : []);
       setNewImages([]);
       setNewColorImages([]);
-
       setSelectedDimensions(product.dimensions || []);
-
       const parts = Array(20).fill("");
-      const descStr = product.description || "";
-      descStr.split(" ").forEach((word, i) => { if (i < 20) parts[i] = word; });
+      (product.description || "").split(" ").forEach((word, i) => { if (i < 20) parts[i] = word; });
       setDescriptionParts(parts);
-
       const filledCount = parts.filter(p => p !== "").length;
       setVisibleBoxes(Math.max(4, Math.ceil(filledCount / 4) * 4));
     }
   }, [product, isOpen]);
+
+  const handleDragStart = (index) => { dragItem.current = index; };
+  const handleDragOver = (e) => { e.preventDefault(); };
+
+  const handleDrop = async (dropIndex) => {
+    const dragIndex = dragItem.current;
+    if (dragIndex === null || dragIndex === dropIndex) return;
+
+    const targetImage = existingImages[dragIndex];
+    const newPos = dropIndex; 
+
+    const tid = toast.loading("Changing position...");
+    try {
+      const res = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/products/${product._id}/change-image-position`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageId: targetImage.id, newPosition: newPos })
+      });
+      const result = await res.json();
+      if (result.success) {
+        setExistingImages(result.images);
+        toast.success(result.message, { id: tid });
+      } else {
+        toast.error("Failed to move", { id: tid });
+      }
+    } catch (err) {
+      toast.error("Server error", { id: tid });
+    }
+    dragItem.current = null;
+  };
 
   const handleFileChange = async (e, setter) => {
     const files = Array.from(e.target.files || []);
@@ -280,22 +312,19 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
       const compressed = await Promise.all(files.map(f => imageCompression(f, options)));
       setter(prev => [...prev, ...compressed]);
       toast.success("Compressed!");
-    } catch (err) {
-      toast.error("Compression failed");
-    } finally { setIsCompressing(false); }
+    } catch (err) { toast.error("Compression failed"); } 
+    finally { setIsCompressing(false); }
   };
 
   const deleteExistingImage = async (img, isColor = false) => {
     if (!window.confirm("Remove this image?")) return;
     const cleanId = img.id?.includes("/") ? img.id.split("/").pop() : img.id;
-    if (!cleanId) return toast.error("Invalid Image ID");
-
     try {
       const res = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/products/products/${product._id}/images/${cleanId}`, { method: "DELETE" });
       if (res.ok) {
-        if (isColor) setExistingColorImages(prev => prev.filter(i => i.id !== img.id));
-        else setExistingImages(prev => prev.filter(i => i.id !== img.id));
-        toast.success("Image deleted");
+        if (isColor) setExistingColorImages(p => p.filter(i => i.id !== img.id));
+        else setExistingImages(p => p.filter(i => i.id !== img.id));
+        toast.success("Deleted");
       }
     } catch (err) { toast.error("Delete failed"); }
   };
@@ -304,31 +333,18 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
     e.preventDefault();
     const data = new FormData();
     data.append("description", descriptionParts.filter(p => p?.trim()).join(" ").trim());
-
-    const dimIds = selectedDimensions
-      .map(d => (typeof d === 'object' && d !== null ? d._id : d))
-      .filter(id => id && id !== "undefined");
-
+    const dimIds = selectedDimensions.map(d => (typeof d === 'object' ? d._id : d)).filter(id => id && id !== "undefined");
     data.append("dimensions", dimIds.join(","));
-
-    Object.entries(formData).forEach(([k, v]) => {
-      if (v !== null && v !== undefined) data.append(k, v);
-    });
-
+    Object.entries(formData).forEach(([k, v]) => { if (v !== null) data.append(k, v); });
     newImages.forEach(f => data.append("images", f, f.name));
     newColorImages.forEach(f => data.append("colorImages", f, f.name));
 
-    const tid = toast.loading("Updating product...");
+    const tid = toast.loading("Updating...");
     try {
       const res = await fetch(`https://threebapi-1067354145699.asia-south1.run.app/api/products/update/${product._id}`, { method: "PUT", body: data });
-      if (res.ok) {
-        toast.success("Updated Successfully!", { id: tid });
-        onUpdateSuccess();
-        onClose();
-      } else {
-        toast.error("Update failed", { id: tid });
-      }
-    } catch (err) { toast.error("Update failed", { id: tid }); }
+      if (res.ok) { toast.success("Updated!", { id: tid }); onUpdateSuccess(); onClose(); }
+      else { toast.error("Failed", { id: tid }); }
+    } catch (err) { toast.error("Error", { id: tid }); }
   };
 
   if (!isOpen) return null;
@@ -340,62 +356,58 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
           <div className="bg-blue-600 text-white p-2 rounded-lg text-sm shadow-md"><FontAwesomeIcon icon={faPenToSquare} /></div>
           Update Product
         </h3>
-        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-red-500 hover:text-white rounded-full transition-all duration-300 text-gray-500">
-          <FontAwesomeIcon icon={faTimes} />
-        </button>
+        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-red-500 hover:text-white rounded-full transition-all duration-300 text-gray-500"><FontAwesomeIcon icon={faTimes} /></button>
       </div>
       <div className="p-8 overflow-y-auto space-y-6 max-h-[75vh] custom-scrollbar">
         <form id="update-form" onSubmit={handleFormSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div>
-              <label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase">Category</label>
+              <label className="text-[11px] font-bold text-gray-500 uppercase">Category</label>
               <select value={formData.categoryId} onChange={e => setFormData({ ...formData, categoryId: e.target.value })} className={inputClass}>
                 <option value="">Select Category</option>
                 {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
               </select>
             </div>
-            <div><label className="text-[11px] tracking-wider font-bold text-[#6A3E9D] uppercase">Model Number</label><input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className={inputClass} /></div>
-            <div><label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase">Position</label><input type="number" value={formData.position} onChange={e => setFormData({ ...formData, position: e.target.value })} className={inputClass} /></div>
+            <div><label className="text-[11px] font-bold text-[#6A3E9D] uppercase">Model Number</label><input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className={inputClass} /></div>
+            <div><label className="text-[11px] font-bold text-gray-500 uppercase">Position</label><input type="number" value={formData.position} onChange={e => setFormData({ ...formData, position: e.target.value })} className={inputClass} /></div>
           </div>
 
           <div className="bg-blue-50/30 p-5 rounded-2xl border border-blue-100">
-            <label className="text-[11px] tracking-wider font-bold text-blue-600 uppercase mb-2 block">Description Boxes</label>
+            <label className="text-[11px] font-bold text-blue-600 uppercase mb-2 block">Description Boxes</label>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               {descriptionParts.slice(0, visibleBoxes).map((p, i) => (
                 <input key={i} value={p} onChange={e => { const u = [...descriptionParts]; u[i] = e.target.value; setDescriptionParts(u); }} className="w-full h-10 border-gray-200 rounded-xl text-center text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all" />
               ))}
             </div>
-            {visibleBoxes < 20 && <button type="button" onClick={() => setVisibleBoxes(v => v + 5)} className="mt-4 px-4 py-2 bg-white border border-blue-200 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition-all duration-300 shadow-sm">+ Add More</button>}
+            {visibleBoxes < 20 && <button type="button" onClick={() => setVisibleBoxes(v => v + 5)} className="mt-4 px-4 py-2 bg-white border border-blue-200 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition-all">+ Add More</button>}
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-            <div><label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase">Stock Qty</label><input type="number" value={formData.quantity} onChange={e => setFormData({ ...formData, quantity: e.target.value })} className={inputClass} /></div>
-            <div><label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase">Price</label><input type="number" value={formData.pricePerPiece} onChange={e => setFormData({ ...formData, pricePerPiece: e.target.value })} className={inputClass} /></div>
-            <div><label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase">Pcs/Box</label><input type="number" value={formData.totalPiecesPerBox} onChange={e => setFormData({ ...formData, totalPiecesPerBox: e.target.value })} className={inputClass} /></div>
-            <div><label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase">Discount %</label><input type="number" value={formData.discountPercentage} onChange={e => setFormData({ ...formData, discountPercentage: e.target.value })} className={inputClass} /></div>
+            <div><label className="text-[11px] font-bold text-gray-500 uppercase">Stock Qty</label><input type="number" value={formData.quantity} onChange={e => setFormData({ ...formData, quantity: e.target.value })} className={inputClass} /></div>
+            <div><label className="text-[11px] font-bold text-gray-500 uppercase">Price</label><input type="number" value={formData.pricePerPiece} onChange={e => setFormData({ ...formData, pricePerPiece: e.target.value })} className={inputClass} /></div>
+            <div><label className="text-[11px] font-bold text-gray-500 uppercase">Pcs/Box</label><input type="number" value={formData.totalPiecesPerBox} onChange={e => setFormData({ ...formData, totalPiecesPerBox: e.target.value })} className={inputClass} /></div>
+            <div><label className="text-[11px] font-bold text-gray-500 uppercase">Discount %</label><input type="number" value={formData.discountPercentage} onChange={e => setFormData({ ...formData, discountPercentage: e.target.value })} className={inputClass} /></div>
           </div>
 
           <div>
-            <label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase block mb-1">Dimensions</label>
+            <label className="text-[11px] font-bold text-gray-500 uppercase block mb-1">Dimensions</label>
             <div className="flex gap-3">
               <select onChange={e => {
                 const d = dimensions.find(x => x._id === e.target.value);
-                if (d && !selectedDimensions.find(s => (s._id || s) === d._id)) {
-                  setSelectedDimensions([...selectedDimensions, d]);
-                }
+                if (d && !selectedDimensions.find(s => (s._id || s) === d._id)) { setSelectedDimensions([...selectedDimensions, d]); }
                 e.target.value = "";
               }} className={inputClass}>
                 <option value="">Select Existing</option>
                 {dimensions.map(d => <option key={d._id} value={d._id}>{d.value}</option>)}
               </select>
               <input type="text" value={newDimensionInput} onChange={e => setNewDimensionInput(e.target.value)} className={inputClass} placeholder="New..." />
-              <button type="button" onClick={handleAddNewDimension} className="mt-1 bg-gray-800 hover:bg-black text-white px-6 rounded-xl font-bold transition-all shadow-md">Add</button>
+              <button type="button" onClick={handleAddNewDimension} className="mt-1 bg-gray-800 text-white px-6 rounded-xl font-bold">Add</button>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               {selectedDimensions.map((d, i) => (
-                <span key={d?._id || i} className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-sm animate-in fade-in zoom-in">
+                <span key={d?._id || i} className="bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2">
                   {d?.value || d}
-                  <button type="button" onClick={() => setSelectedDimensions(selectedDimensions.filter((_, idx) => idx !== i))} className="hover:text-red-200 bg-black/20 rounded-full w-4 h-4 flex items-center justify-center transition-colors">×</button>
+                  <button type="button" onClick={() => setSelectedDimensions(selectedDimensions.filter((_, idx) => idx !== i))} className="bg-black/20 rounded-full w-4 h-4 flex items-center justify-center">×</button>
                 </span>
               ))}
             </div>
@@ -403,19 +415,30 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
 
           <div className="space-y-6 border-t pt-6">
             <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100">
-              <label className="text-[11px] tracking-wider font-bold text-[#6A3E9D] uppercase block mb-3">Product Images (Existing & New)</label>
+              <label className="text-[11px] font-bold text-[#6A3E9D] uppercase block mb-3">Product Images (Drag to Reorder)</label>
               <div className="flex flex-wrap gap-3">
-                {existingImages.map((img, i) => <ImageThumb key={`ex-${i}`} file={img.url} isUrl={true} onRemove={() => deleteExistingImage(img)} />)}
-                {newImages.map((f, i) => <ImageThumb key={`new-${i}`} file={f} onRemove={() => setNewImages(prev => prev.filter((_, idx) => idx !== i))} />)}
+                {existingImages.map((img, i) => (
+                  <ImageThumb 
+                    key={img.id} 
+                    file={img.url} 
+                    isUrl={true} 
+                    index={i}
+                    onDragStart={handleDragStart}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    onRemove={() => deleteExistingImage(img)} 
+                  />
+                ))}
+                {newImages.map((f, i) => <ImageThumb key={`new-${i}`} file={f} onRemove={() => setNewImages(p => p.filter((_, idx) => idx !== i))} />)}
               </div>
               <input type="file" multiple onChange={e => handleFileChange(e, setNewImages)} className={`${fileInputClass} mt-4`} />
             </div>
 
             <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100">
-              <label className="text-[11px] tracking-wider font-bold text-gray-500 uppercase block mb-3">Color Images (Existing & New)</label>
+              <label className="text-[11px] font-bold text-gray-500 uppercase block mb-3">Color Images</label>
               <div className="flex flex-wrap gap-3">
-                {existingColorImages.map((img, i) => <ImageThumb key={`exc-${i}`} file={img.url} isUrl={true} onRemove={() => deleteExistingImage(img, true)} />)}
-                {newColorImages.map((f, i) => <ImageThumb key={`newc-${i}`} file={f} onRemove={() => setNewColorImages(prev => prev.filter((_, idx) => idx !== i))} />)}
+                {existingColorImages.map((img, i) => <ImageThumb key={img.id} file={img.url} isUrl={true} onRemove={() => deleteExistingImage(img, true)} />)}
+                {newColorImages.map((f, i) => <ImageThumb key={`newc-${i}`} file={f} onRemove={() => setNewColorImages(p => p.filter((_, idx) => idx !== i))} />)}
               </div>
               <input type="file" multiple onChange={e => handleFileChange(e, setNewColorImages)} className={`${fileInputClass} mt-4`} />
             </div>
@@ -423,8 +446,8 @@ const UpdateProductModal = ({ isOpen, onClose, onUpdateSuccess, product, categor
         </form>
       </div>
       <div className="p-5 bg-gray-50 border-t flex justify-end gap-3 rounded-b-3xl">
-        <button onClick={onClose} className="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-100 transition-all duration-300">Cancel</button>
-        <button type="submit" form="update-form" disabled={isCompressing} className="px-8 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-1 transition-all duration-300 flex items-center gap-2">
+        <button onClick={onClose} className="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold">Cancel</button>
+        <button type="submit" form="update-form" disabled={isCompressing} className="px-8 py-2.5 bg-blue-600 text-white rounded-xl font-bold shadow-lg">
           {isCompressing ? "Processing..." : "Update Changes"}
         </button>
       </div>
