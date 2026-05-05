@@ -112,6 +112,7 @@ function ViewClients() {
                 <th className="px-6 py-5 font-bold uppercase text-xs tracking-wider">Client Details</th>
                 <th className="px-6 py-5 font-bold uppercase text-xs tracking-wider">Contact Info</th>
                 <th className="px-6 py-5 font-bold uppercase text-xs tracking-wider">Shipping Addresses</th>
+                <th className="px-6 py-5 font-bold uppercase text-xs tracking-wider">GST No.</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -172,6 +173,11 @@ function ViewClients() {
                         <span className="text-xs text-gray-400 italic">No addresses saved</span>
                       )}
                     </td>
+                    <td className="px-6 py-4">
+  <span className="text-sm text-gray-700">
+    {client.gstNumber || 'N/A'}
+  </span>
+</td>
                   </motion.tr>
                 )) : (
                   <tr>
