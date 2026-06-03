@@ -15,26 +15,38 @@ const responsiveStyles = `
     0% { transform: scale(0.5); opacity: 0; } 
     100% { transform: scale(1); opacity: 1; } 
   }
-
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 15px;
-    margin-bottom: 25px;
+  @keyframes lockShake {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-10deg); }
+    75% { transform: rotate(10deg); }
   }
 
-  .charts-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-    margin-bottom: 25px;
-  }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; margin-bottom: 25px; }
+  .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 25px; }
+  .ops-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 30px; }
 
-  .ops-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 15px;
-    margin-bottom: 30px;
+  .access-denied-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: #f8f9fa;
+    text-align: center;
+    padding: 20px;
+  }
+  .lock-icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+    animation: lockShake 0.5s ease-in-out infinite alternate;
+  }
+  .denied-card {
+    background: white;
+    padding: 40px;
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    max-width: 450px;
   }
 
   @media (max-width: 600px) {
@@ -72,7 +84,10 @@ const Card = ({ icon, title, onClick }) => (
 
 function Dashboard() {
   const navigate = useNavigate();
-  const userName = localStorage.getItem('userName') || 'Manager';
+  const userName = localStorage.getItem('userName') || 'User';
+  const userRole = localStorage.getItem('role') || 'staff';
+  const permissions = JSON.parse(localStorage.getItem('permissions') || '{}');
+  
   const [orders, setOrders] = useState([]);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -80,6 +95,14 @@ function Dashboard() {
   const [greetingInfo, setGreetingInfo] = useState({ text: '', icon: '' });
   const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+
+  const hasAccess = userRole === 'admin' || (userRole === 'sub-admin' && permissions.dashboard);
+
+  const handleLogout = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    navigate('/');
+  };
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -93,6 +116,7 @@ function Dashboard() {
   }, []);
 
   useEffect(() => {
+    if (!hasAccess) return;
     const fetchData = async () => {
       try {
         const res = await fetch('https://threebapi-1067354145699.asia-south1.run.app/api/orders/get-orders');
@@ -103,7 +127,7 @@ function Dashboard() {
     };
     fetchData();
     setActivities(JSON.parse(sessionStorage.getItem("activities") || "[]"));
-  }, []);
+  }, [hasAccess]);
 
   const data = useMemo(() => {
     const filtered = orders.filter(o => {
@@ -130,6 +154,27 @@ function Dashboard() {
 
   const formatINR = (v) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(v);
 
+  if (!hasAccess) {
+    return (
+      <div className="access-denied-container">
+        <style>{responsiveStyles}</style>
+        <div className="denied-card">
+          <div className="lock-icon">🚫</div>
+          <h1 style={{ ...styles.greetingText, fontFamily: 'Poppins', fontSize: '1.8rem', color: '#dc3545' }}>Access Denied</h1>
+          <p style={{ color: '#666', margin: '20px 0', lineHeight: '1.6' }}>
+            Attention {userName} ({userRole}), you do not have permission to view this dashboard. Please contact your administrator.
+          </p>
+          <button 
+            onClick={handleLogout}
+            style={{ padding: '12px 30px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: '600' }}
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={styles.container}>
       <style>{responsiveStyles}</style>
@@ -148,7 +193,7 @@ function Dashboard() {
 
       <header style={styles.header}>
         <h2 style={{ fontFamily: "'Dancing Script', cursive", fontSize: '2.2rem', color: '#333', margin: 0 }}>Hello, {userName}!</h2>
-        <p style={{ color: '#777', margin: '5px 0 0', fontSize: '0.9rem' }}>Business Overview & Analytics</p>
+        <p style={{ color: '#777', margin: '5px 0 0', fontSize: '0.9rem' }}>Business Overview & Analytics ({userRole})</p>
       </header>
 
       <div style={styles.controls} className="controls-container">
@@ -238,3 +283,5 @@ function Dashboard() {
 }
 
 export default Dashboard;
+
+

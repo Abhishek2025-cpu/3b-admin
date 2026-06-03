@@ -36,9 +36,6 @@ const UpdateBoxesModal = ({ isOpen, onClose, item, onUpdateSubmit }) => {
     return <GenericModal isOpen={isOpen} onClose={onClose}><div className="p-4 border-b flex justify-between items-center"><h2 className="text-xl font-bold text-gray-800">Add More Boxes</h2><button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button></div><form onSubmit={handleSubmit}><div className="p-4 sm:p-6 space-y-4"><div><label className="font-semibold text-gray-700 block mb-1">Item No</label><input type="text" readOnly value={item?.itemNo?.trim() || ''} className="w-full p-2 bg-gray-100 border rounded-lg cursor-not-allowed" /></div><div><label htmlFor="new-boxes-input" className="font-semibold text-gray-700 block mb-1">Number of New Boxes to Add</label><input id="new-boxes-input" type="number" min="1" value={numberOfNewBoxes} onChange={(e) => setNumberOfNewBoxes(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., 5" required /></div></div><div className="p-4 border-t flex justify-end gap-3"><button type="button" onClick={onClose} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg w-full sm:w-auto">Cancel</button><button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg disabled:bg-indigo-300 disabled:cursor-not-allowed w-full sm:w-auto">{isSubmitting ? 'Adding...' : 'Add Boxes'}</button></div></form></GenericModal>;
 };
 
-// ==========================================
-// PRINTABLE PAGE LAYOUT (QR ALIGNMENT FIXED)
-// ==========================================
 const PrintablePageLayout = ({ item, box }) => {
     const qtyPerBox = item.noOfSticks || "N/A";
     const productImg = Array.isArray(item.productImageUrl)
@@ -48,22 +45,15 @@ const PrintablePageLayout = ({ item, box }) => {
     return (
         <div className="border-[4px] border-purple-800 p-3 bg-white w-[152.4mm] h-[108mm] relative font-sans text-black mx-auto overflow-hidden flex flex-col box-border flex-shrink-0">
             <div className="flex h-full w-full">
-                {/* LEFT SECTION (Approx 60%) */}
                 <div className="w-[62%] flex flex-col justify-between pr-5 h-full pt-1">
-
-                    {/* Top Container: Logo Block + QR Code */}
-                    <div className="flex justify-between items-start w-full"> {/* items-start rakha hai taaki manually control kar sakein */}
-
-                        {/* Logo & Brand Block */}
+                    <div className="flex justify-between items-start w-full">
                         <div className="flex flex-col ml-[-4px] items-center justify-center">
                             <img src={logo} alt="3B Logo" className="w-[180px] object-contain" />
                             <p className="text-[#1349a8] font-bold mt-[-45px] text-[14px]">
                                 www.3bprofilespvtlt.com
                             </p>
                         </div>
-
-                        {/* QR CODE SECTION (Moved Down for Logo Alignment) */}
-                        <div className="flex-shrink-0 mr-1 mt-7" > {/* mt-9 se QR code logo ke barabar niche aa jayega */}
+                        <div className="flex-shrink-0 mr-1 mt-7" >
                             <img
                                 src={box.qrCodeUrl}
                                 alt="Box QR"
@@ -73,7 +63,6 @@ const PrintablePageLayout = ({ item, box }) => {
                         </div>
                     </div>
 
-                    {/* Bottom Container: Data Fields */}
                     <div className="flex flex-col space-y-6 mb-12 w-full ml-[2px]">
                         <div className="flex items-end w-full">
                             <span className="font-extrabold text-[15px] w-[45%] text-left">Profile Code</span>
@@ -81,10 +70,9 @@ const PrintablePageLayout = ({ item, box }) => {
                                 {item.itemNo?.trim()}
                             </div>
                         </div>
-<div className="flex items-end w-full">
+                        <div className="flex items-end w-full">
                             <span className="font-extrabold text-[15px] w-[45%] text-left">Height (m)</span>
                             <div className="w-[55%] border-b-2 border-[#1349a8] text-center text-[16px] font-extrabold pb-0.5 text-black">
-                                {/* .replace(/feet/i, '').trim() lagaya hai taaki "Feet" word hat jaye aur sirf number bache */}
                                {item.length ? (parseFloat(item.length) * 0.3048).toFixed(1) : ''}
                             </div>
                         </div>
@@ -97,16 +85,14 @@ const PrintablePageLayout = ({ item, box }) => {
                     </div>
                 </div>
 
-                {/* RIGHT SECTION (Approx 38%) */}
                 <div className="w-[38%] flex flex-col items-center pl-4 py-1 h-full">
-                    {/* Dotted Box: p-0 rakha hai taaki koi extra space na ho */}
-                    <div className="flex-1 w-full border-2 border-dashed border-gray-400 p-0 flex items-center justify-center bg-white mt-[34px] mb-6 overflow-hidden relative">
+                    {/* Dotted Box: p-0 and object-cover to fit perfectly */}
+                    <div className="w-[150px] h-[170px] border-2 border-dashed border-gray-400 p-0 flex items-center justify-center bg-white mt-[42px] mb-8 overflow-hidden relative">
                         {productImg ? (
                             <img
                                 src={productImg}
                                 alt="Product"
-                                /* object-cover aur scale-[1.3] kiya hai taaki white line dotted box se bilkul touch ho jaye */
-                                className="w-full h-full object-cover drop-shadow-sm rotate-90 scale-[1.4] transform-gpu"
+                                className="w-full h-full object-cover drop-shadow-sm rotate-90 transform-gpu"
                             />
                         ) : (
                             <span className="text-xs text-gray-400 font-semibold uppercase">No Image</span>
@@ -134,10 +120,6 @@ const PrintablePageLayout = ({ item, box }) => {
         </div>
     );
 };
-
-// ==========================================
-// REST OF THE COMPONENTS
-// ==========================================
 
 const PrintModal = ({ isOpen, onClose, item, box }) => {
     const handlePrint = () => { setTimeout(() => window.print(), 300); };
