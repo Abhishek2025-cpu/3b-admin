@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  base: '/', // IMPORTANT for static hosting
+  base: '/',
   plugins: [react(), tailwindcss()],
+  preview: {
+    allowedHosts: true
+  }
 })
