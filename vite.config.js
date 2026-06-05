@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   preview: {
     host: true,
-    allowedHosts: ['threeb-employees-2uze.onrender.com']
+    port: 4173,
+    allowedHosts: ['threeb-employees-2uze.onrender.com', '.onrender.com']
   }
 })
