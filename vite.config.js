@@ -5,10 +5,7 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   preview: {
-    allowedHosts: true,
-    host: true
-  },
-  server: {
-    host: true
+    host: true,
+    allowedHosts: ['threeb-employees-2uze.onrender.com']
   }
 })
